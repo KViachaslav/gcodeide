@@ -42,6 +42,7 @@ def extract_black_lines(image_path, pixel_distance):
     dpg.add_button(label=nice_path,parent='butonss',tag=nice_path,callback=active_but)
     
     img = Image.open(image_path).convert('L') 
+    img.save("output_bw.png")
     img_array = np.array(img)
     height, width = img_array.shape
     liness = []
@@ -49,7 +50,7 @@ def extract_black_lines(image_path, pixel_distance):
     for y in range(height):
         start = None
         for x in range(0, width):
-            
+            # print(img_array[y, x])
             if img_array[y, x] < 128:  
                 if start is None:
                     start = (x, y) 
@@ -59,8 +60,8 @@ def extract_black_lines(image_path, pixel_distance):
                     
                     start = None
         
-        if start is not None:
-            liness.append((start, (width - pixel_distance, y)))
+        #if start is not None:
+            #liness.append((start,y, width - pixel_distance,y,0,nice_path,0,1))
 
     return liness
 
@@ -138,6 +139,8 @@ def draw_hatched_area(rect, circles,rectangles):
             for i in range(3):
                 if find_intersection(rect[i][0],rect[i][1],rect[i+1][0],rect[i+1][1],y):
                     p.append(find_intersection(rect[i][0],rect[i][1],rect[i+1][0],rect[i+1][1],y))
+            if find_intersection(rect[0][0],rect[0][1],rect[3][0],rect[3][1],y):
+                    p.append(find_intersection(rect[0][0],rect[0][1],rect[3][0],rect[3][1],y))
             if len(p) == 2:
                 # print(p)
                 if p[0][0] < p[1][0]:
@@ -171,6 +174,23 @@ def find_intersection(x1, y1, x2, y2, c):
         return (x_intersection, c)
     
     return None 
+def extend_line(a, b, w):
+    
+    dx = b[0] - a[0]
+    dy = b[1] - a[1]
+    
+    length = math.sqrt(dx**2 + dy**2)
+    
+    if length == 0:
+        return b 
+    
+    dx /= length
+    dy /= length
+    
+    c_x = b[0] + dx * w
+    c_y = b[1] + dy * w
+    
+    return c_x, c_y
 def read_dxf_lines_from_esyeda(file_path):
     nice_path = os.path.basename(file_path)
     iter = 1
@@ -194,10 +214,12 @@ def read_dxf_lines_from_esyeda(file_path):
         
     for polyline in msp.query('LWPOLYLINE'):
         w = polyline.dxf.const_width
-        
+        print(w)
         points = polyline.get_points()  
         for i in range(len(points) - 1):
+            nx,ny = extend_line(points[i],points[i + 1],w)
             boundaries = calculate_boundary_coordinates(points[i][0], points[i][1], points[i + 1][0], points[i + 1][1], w)
+            circles.append((points[i + 1][0], points[i + 1][1],w/2))
             rectangles.append((boundaries['left_start'],boundaries['left_end'],boundaries['right_end'],boundaries['right_start']))
 
 
@@ -1821,8 +1843,7 @@ def pr(selected_files):
 ##########################################
 #############################################
 def test_callback():
-    #db.clear_table('lines')
-    redraw()
+    dpg.bind_item_theme("plot", plot_theme)
 ####################################################
 ####################################################
 ####################################################
@@ -1885,6 +1906,21 @@ components.append(coloured_line_component5)
 themes.append(coloured_line_theme6)
 components.append(coloured_line_component6)
 
+
+
+
+with dpg.theme() as plot_theme:
+    with dpg.theme_component(dpg.mvPlot):
+        
+        dpg.add_theme_color(dpg.mvPlotCol_Line,  [80, 80, 80])## линии на поле, цифры на осях, подпись графика и оси
+        
+        dpg.add_theme_color(dpg.mvPlotCol_MarkerOutline,  [255, 255, 255])## цвет поля
+        
+        dpg.add_theme_color(dpg.mvPlotCol_FrameBg,  [0, 0, 0])## граница поля
+        
+        dpg.add_theme_color(dpg.mvPlotCol_PlotBorder,  [200, 200, 200])## вокруг поля (под цифрами, названиями осей)
+        
+
 with dpg.theme() as coloured_Core_theme1:
     with dpg.theme_component():
         coloured_core_component1 = dpg.add_theme_color(dpg.mvThemeCol_CheckMark, (0, 191, 255, 255), category=dpg.mvThemeCat_Core)
@@ -1946,15 +1982,11 @@ with dpg.viewport_menu_bar():
         dpg.add_color_picker(label="Color Me", callback=print_me)      
 
 
-
 with dpg.window(pos=(0,0),width=900, height=725,tag='papa'):
     
     with dpg.group(horizontal=True):
         with dpg.group():
-            # with dpg.file_dialog(directory_selector=False, show=False, callback=callback_, id="file_dialog_id", width=700 ,height=400):
-            #         dpg.add_file_extension("", color=(150, 255, 150, 255))
-            #         dpg.add_file_extension(".dxf", color=(255, 0, 255, 255), custom_text="[DXF]")
-            #         dpg.add_file_extension(".png", color=(255, 0, 0, 255), custom_text="[PNG]")
+          
             with dpg.file_dialog(directory_selector=False, show=False, callback=callback_to_gcode, id="file_dialog_id2", width=700 ,height=400):
                     dpg.add_file_extension(".gcode", color=(255, 0, 255, 255), custom_text="[DXF]")
             
