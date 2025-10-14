@@ -10,13 +10,13 @@ import svgwrite
 from db import SQLiteDatabase
 from PIL import Image
 import os
-
+from ezdxf import colors
 
 
 
 def active_but(sender,app_data):
     state = db.get_records_where('lines',f"parent='{sender}'")[0][7]
-    print(state)
+    
     db.update_multiple_fields('lines','isactive','parent',sender)
     dpg.bind_item_theme(sender, enabled_theme if state else disabled_theme)
     redraw()
@@ -91,28 +91,17 @@ def calculate_boundary_coordinates(x1, y1, x2, y2, width):
 
 def exclude_intervals(include_intervals, exclude_intervals):
     result = []
-
     for start, end in include_intervals:
         current_start = start
-        
-        # Сортируем исключаемые промежутки
         sorted_excludes = sorted(exclude_intervals)
-        
         for ex_start, ex_end in sorted_excludes:
-            # Если исключаемый промежуток не перекрывается
             if current_start >= ex_end:
                 continue
             if end <= ex_start:
                 break
-            
-            # Обрабатываем часть до исключаемого промежутка
             if current_start < ex_start:
                 result.append((current_start, ex_start))
-            
-            # Обновляем current_start, если current_end пересекается с исключаемым
             current_start = max(current_start, ex_end)
-        
-        # Добавляем оставшуюся часть, если она есть
         if current_start < end:
             result.append((current_start, end))
     
@@ -191,45 +180,77 @@ def extend_line(a, b, w):
     c_y = b[1] + dy * w
     
     return c_x, c_y
-def read_dxf_lines_from_esyeda(file_path):
-    nice_path = os.path.basename(file_path)
+def read_dxf_lines_from_esyeda(sender, app_data, user_data):
+    doc = ezdxf.readfile(user_data[0])
+    full = dpg.get_value('varradio') == 'full'
+   
+    layers = []
+    for i in range(1,len(user_data)):
+        if dpg.get_value(user_data[i]):
+            layers.append(user_data[i])
+        dpg.delete_item(user_data[i])
+    dpg.delete_item('CANCEL')
+    dpg.delete_item('OK')
+    dpg.delete_item('hor_grouph')
+    dpg.delete_item('varradio')
+    
+    dpg.configure_item("modal_id", show=False)
+    nice_path = os.path.basename(user_data[0])
     iter = 1
     while 1:
         for i in db.get_unique_values('lines','parent'):
             if i == nice_path:
-                nice_path = os.path.basename(file_path) + f' (copy {iter})'
+                nice_path = os.path.basename(user_data[0]) + f' (copy {iter})'
                 iter +=1
-        else: 
+        else:
             break
     dpg.add_button(label=nice_path,parent='butonss',tag=nice_path,callback=active_but)
-    doc = ezdxf.readfile(file_path)
+    doc = ezdxf.readfile(user_data[0])
     msp = doc.modelspace()
+    
     lines = []
     rectangles = []
     circles = []
+    intersecting_rectangles = []
+
     for circle in msp.query('CIRCLE'):
-       
+        layer = circle.dxf.layer
         
-        circles.append((circle.dxf.center.x,circle.dxf.center.y,circle.dxf.radius))
+        if layer in layers:
+            circles.append((circle.dxf.center.x,circle.dxf.center.y,circle.dxf.radius))
         
     for polyline in msp.query('LWPOLYLINE'):
-        w = polyline.dxf.const_width
-        print(w)
-        points = polyline.get_points()  
-        for i in range(len(points) - 1):
-            nx,ny = extend_line(points[i],points[i + 1],w)
-            boundaries = calculate_boundary_coordinates(points[i][0], points[i][1], points[i + 1][0], points[i + 1][1], w)
-            circles.append((points[i + 1][0], points[i + 1][1],w/2))
-            rectangles.append((boundaries['left_start'],boundaries['left_end'],boundaries['right_end'],boundaries['right_start']))
+        layer = polyline.dxf.layer
+        if layer in layers:
+            w = polyline.dxf.const_width
+            points = polyline.get_points()  
+            for i in range(len(points) - 1):
+                
+                boundaries = calculate_boundary_coordinates(points[i][0], points[i][1], points[i + 1][0], points[i + 1][1], w)
+                circles.append((points[i + 1][0], points[i + 1][1],w/2))
+                rectangles.append((boundaries['left_start'],boundaries['left_end'],boundaries['right_end'],boundaries['right_start']))
 
-
-
-    lins = draw_hatched_area((0,0,100,60),circles,rectangles)
+    for hatch in msp.query('HATCH'):
+        layer = circle.dxf.layer
+        
+        if layer in layers:
+            for path in hatch.paths:
+                
+                points = path.vertices
+                if len(points) == 4:
+                    rectangles.append((points[0],points[1],points[2],points[3]))
+           
+    if full:
+        lins = draw_hatched_area((0,0,100,60),circles,rectangles)
+    
 
     for l in lins:
         lines.append((round(l[0],4),  round(l[1],4), round(l[2],4), round(l[3],4),0,nice_path,0,1))
-    return lines
 
+
+    
+    db.add_multiple_records('lines',lines)
+    redraw()
 
 
 
@@ -300,37 +321,45 @@ def read_dxf_lines(file_path):
         lines.append((round(hlines[i]['start'][0],4),  round(hlines[i]['start'][1],4), round(hlines[i]['end'][0],4), round(hlines[i]['end'][1],4),0,nice_path,0,1))
        
     for acdb_line in msp.query('AcDbLine'):
+
         lines.append((round(acdb_line.dxf.start.x,4),  round(acdb_line.dxf.start.y,4), round(acdb_line.dxf.end.x,4), round(acdb_line.dxf.end.y,4),0,nice_path,0,1))
        
-    for arc in msp.query('ARC'):
-        center = arc.dxf.center  
-        radius = arc.dxf.radius   
-        start_angle = arc.dxf.start_angle 
-        end_angle = arc.dxf.end_angle
-        if radius<10:
-            points = arc_to_lines(center, radius, start_angle, end_angle,10)
-        else:
-            points = arc_to_lines(center, radius, start_angle, end_angle,50)
-        for i in range(len(points)-1):
-            lines.append((round(points[i][0],4),  round(points[i][1],4), round(points[i+1][0],4), round(points[i+1][1],4),0,nice_path,0,1))
-            #db.add_record('lines', (round(points[i][0],4),  round(points[i][1],4), round(points[i+1][0],4), round(points[i+1][1],4),0,nice_path,0,1))
+    # for arc in msp.query('ARC'):
+    #     center = arc.dxf.center  
+    #     radius = arc.dxf.radius   
+    #     start_angle = arc.dxf.start_angle 
+    #     end_angle = arc.dxf.end_angle
+    #     if radius<10:
+    #         points = arc_to_lines(center, radius, start_angle, end_angle,10)
+    #     else:
+    #         points = arc_to_lines(center, radius, start_angle, end_angle,50)
+    #     for i in range(len(points)-1):
+    #         lines.append((round(points[i][0],4),  round(points[i][1],4), round(points[i+1][0],4), round(points[i+1][1],4),0,nice_path,0,1))
             
-    for circle in msp.query('CIRCLE'):
-        center = circle.dxf.center 
-        radius = circle.dxf.radius  
-        num_points = 50  
+    # for circle in msp.query('CIRCLE'):
+    #     center = circle.dxf.center 
+    #     radius = circle.dxf.radius  
+    #     num_points = 50  
 
-        points = [
-            (
-                center.x + radius * math.cos(2 * math.pi * i / num_points),
-                center.y + radius * math.sin(2 * math.pi * i / num_points)
-            )
-            for i in range(num_points)
-        ]
+    #     points = [
+    #         (
+    #             center.x + radius * math.cos(2 * math.pi * i / num_points),
+    #             center.y + radius * math.sin(2 * math.pi * i / num_points)
+    #         )
+    #         for i in range(num_points)
+    #     ]
         
-        for i in range(len(points)-1):
-            lines.append((round(points[i][0],4),  round(points[i][1],4), round(points[i+1][0],4), round(points[i+1][1],4),0,nice_path,0,1))
+    #     for i in range(len(points)-1):
+    #         lines.append((round(points[i][0],4),  round(points[i][1],4), round(points[i+1][0],4), round(points[i+1][1],4),0,nice_path,0,1))
           
+
+    for polyline in msp.query('SOLID'):
+        print('asd')
+        points = polyline.get_points()  
+        for i in range(len(points) - 1):
+            lines.append((round(points[i][0],4),  round(points[i][1],4), round(points[i+1][0],4), round(points[i+1][1],4),0,nice_path,0,1))
+           
+
     for polyline in msp.query('LWPOLYLINE'):
         
         points = polyline.get_points()  
@@ -339,9 +368,12 @@ def read_dxf_lines(file_path):
            
     for hatch in msp.query('HATCH'):
         for path in hatch.paths:
-        
+            
             points = path.vertices
-            lines.append((round(points[0][0],4),  round(points[0][1],4), round(points[1][0],4), round(points[1][1],4),0,nice_path,0,1))
+            
+            for i in range(len(points)-1):
+                lines.append((round(points[i][0],4),  round(points[i][1],4), round(points[i+1][0],4), round(points[i+1][1],4),0,nice_path,0,1))
+            lines.append((round(points[0][0],4),  round(points[0][1],4), round(points[len(points)-1][0],4), round(points[len(points)-1][1],4),0,nice_path,0,1))
            
     return lines
 
@@ -1613,7 +1645,7 @@ def plot_mouse_click_callback():
 
 
         l = find_closest_lines(lines,(x,y),range(len(lines)))###################
-        print(l)
+        
         if dpg.get_value('color_1'):
             db.set_color_where_id('lines',0,l)
         elif dpg.get_value('color_2'):
@@ -1701,77 +1733,44 @@ def delete_l():
 
 
 def split_l():
- 
+    for t in db.get_parent_by_field_unique('lines','isactive',1):
+        dpg.delete_item(t)     
 
-    deleted_aciv = []
-    new_active_obj = []
-    new_lines = []
-    new_ts = []
-    new_objects = []
-    for i,t in enumerate(active_obj):
-        if t['bool'] == 1:
-            dpg.delete_item(t['tag'])
-           
-            lines_for_split = []
-            ts_for_split = []
-           
-            for i,o in enumerate(objects):
-                if o != t['tag']:    
-                    new_lines.append(lines[i])
-                    new_ts.append(ts[i])
-                    new_objects.append(objects[i])    
-                else:
-                    lines_for_split.append(lines[i])
-                    ts_for_split.append(ts[i])
-            sett = {i for i in range(len(lines_for_split))}
-        
-            v = 0
-            while sett:
-                i = next(iter(sett))
-                l = find_closest_lines(lines_for_split,lines_for_split[i]['start'],sett)
-                dpg.add_button(label=t['tag'] + f'__{v}',parent='butonss',tag=t['tag'] + f'__{v}',callback=active_but)
-                new_active_obj.append({'tag':t['tag'] + f'__{v}','bool':0})
-               
-                for h in l:
-                    new_lines.append(lines_for_split[h])
-                    new_ts.append(ts_for_split[h])
-                    new_objects.append(t['tag'] + f'__{v}')   
-                    sett.remove(h)
-                v+=1
- 
-            
-
-        else:
-            deleted_aciv.append(i)
-
-
-    lines = new_lines
-    ts = new_ts
-    objects = new_objects
-
-
-    for i in deleted_aciv:
-        new_active_obj.append(active_obj[i])
+        lines_for_split = []
+        ids = []
+        for i,o in enumerate(db.get_records_where('lines',f"parent='{t}'")):   
+            lines_for_split.append([(o[1],o[2]),(o[3],o[4])])
+            ids.append(o[0])
+        sett = {i for i in range(len(lines_for_split))}
     
 
+        v = 0
+        while sett:
+            i = next(iter(sett))
 
-    active_obj = new_active_obj
+            l = find_closest_lines(lines_for_split,lines_for_split[i][0],sett)
+            dpg.add_button(label=t + f'__{v}',parent='butonss',tag=t + f'__{v}',callback=active_but)
+            nice_ids = []
+            for h in l:
+                nice_ids.append(ids[h]) 
+                sett.remove(h)
+            db.update_multiple_records('lines','parent',nice_ids,f"'{t}__{v}'")
+            db.update_multiple_records('lines','forredraw',nice_ids,1)  
+            db.update_multiple_records('lines','isactive',nice_ids,0)
+            v+=1
+
     redraw()
 
 def optimize_():
     
+    return
+    #optimize.create_continuous_lines('temp.dxf',lines )
     
-    optimize.create_continuous_lines('temp.dxf',lines )
-    #plot_dxf('temp.dxf')
-
 def normal_():
     normalize_lines()
-    
 
 def rotate_x():
-    invers_lines(lines)
-    
-
+    invers_lines()
 
 def normalize_lines():
     rec = db.get_records_where('lines','isactive=1')
@@ -1782,7 +1781,7 @@ def normalize_lines():
     db.increment_field_value_with_condition('lines','sx','ex','sy','ey',-min(xx),-min(yy),'isactive',1)
     redraw()
 
-def invers_lines(lines):
+def invers_lines():
     rec = db.get_records_where('lines','isactive=1')
     xx = [r[1] for r in rec]
     xx+= [r[3] for r in rec]
@@ -1792,24 +1791,6 @@ def invers_lines(lines):
     db.inverse_field_value_with_condition('lines','sy','ey',max(yy) + min(yy),'isactive',1)
     redraw()
     
-def esy_eda(selected_files):
-    current_file = selected_files[0]
-    global lines
-    global ts
-    global objects
-    global active_obj
-    if dpg.get_value('eraseold'):
-        for t in db.get_unique_values('lines','parent'):
-            dpg.delete_item(t)
-        db.clear_table('lines')
-        
-    lines = read_dxf_lines_from_esyeda(current_file)
-    db.add_multiple_records('lines',lines) 
-    
-        
-        
-        
-    redraw()
 
 
 def pr(selected_files):
@@ -1825,13 +1806,33 @@ def pr(selected_files):
 
         if esyedaflag:
             esyedaflag = False
-            lines = read_dxf_lines_from_esyeda(current_file)
-            db.add_multiple_records('lines',lines) 
+            normicks = ['TopLayer','BoardOutLine','Multi-Layer']
+            doc = ezdxf.readfile(current_file)
+            layers = doc.layers
+            ll = []
+            ll.append(current_file)
+            dpg.add_radio_button(parent="modal_id",items=['full','border'],tag='varradio',horizontal=True,default_value='full')
+            for layer in layers:
+                
+                ll.append(layer.dxf.name)
+                if layer.dxf.name in normicks:
+                    dpg.add_checkbox(label=layer.dxf.name,parent="modal_id",tag=layer.dxf.name,default_value=True)
+                else:
+                    dpg.add_checkbox(label=layer.dxf.name,parent="modal_id",tag=layer.dxf.name)
+            dpg.add_group(horizontal=True,tag='hor_grouph',parent="modal_id")
+            
+            dpg.add_button(label="OK", width=75, parent='hor_grouph',callback=read_dxf_lines_from_esyeda,user_data=ll,tag='OK')
+            dpg.add_button(label="Cancel", width=75, parent='hor_grouph', callback=lambda: dpg.configure_item("modal_id", show=False),tag='CANCEL')
+            dpg.configure_item("modal_id", show=True)
+            #dpg.configure_item("modal_id", modal=True)
+            
+            #lines = read_dxf_lines_from_esyeda(current_file)
+            #db.add_multiple_records('lines',lines) 
         else:
             lines = read_dxf_lines(current_file)
             db.add_multiple_records('lines',lines) 
         
-        redraw()
+            redraw()
     elif '.png' in current_file:   
         lines = extract_black_lines(current_file,0.1)
         db.add_multiple_records('lines',lines)
@@ -1843,7 +1844,10 @@ def pr(selected_files):
 ##########################################
 #############################################
 def test_callback():
-    dpg.bind_item_theme("plot", plot_theme)
+    #dpg.bind_item_theme("plot", plot_theme)
+    
+    dpg.configure_item("modal_id", show=True)
+    
 ####################################################
 ####################################################
 ####################################################
@@ -1862,16 +1866,18 @@ Y_AXIS_TAG = "y_axis_tag"
 current_file = None
 themes = []
 components = []
-lines =[]
-ts = []
-objects = []
-active_obj = []
+
 esyedaflag = False
 
 db = SQLiteDatabase('example.db')
 db.drop_table('lines')
 db.create_table('lines', [('sx', 'REAL'), ('sy', 'REAL'), ('ex', 'REAL'), ('ey', 'REAL'),('color', 'INTEGER'), ('parent', 'TEXT'),('isactive', 'INTEGER'),('forredraw', 'INTEGER')])
 
+with dpg.window(label="Delete Files", show=False, tag="modal_id", no_title_bar=True):
+    dpg.add_text("Layers")
+    dpg.add_separator()
+    
+   
 
 with dpg.theme(tag="coloured_line_theme1") as coloured_line_theme1:
     with dpg.theme_component():
@@ -1969,7 +1975,7 @@ with dpg.viewport_menu_bar():
             dpg.add_menu_item(label="Setting 1", callback=print_me, check=True)
             dpg.add_menu_item(label="Setting 2", callback=print_me)
     with dpg.menu(label="Functions"):
-        dpg.add_menu_item(label="Optimize", callback=optimize_)
+        dpg.add_menu_item(label="Split", callback=split_l)
         dpg.add_menu_item(label="Normalize", callback=normal_)
         dpg.add_menu_item(label="Rotate X", callback=rotate_x)
         dpg.add_menu_item(label="Delete", callback=delete_l)

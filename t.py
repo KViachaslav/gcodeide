@@ -1,96 +1,63 @@
-import matplotlib.pyplot as plt
+# import shapely
+# from shapely import MultiPoint, Polygon
+
+# import matplotlib.pyplot as plt
+# from shapely.geometry import Polygon
+# multi_point = MultiPoint([(0, 0), (0, 3), (1, 1), (3, 0), (3, 3)])
+
+# polygon = shapely.concave_hull(multi_point, ratio=0)
+
+# x, y = polygon.exterior.xy
+
+# plt.figure(figsize=(6, 6))
+# plt.fill(x, y, alpha=0.5, fc='lightblue', ec='black')
+# plt.title('Polygon Visualization')
+# plt.xlabel('X-axis')
+# plt.ylabel('Y-axis')
+# plt.grid()
+# plt.axhline(0, color='black', linewidth=0.5, ls='--')
+# plt.axvline(0, color='black', linewidth=0.5, ls='--')
+# plt.xlim(0, 6)
+# plt.ylim(0, 5)
+# plt.show()
+
+
 import numpy as np
 
-def exclude_intervals(include_intervals, exclude_intervals):
-    result = []
-
-    for start, end in include_intervals:
-        current_start = start
-        
-        # Сортируем исключаемые промежутки
-        sorted_excludes = sorted(exclude_intervals)
-        
-        for ex_start, ex_end in sorted_excludes:
-            # Если исключаемый промежуток не перекрывается
-            if current_start >= ex_end:
-                continue
-            if end <= ex_start:
-                break
-            
-            # Обрабатываем часть до исключаемого промежутка
-            if current_start < ex_start:
-                result.append((current_start, ex_start))
-            
-            # Обновляем current_start, если current_end пересекается с исключаемым
-            current_start = max(current_start, ex_end)
-        
-        # Добавляем оставшуюся часть, если она есть
-        if current_start < end:
-            result.append((current_start, end))
+def distance_point_to_segment(px, py, ax, ay, bx, by):
+    # Превращаем точки в numpy массивы
+    p = np.array([px, py])
+    a = np.array([ax, ay])
+    b = np.array([bx, by])
     
-    return result
-def find_intersection(x1, y1, x2, y2, c):
+    # Вектор AB
+    ab = b - a
+    # Вектор AP
+    ap = p - a
+    # Вектор BP
+    bp = p - b
+
+    # Длина AB в квадрате
+    ab_len_sq = np.dot(ab, ab)
     
-    if (y1 - c) * (y2 - c) > 0:
-        return None
+    # Если A и B совпадают
+    if ab_len_sq == 0:
+        return np.linalg.norm(ap)  # расстояние от точки до A (или B)
 
-    if y1 == c:
-        return (x1, y1)
-    if y2 == c:
-        return (x2, y2)
-    t = (c - y1) / (y2 - y1)
-
-
-    if 0 <= t <= 1:
-        
-        x_intersection = x1 + t * (x2 - x1)
-        return (x_intersection, c)
+    # Параметр t для проекции P на AB
+    t = np.dot(ap, ab) / ab_len_sq
+    t = np.clip(t, 0, 1)  # ограничиваем t от 0 до 1
     
-    return None 
-def draw_hatched_area(rect, circles,rectangles):
-    x_min, y_min, x_max, y_max = rect
-    y_lines = []
-    step = 0.09
-    for y in np.arange(y_min, y_max, step):
-        x_start = x_min
-        x_end = x_max
-        include_intervals = [(x_start,x_end)]
-        exclude_intervals_list = []
-        for (x_center, y_center, radius) in circles: 
-            if abs(y - y_center) <= radius:  
-                delta_x = np.sqrt(radius**2 - (y - y_center)**2)
-                x_left = x_center - delta_x
-                x_right = x_center + delta_x
-                exclude_intervals_list.append((x_left,x_right))
-        
-        for rect in rectangles:
-            p = []
-            for i in range(3):
-                if find_intersection(rect[i][0],rect[i][1],rect[i+1][0],rect[i+1][1],y):
-                    p.append(find_intersection(rect[i][0],rect[i][1],rect[i+1][0],rect[i+1][1],y))
-            if len(p) == 2:
-                print(p)
-                exclude_intervals_list.append((p[0][0],p[1][0]))
-
-        
-
-
-        result = exclude_intervals(include_intervals, exclude_intervals_list)
-        for r in result:
-            y_lines.append((r[0],y,r[1],y))   
-
+    # Находим ближайшую точку на отрезке
+    nearest = a + t * ab
     
-    for (x_start, y, x_end, y) in y_lines:
-        plt.plot([x_start, x_end], [y, y], color='black')
+    # Возвращаем расстояние от P до ближайшей точки
+    return np.linalg.norm(p - nearest)
 
-    plt.xlim(x_min, x_max)
-    plt.ylim(y_min, y_max)
-    plt.gca().set_aspect('equal')
-    plt.show() 
-    return y_lines
+# Пример использования
+px, py = 8, 3  # координаты точки
+ax, ay = 1, 1  # координаты начала отрезка
+bx, by = 4, 4  # координаты конца отрезка
 
-rect = (0, 0, 10, 10)
-circles = []
-rects = [((1,1),(1.2,3.4),(4,3),(4.3,0.6))]
-draw_hatched_area(rect, circles,rects)
-
+dist = distance_point_to_segment(px, py, ax, ay, bx, by)
+print(f"Расстояние от точки до отрезка: {dist}")

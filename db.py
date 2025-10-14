@@ -44,7 +44,8 @@ class SQLiteDatabase:
     def update_multiple_records(self, table_name, column_name, ids, value):
         
         ids_placeholder = ', '.join('?' for _ in ids)  # создание плейсхолдеров для SQL запроса
-        self.cursor.execute(f"UPDATE {table_name} SET {column_name} = {value} WHERE id IN ({ids_placeholder})", ids)
+        self.cursor.execute(f"UPDATE lines SET {column_name} = {value} WHERE id IN ({ids_placeholder})", ids)
+        
         self.connection.commit()
     def update_multiple_fields(self, table_name, toggle_column, column, target_value):
        
