@@ -11,7 +11,10 @@ from db import SQLiteDatabase
 from PIL import Image
 import os
 from ezdxf import colors
-
+import shapely
+from shapely.geometry import Point, LineString, MultiPoint,Polygon,MultiPolygon
+from shapely.ops import unary_union
+import re
 
 
 def active_but(sender,app_data):
@@ -131,7 +134,7 @@ def draw_hatched_area(rect, circles,rectangles):
             if find_intersection(rect[0][0],rect[0][1],rect[3][0],rect[3][1],y):
                     p.append(find_intersection(rect[0][0],rect[0][1],rect[3][0],rect[3][1],y))
             if len(p) == 2:
-                # print(p)
+                
                 if p[0][0] < p[1][0]:
                     exclude_intervals_list.append((p[0][0],p[1][0]))
                 else:
@@ -180,6 +183,48 @@ def extend_line(a, b, w):
     c_y = b[1] + dy * w
     
     return c_x, c_y
+
+def points_on_rectangle_sides(corners, distance):
+    points = []
+    
+    sides = [
+        LineString([corners[0], corners[1]]),
+        LineString([corners[1], corners[2]]),
+        LineString([corners[2], corners[3]]),
+        LineString([corners[3], corners[0]])  
+    ]
+
+    for side in sides:
+        length = side.length
+       
+        num_points = int(length // distance)
+        
+        for i in range(num_points + 1): 
+            point = side.interpolate(i * distance)
+            points.append(point)
+    return points
+def manual_clustering(multipoint, min_distance=2):
+   
+    points = list(multipoint.geoms)
+    clusters = []
+
+    for point in points:
+        
+        can_add_to_cluster = False
+        for cluster in clusters:
+            
+            for cluster_point in cluster:
+                if point.distance(cluster_point) < min_distance:
+                    cluster.append(point)
+                    can_add_to_cluster = True
+                    break
+            if can_add_to_cluster:
+                break
+        
+        if not can_add_to_cluster:
+            clusters.append([point])
+    return [MultiPoint(cluster) for cluster in clusters]
+
 def read_dxf_lines_from_esyeda(sender, app_data, user_data):
     doc = ezdxf.readfile(user_data[0])
     full = dpg.get_value('varradio') == 'full'
@@ -204,52 +249,145 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
                 iter +=1
         else:
             break
-    dpg.add_button(label=nice_path,parent='butonss',tag=nice_path,callback=active_but)
+    dpg.add_button(label=nice_path ,parent='butonss',tag=nice_path ,callback=active_but)
     doc = ezdxf.readfile(user_data[0])
     msp = doc.modelspace()
     
-    lines = []
+    
     rectangles = []
     circles = []
-    intersecting_rectangles = []
-
+    num_lines = int(dpg.get_value('border_line_count'))
+    width_lines = float(dpg.get_value('border_line_width'))
+    polygons = [[]for _ in range(num_lines)]
     for circle in msp.query('CIRCLE'):
         layer = circle.dxf.layer
         
         if layer in layers:
-            circles.append((circle.dxf.center.x,circle.dxf.center.y,circle.dxf.radius))
+            if full:    
+                circles.append((circle.dxf.center.x,circle.dxf.center.y,circle.dxf.radius))
+            else:
+
+                center = circle.dxf.center 
+                 
+                num_points = 50  
+                for i in range(num_lines):
+                    radius = circle.dxf.radius + (i+1) * width_lines/2
+                    polygons[i].append(Polygon([(center.x + radius * math.cos(2 * math.pi * i / num_points),center.y + radius * math.sin(2 * math.pi * i / num_points))for i in range(num_points)]))
+
+            
         
     for polyline in msp.query('LWPOLYLINE'):
         layer = polyline.dxf.layer
         if layer in layers:
             w = polyline.dxf.const_width
             points = polyline.get_points()  
-            for i in range(len(points) - 1):
+            if full:
+                circles.append((points[0][0], points[0][1],w/2))
+            else:
+                num_points = 40
+                for i in range(num_lines):
+                    radius = w/2 + (i+1) * width_lines/2
+                    polygons[i].append(Polygon([(points[0][0] + radius * math.cos(2 * math.pi * i / num_points),points[0][1] + radius * math.sin(2 * math.pi * i / num_points))for i in range(num_points)]))
+                    
+            for j in range(len(points) - 1):
                 
-                boundaries = calculate_boundary_coordinates(points[i][0], points[i][1], points[i + 1][0], points[i + 1][1], w)
-                circles.append((points[i + 1][0], points[i + 1][1],w/2))
-                rectangles.append((boundaries['left_start'],boundaries['left_end'],boundaries['right_end'],boundaries['right_start']))
+                
+                if full:
+                    boundaries = calculate_boundary_coordinates(points[j][0], points[j][1], points[j + 1][0], points[j + 1][1], w)
+                    circles.append((points[j + 1][0], points[j + 1][1],w/2))
+                    rectangles.append((boundaries['left_start'],boundaries['left_end'],boundaries['right_end'],boundaries['right_start']))
+                else:
+                    num_points = 40
+                    for i in range(num_lines):
+                        radius = w/2 + (i+1) * width_lines/2
+                        boundaries = calculate_boundary_coordinates(points[j][0], points[j][1], points[j + 1][0], points[j + 1][1], w + (i+1) * width_lines)
+                        polygons[i].append(Polygon([(points[j + 1][0] + radius * math.cos(2 * math.pi * i / num_points),points[j + 1][1] + radius * math.sin(2 * math.pi * i / num_points))for i in range(num_points)]))
+                        
+                        polygons[i].append(Polygon([(boundaries['left_start'][0],boundaries['left_start'][1]), (boundaries['left_end'][0],boundaries['left_end'][1]), (boundaries['right_end'][0],boundaries['right_end'][1]), (boundaries['right_start'][0],boundaries['right_start'][1])]))
 
     for hatch in msp.query('HATCH'):
-        layer = circle.dxf.layer
+        layer = hatch.dxf.layer
         
         if layer in layers:
             for path in hatch.paths:
                 
                 points = path.vertices
                 if len(points) == 4:
-                    rectangles.append((points[0],points[1],points[2],points[3]))
-           
+                    if full:
+                        rectangles.append((points[0],points[1],points[2],points[3]))
+                    else:
+                        for i in range(num_lines):
+                            polygons[i].append(Polygon([(points[0][0],points[0][1]), (points[1][0],points[1][1]), (points[2][0],points[2][1]), (points[3][0],points[3][1])]).buffer((i+1)*width_lines/2,quad_segs=2))
+
+    lins = []
     if full:
+        dpg.add_button(label=nice_path,parent='butonss',tag=nice_path,callback=active_but)
         lins = draw_hatched_area((0,0,100,60),circles,rectangles)
-    
+        lines = []
+        for l in lins:
+            
+            lines.append((round(l[0],4),  round(l[1],4), round(l[2],4), round(l[3],4),0,nice_path,0,1))
+        db.add_multiple_records('lines',lines)
+    else:
+        for i in range(num_lines):
+            multipolygon = MultiPolygon([p for p in polygons[i]])
+            print(i)
+            union_polygon = unary_union(multipolygon)
+            
 
-    for l in lins:
-        lines.append((round(l[0],4),  round(l[1],4), round(l[2],4), round(l[3],4),0,nice_path,0,1))
+            if union_polygon.geom_type == 'Polygon':
+                print(len(union_polygon.interiors))
+                xm, ym = union_polygon.exterior.xy
+                lins = []
+                lines = []
+                for i in range(len(xm)-1):
+                    lins.append((xm[i],ym[i],xm[i+1],ym[i+1]))
+                lins.append((xm[len(xm)-1],ym[len(xm)-1],xm[0],ym[0]))
+
+                for l in lins:
+            
+                    lines.append((round(l[0],4),  round(l[1],4), round(l[2],4), round(l[3],4),0,nice_path ,0,1))
+                db.add_multiple_records('lines',lines)
+                for inter in union_polygon.interiors:
+                        xm, ym = inter.xy
+                        for i in range(len(xm)-1):
+                            lins.append((xm[i],ym[i],xm[i+1],ym[i+1]))
+                        lins.append((xm[len(xm)-1],ym[len(xm)-1],xm[0],ym[0]))
+
+                        for l in lins:
+                    
+                            lines.append((round(l[0],4),  round(l[1],4), round(l[2],4), round(l[3],4),0,nice_path ,0,1))
+                        db.add_multiple_records('lines',lines)
+                
+            else:
+                print(len(union_polygon.geoms[0].interiors))
+                for p in union_polygon.geoms:
+                    lins = []
+                    lines = []
+                    xm, ym = p.exterior.xy
+                    for i in range(len(xm)-1):
+                        lins.append((xm[i],ym[i],xm[i+1],ym[i+1]))
+                    lins.append((xm[len(xm)-1],ym[len(xm)-1],xm[0],ym[0]))
+
+                    for l in lins:
+                
+                        lines.append((round(l[0],4),  round(l[1],4), round(l[2],4), round(l[3],4),0,nice_path ,0,1))
+                    db.add_multiple_records('lines',lines)
 
 
-    
-    db.add_multiple_records('lines',lines)
+                    for inter in p.interiors:
+                        xm, ym = inter.xy
+                        for i in range(len(xm)-1):
+                            lins.append((xm[i],ym[i],xm[i+1],ym[i+1]))
+                        lins.append((xm[len(xm)-1],ym[len(xm)-1],xm[0],ym[0]))
+
+                        for l in lins:
+                    
+                            lines.append((round(l[0],4),  round(l[1],4), round(l[2],4), round(l[3],4),0,nice_path ,0,1))
+                        db.add_multiple_records('lines',lines)
+                    
+                   
+
     redraw()
 
 
@@ -278,12 +416,44 @@ def read_dxf_lines(file_path):
     dpg.add_button(label=nice_path,parent='butonss',tag=nice_path,callback=active_but)
     doc = ezdxf.readfile(file_path)
     msp = doc.modelspace()
+
+
+    layers = doc.layers
+    ll = []
+    lll = {}
+    pattern = r'^power(\d+)speed(\d+)$'
+    h = 1
+    for layer in layers:
+        match = re.match(pattern, layer.dxf.name)
+        if match:
+            ll.append(layer.dxf.name)
+            power = int(match.group(1))
+            speed = int(match.group(2))
+            dpg.set_value(f"{h}1_value",power)
+            dpg.set_value(f"{h}_value",speed)
+            lll[layer.dxf.name] = h - 1 
+            h+=1
+
+
     lines = []
     for line in msp.query('LINE'):
-        lines.append((round(line.dxf.start.x,4),  round(line.dxf.start.y,4), round(line.dxf.end.x,4), round(line.dxf.end.y,4),0,nice_path,0,1))
+        layer = line.dxf.layer
+        
+        if layer in ll:
+            
+            lines.append((round(line.dxf.start.x,4),  round(line.dxf.start.y,4), round(line.dxf.end.x,4), round(line.dxf.end.y,4),lll[layer],nice_path,0,1))
+        else:
+            lines.append((round(line.dxf.start.x,4),  round(line.dxf.start.y,4), round(line.dxf.end.x,4), round(line.dxf.end.y,4),0,nice_path,0,1))
+
         
     hlines = []
+    hcol = []
     for line in msp.query('3DFACE'): 
+        layer = line.dxf.layer
+        if layer in ll:
+            hcol.append(lll[layer])
+        else:
+            hcol.append(0)
         hlines.append({
             'start': (line.dxf.vtx0[0], line.dxf.vtx0[1]),
             'end': (line.dxf.vtx1[0], line.dxf.vtx1[1])
@@ -318,11 +488,14 @@ def read_dxf_lines(file_path):
             break
         
     for i in settt:
-        lines.append((round(hlines[i]['start'][0],4),  round(hlines[i]['start'][1],4), round(hlines[i]['end'][0],4), round(hlines[i]['end'][1],4),0,nice_path,0,1))
+        lines.append((round(hlines[i]['start'][0],4),  round(hlines[i]['start'][1],4), round(hlines[i]['end'][0],4), round(hlines[i]['end'][1],4),hcol[i],nice_path,0,1))
        
     for acdb_line in msp.query('AcDbLine'):
-
-        lines.append((round(acdb_line.dxf.start.x,4),  round(acdb_line.dxf.start.y,4), round(acdb_line.dxf.end.x,4), round(acdb_line.dxf.end.y,4),0,nice_path,0,1))
+        layer = acdb_line.dxf.layer
+        if layer in ll:
+            lines.append((round(acdb_line.dxf.start.x,4),  round(acdb_line.dxf.start.y,4), round(acdb_line.dxf.end.x,4), round(acdb_line.dxf.end.y,4),lll[layer],nice_path,0,1))
+        else:
+            lines.append((round(acdb_line.dxf.start.x,4),  round(acdb_line.dxf.start.y,4), round(acdb_line.dxf.end.x,4), round(acdb_line.dxf.end.y,4),0,nice_path,0,1))
        
     # for arc in msp.query('ARC'):
     #     center = arc.dxf.center  
@@ -354,26 +527,42 @@ def read_dxf_lines(file_path):
           
 
     for polyline in msp.query('SOLID'):
-        print('asd')
-        points = polyline.get_points()  
-        for i in range(len(points) - 1):
-            lines.append((round(points[i][0],4),  round(points[i][1],4), round(points[i+1][0],4), round(points[i+1][1],4),0,nice_path,0,1))
-           
+        layer = polyline.dxf.layer
+        
+        points = polyline.get_points() 
+        if layer in ll:
+         
+            for i in range(len(points) - 1):
+                lines.append((round(points[i][0],4),  round(points[i][1],4), round(points[i+1][0],4), round(points[i+1][1],4),lll[layer],nice_path,0,1))
+        else:
+            for i in range(len(points) - 1):
+                lines.append((round(points[i][0],4),  round(points[i][1],4), round(points[i+1][0],4), round(points[i+1][1],4),0,nice_path,0,1))
+            
 
     for polyline in msp.query('LWPOLYLINE'):
+        layer = polyline.dxf.layer
+        points = polyline.get_points() 
         
-        points = polyline.get_points()  
-        for i in range(len(points) - 1):
-            lines.append((round(points[i][0],4),  round(points[i][1],4), round(points[i+1][0],4), round(points[i+1][1],4),0,nice_path,0,1))
+        if layer in ll:
+            for i in range(len(points) - 1):
+                lines.append((round(points[i][0],4),  round(points[i][1],4), round(points[i+1][0],4), round(points[i+1][1],4),lll[layer],nice_path,0,1))
+        else:
+            for i in range(len(points) - 1):
+                lines.append((round(points[i][0],4),  round(points[i][1],4), round(points[i+1][0],4), round(points[i+1][1],4),0,nice_path,0,1))
            
     for hatch in msp.query('HATCH'):
         for path in hatch.paths:
+            layer = polyline.dxf.layer
             
             points = path.vertices
-            
-            for i in range(len(points)-1):
-                lines.append((round(points[i][0],4),  round(points[i][1],4), round(points[i+1][0],4), round(points[i+1][1],4),0,nice_path,0,1))
-            lines.append((round(points[0][0],4),  round(points[0][1],4), round(points[len(points)-1][0],4), round(points[len(points)-1][1],4),0,nice_path,0,1))
+            if layer in ll:
+                for i in range(len(points)-1):
+                    lines.append((round(points[i][0],4),  round(points[i][1],4), round(points[i+1][0],4), round(points[i+1][1],4),lll[layer],nice_path,0,1))
+                lines.append((round(points[0][0],4),  round(points[0][1],4), round(points[len(points)-1][0],4), round(points[len(points)-1][1],4),lll[layer],nice_path,0,1))
+            else:
+                for i in range(len(points)-1):
+                    lines.append((round(points[i][0],4),  round(points[i][1],4), round(points[i+1][0],4), round(points[i+1][1],4),0,nice_path,0,1))
+                lines.append((round(points[0][0],4),  round(points[0][1],4), round(points[len(points)-1][0],4), round(points[len(points)-1][1],4),0,nice_path,0,1))
            
     return lines
 
@@ -490,9 +679,10 @@ def callback_to_gcode(sender, app_data, user_data):
         f.write("\n".join(gcode_lines))
 
     dpg.set_value('multiline_input',"\n".join(gcode_lines))
-
-def save_dxf():
-    
+def save_as_dxf():
+    dpg.show_item("file_dialog_id1")
+def save_dxf(sender, app_data, user_data):
+    current_file = app_data['file_path_name']
     doc = ezdxf.new()
     msp = doc.modelspace()
     rec = db.get_records('lines')
@@ -510,22 +700,27 @@ def save_dxf():
     sets.append(set2)
     sets.append(set3)
     sets.append(set4)
-    
+    h = 0
     current_start = (0,0)
     for sett in sets:
+        power = dpg.get_value(f"{h+1}1_value")
+        speed = dpg.get_value(f"{h+1}_value")
+        
+        layer_name = f"power{power}speed{speed}"
+        doc.layers.new(name=layer_name, dxfattribs={'color': 7})  # 7 - цвет белый
         while sett:
             p,j,m,d = find_closest_pointt(lines,current_start,sett)
 
             if m:
-                msp.add_line(lines[j]['start'], lines[j]['end'])
-                current_start = lines[j]['end']
+                msp.add_line(lines[j][0], lines[j][1], dxfattribs={'layer': layer_name})
+                current_start = lines[j][1]
             else:
-                msp.add_line(lines[j]['end'], lines[j]['start'])
-                current_start = lines[j]['start']
+                msp.add_line(lines[j][1], lines[j][0], dxfattribs={'layer': layer_name})
+                current_start = lines[j][0]
 
             sett.remove(j)
-
-    doc.saveas('out.dxf')
+        h+=1
+    doc.saveas(current_file)
 
 
 def check_callback(sender):
@@ -1877,7 +2072,21 @@ with dpg.window(label="Delete Files", show=False, tag="modal_id", no_title_bar=T
     dpg.add_text("Layers")
     dpg.add_separator()
     
-   
+
+with dpg.window(label="Border EsyEDA", show=False, tag="border_from_esyeda", no_title_bar=True,pos=(400,100)):
+    dpg.add_text("EsyEDA border")
+    dpg.add_separator()
+    with dpg.group(horizontal=True):
+        dpg.add_text("line width ")      
+        dpg.add_input_text(width=50,scientific=True,tag='border_line_width',default_value='0.1')
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_text("count lines")      
+        dpg.add_input_text(width=50,scientific=True,tag='border_line_count',default_value='10') 
+    with dpg.group(horizontal=True):
+        dpg.add_spacer(width=50)
+        dpg.add_button(label='Apply',callback=lambda:dpg.configure_item("border_from_esyeda", show=False))
+        dpg.add_spacer(width=50)
 
 with dpg.theme(tag="coloured_line_theme1") as coloured_line_theme1:
     with dpg.theme_component():
@@ -1968,12 +2177,12 @@ with dpg.viewport_menu_bar():
         dpg.add_menu_item(label="Open", callback=fd.show_file_dialog)
         dpg.add_menu_item(label="Open DXF from EsyEDA", callback=esye)
         dpg.add_menu_item(label="Save As Gcode", callback=save_as_gcode)
-        dpg.add_menu_item(label="Save As DXF", callback=save_dxf)
+        dpg.add_menu_item(label="Save As DXF", callback=save_as_dxf)
         
         
         with dpg.menu(label="Settings"):
             dpg.add_menu_item(label="Setting 1", callback=print_me, check=True)
-            dpg.add_menu_item(label="Setting 2", callback=print_me)
+            dpg.add_menu_item(label="Border from EsyEDA", callback=lambda:dpg.configure_item("border_from_esyeda", show=True))
     with dpg.menu(label="Functions"):
         dpg.add_menu_item(label="Split", callback=split_l)
         dpg.add_menu_item(label="Normalize", callback=normal_)
@@ -1992,9 +2201,11 @@ with dpg.window(pos=(0,0),width=900, height=725,tag='papa'):
     
     with dpg.group(horizontal=True):
         with dpg.group():
-          
+            with dpg.file_dialog(directory_selector=False, show=False, callback=save_dxf, id="file_dialog_id1", width=700 ,height=400):
+                    dpg.add_file_extension(".dxf", color=(255, 0, 255, 255), custom_text="[DXF]")
             with dpg.file_dialog(directory_selector=False, show=False, callback=callback_to_gcode, id="file_dialog_id2", width=700 ,height=400):
-                    dpg.add_file_extension(".gcode", color=(255, 0, 255, 255), custom_text="[DXF]")
+                    dpg.add_file_extension(".gcode", color=(255, 0, 255, 255), custom_text="[GCODE]")
+
             
             with dpg.plot(label="DXF Plot", width=600, height=600, tag="plot",no_menus=True, no_box_select=True) as plot:
                 dpg.add_plot_axis(dpg.mvXAxis, label="X-Axis", tag=X_AXIS_TAG)
