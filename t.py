@@ -1,39 +1,47 @@
 import matplotlib.pyplot as plt
 from shapely.geometry import Polygon
 
-# Определяем два полигона
-points1 = [(0, 0), (4, 0), (4, 1), (1, 1), (1, 4), (0, 4)]
-points2 = [(4, 4), (4, 0), (3, 0), (3, 3), (0, 3), (0, 4)]
+plt.figure()
+polygon1 = Polygon([(3.5, 8), (0, 8), (0, 0), (14, 0), (14, 8), (11, 8), (11, 35), (5, 35), (0, 28), (0, 23), (3.5, 23)])
+polygon2 = Polygon([(0, 8), (0, 0), (22, 0), (22,9), (13, 9), (22, 20), (22, 29), (16.5, 35), (5.5, 35), (0, 29), (0, 22), (9, 22), (9, 26), (10, 27), (13, 27), (14, 26), (14, 23)])
+polygon3 = Polygon([(0, 6), (6, 0), (20, 0), (26,6), (26, 17), (24.5, 18), (26, 19), (26, 29), (20, 35), (6, 35), (0, 29), (0, 23), (9.5, 23), (9.5, 26), (10.5, 27), (15.5, 27), (16.5, 26), (16.5, 22), (15.5, 21), (11, 21), (11, 14), (15.5, 14), (16.5, 13), (16.5, 9.5), (15.5, 8.5), (10, 8.5), (9, 9.5), (9, 11.5), (0, 11.5)])
+polygon4 = Polygon([(10, 7), (10, 0), (25, 0), (25,7), (22, 7), (22, 11), (25, 11), (25, 18), (22, 18), (22, 36), (14, 36), (0, 21), (0, 11), (13, 11), (13, 7)],holes=[[(8,18),(14,18),(14,24)]])
+polygon5 = Polygon([(9, 12), (0, 12), (0, 6.5), (6.5,0), (21, 0), (27, 6), (27, 19), (21, 24), (10.5, 24), (9.5, 25), (9.5, 27), (27, 27), (27, 35), (0, 35), (0, 22), (6, 16.5), (16, 16.5), (17.5, 15), (17.5, 8), (16, 6.5), (10.5, 6.5), (9, 8)])
+polygon6 = Polygon([(0, 6), (6, 0), (20, 0), (26,6), (26, 15), (19.5, 20.5), (8, 20.5), (8, 25), (10, 28), (16, 28), (18, 25),(18, 23), (26, 23), (26, 28), (21, 35), (5, 35), (0, 28)],holes=[[(8,8),(10,6),(16,6),(18,8),(18,13),(16,15),(10,15),(8,13)]])
+polygon7 = Polygon([(5, 0), (14, 0), (25, 27), (25,34), (0, 34), (0, 23.5), (6.5, 23.5), (6.5, 26), (15, 26)])
+polygon8 = Polygon([(0, 5), (5, 0), (19, 0), (24,5), (24, 15), (21.5, 17), (24, 19), (24, 30), (19, 35), (5, 35), (0, 30),(0, 19), (2.5, 17), (0, 15)],holes=[[(7,8),(9,6),(15,6),(17,8),(17,13),(15,15),(9,15),(7,13)],[(7,22),(9,20),(15,20),(17,22),(17,27),(15,29),(9,29),(7,27)]])
+polygon9 = Polygon([(26, 29), (20, 35), (6, 35), (0,29), (0, 20), (6.5, 14.5), (18, 14.5), (18, 10), (16, 7), (10, 7), (8, 10),(8, 12), (0, 12), (0, 7), (5, 0), (21, 0), (26, 7)],holes=[[(18,27),(16,29),(10,29),(8,27),(8,22),(10,20),(16,20),(18,22)]])
+polygon0 = Polygon([(0, 5), (5, 0), (19, 0), (24,5), (24, 30), (19, 35), (5, 35), (0, 30)],holes=[[(7,8),(9,6),(15,6),(17,8),(17,27),(15,29),(9,29),(7,27)]])
+polygonpoint = Polygon([(0, 1), (1, 0), (3, 0), (4,1), (4, 3), (3, 4), (1, 4), (0, 3)])
+polygon2 = Polygon([(0, 3),(0, 1), (1, 0), (3, 0),  (25, 32), (25, 34), (24, 35), (22, 35)])
 
-# Создаем полигоны
-polygon1 = Polygon(points1)
-polygon2 = Polygon(points2)
 
-# Объединяем полигоны
-merged_polygon = polygon1.union(polygon2)
 
-# Создаем фигуру и оси
-fig, ax = plt.subplots()
+while 1:
+    if polygon2.geom_type == 'Polygon':
+        x, y = polygon2.exterior.xy
+        plt.plot(x, y, color='blue', linewidth=1)
+        for p in polygon2.interiors:
+            x, y = p.xy
+            plt.plot(x, y, color='blue', linewidth=1)
+        polygon2 = polygon2.buffer(-0.2)
+    elif polygon2.geom_type == 'MultiPolygon':
+        for pol in polygon2.geoms:
+            x, y = pol.exterior.xy
+            plt.plot(x, y, color='blue', linewidth=1)
+            for p in pol.interiors:
+                x, y = p.xy
+                plt.plot(x, y, color='blue', linewidth=1)
+        polygon2 = polygon2.buffer(-0.2)
+    if polygon2.is_empty:
+        break
 
-# # Рисуем первый полигон
-# x1, y1 = polygon1.exterior.xy
-# ax.fill(x1, y1, alpha=0.5, fc='blue', label='Polygon 1')
 
-# # Рисуем второй полигон
-# x2, y2 = polygon2.exterior.xy
-# ax.fill(x2, y2, alpha=0.5, fc='green', label='Polygon 2')
 
-# Рисуем объединенный полигон
-x_merged, y_merged = merged_polygon.exterior.xy
-ax.fill(x_merged, y_merged, alpha=0.5, fc='red', label='Merged Polygon')
 
-# Настройка графика
-ax.set_title('Polygon Union Visualization')
-ax.set_xlabel('X-axis')
-ax.set_ylabel('Y-axis')
-ax.legend()
-ax.set_aspect('equal')
-ax.grid(True)
-
-# Показываем график
+plt.title("Контур полигона")
+plt.xlabel("X")
+plt.ylabel("Y")
+plt.grid()
+plt.axis('equal')  # Сохраняем пропорции
 plt.show()
