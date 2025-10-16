@@ -1895,7 +1895,7 @@ def plot_mouse_click_callback():
                 break
         dpg.add_button(label=nice_path,parent='butonss',tag=nice_path,callback=active_but)
         lines = []
-        heig = 10
+        heig = int(dpg.get_value('text_size'))
         kf = 35/heig
 
         for ch in val:
@@ -2152,6 +2152,18 @@ with dpg.window(label="Border EsyEDA", show=False, tag="border_from_esyeda", no_
         dpg.add_button(label='Apply',callback=lambda:dpg.configure_item("border_from_esyeda", show=False))
         dpg.add_spacer(width=50)
 
+with dpg.window(label="Text Size", show=False, tag="text_size_modal", no_title_bar=True,pos=(400,100)):
+    dpg.add_text("Text Size")
+    dpg.add_separator()
+    with dpg.group(horizontal=True):
+        dpg.add_text("height")      
+        dpg.add_input_text(width=50,scientific=True,tag='text_size',default_value='10')
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_spacer(width=50)
+        dpg.add_button(label='Apply',callback=lambda:dpg.configure_item("text_size_modal", show=False))
+        dpg.add_spacer(width=50)
+
 with dpg.theme(tag="coloured_line_theme1") as coloured_line_theme1:
     with dpg.theme_component():
         coloured_line_component1 = dpg.add_theme_color(dpg.mvPlotCol_Line, (0, 191, 255, 255), category=dpg.mvThemeCat_Plots)
@@ -2245,7 +2257,7 @@ with dpg.viewport_menu_bar():
         
         
         with dpg.menu(label="Settings"):
-            dpg.add_menu_item(label="Setting 1", callback=print_me, check=True)
+            dpg.add_menu_item(label="Text Size", callback=lambda:dpg.configure_item("text_size_modal", show=True))
             dpg.add_menu_item(label="Border from EsyEDA", callback=lambda:dpg.configure_item("border_from_esyeda", show=True))
     with dpg.menu(label="Functions"):
         dpg.add_menu_item(label="Split", callback=split_l)
