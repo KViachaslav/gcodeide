@@ -15,15 +15,20 @@ import shapely
 from shapely.geometry import Point, LineString, MultiPoint,Polygon,MultiPolygon,MultiLineString
 from shapely.ops import unary_union
 import re
-
+from line_manager import PolylineDatabase
 
 def active_but(sender,app_data):
+    state = data_base.get_polyline_where(f"big_tag='{sender}'")
     
-    state = db.get_records_where('lines',f"parent='{sender}'")[0][7]
+
+    tags = [s[1] for s in state]
+    print(state[0][4])
+    data_base.update_polylines(tags,active=False if state[0][4]==1  else True)
     
-    db.update_multiple_fields('lines','isactive','parent',sender)
-    dpg.bind_item_theme(sender, enabled_theme if state else disabled_theme)
-    redraw()
+    data_base.update_polylines(tags,color_change_flag=True)
+    
+    dpg.bind_item_theme(sender, enabled_theme if state[0][4]==1 else disabled_theme)
+    recolor()
 
 def arc_to_lines(center, radius, start_angle, end_angle, num_segments):
     start_angle_rad = np.radians(start_angle)
@@ -404,12 +409,12 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
 
 def read_dxf_lines(file_path):
     nice_path = os.path.basename(file_path)
-    iter = 1
+    iterr = 1
     while 1:
-        for i in db.get_unique_values('lines','parent'):
+        for i in data_base.get_unique_politag():
             if i == nice_path:
-                nice_path = os.path.basename(file_path) + f' (copy {iter})'
-                iter +=1
+                nice_path = os.path.basename(file_path) + f' (copy {iterr})'
+                iterr +=1
         else: 
             break
     dpg.add_button(label=nice_path,parent='butonss',tag=nice_path,callback=active_but)
@@ -434,15 +439,18 @@ def read_dxf_lines(file_path):
             h+=1
 
 
-    lines = []
+    
+    counter= 0
     for line in msp.query('LINE'):
         layer = line.dxf.layer
         
         if layer in ll:
             
-            lines.append((round(line.dxf.start.x,4),  round(line.dxf.start.y,4), round(line.dxf.end.x,4), round(line.dxf.end.y,4),lll[layer],nice_path,0,1))
+            data_base.add_polyline(nice_path+f"_line_"+f"{counter}",nice_path,lll[layer], False, True, False)
         else:
-            lines.append((round(line.dxf.start.x,4),  round(line.dxf.start.y,4), round(line.dxf.end.x,4), round(line.dxf.end.y,4),0,nice_path,0,1))
+            data_base.add_polyline(nice_path+f"_line_"+f"{counter}",nice_path,0, False, True, False)
+        data_base.add_coordinates(nice_path+f"_line_"+f"{counter}", [[round(line.dxf.start.x,4),  round(line.dxf.start.y,4)], [round(line.dxf.end.x,4), round(line.dxf.end.y,4)]])
+        counter+=1
 
         
     hlines = []
@@ -490,16 +498,45 @@ def read_dxf_lines(file_path):
             sett.remove(i)
             break
     
+    
+    border_lines = []
     for i in settt:
-        lines.append((round(hlines[i]['start'][0],4),  round(hlines[i]['start'][1],4), round(hlines[i]['end'][0],4), round(hlines[i]['end'][1],4),hcol[i],nice_path,0,1))
+        border_lines.append([(round(hlines[i]['start'][0],4),  round(hlines[i]['start'][1],4)),(round(hlines[i]['end'][0],4),  round(hlines[i]['end'][1],4))])
+
+
+    sett = {i for i in range(len(border_lines))}
+    
+    counter = 0
+    while sett:
+        i = next(iter(sett))
+        coords = []
+        l,m = find_closest_lines(border_lines,border_lines[i][0],sett)
+        
+        
+        coords.append((round(border_lines[i][0][0],4),  round(border_lines[i][0][1],4)))
        
-    for acdb_line in msp.query('AcDbLine'):
-        layer = acdb_line.dxf.layer
-        if layer in ll:
-            lines.append((round(acdb_line.dxf.start.x,4),  round(acdb_line.dxf.start.y,4), round(acdb_line.dxf.end.x,4), round(acdb_line.dxf.end.y,4),lll[layer],nice_path,0,1))
-        else:
-            lines.append((round(acdb_line.dxf.start.x,4),  round(acdb_line.dxf.start.y,4), round(acdb_line.dxf.end.x,4), round(acdb_line.dxf.end.y,4),0,nice_path,0,1))
+        for h,j in zip(l,m):
+            if j:
+                coords.append((round(border_lines[h][1][0],4),  round(border_lines[h][1][1],4)))
+            else:
+                coords.append((round(border_lines[h][0][0],4),  round(border_lines[h][0][1],4)))
+            sett.remove(h)
+        data_base.add_polyline(nice_path+f"_3dface_"+f"{counter}",nice_path,0, False, True, False)
+        data_base.add_coordinates(nice_path+f"_3dface_"+f"{counter}", coords)
+        counter+=1
+
+
+
+
+
+
+
+
+    # for i in settt:
+    #     coords.append((round(hlines[i]['start'][0],4),  round(hlines[i]['start'][1],4)))
+    
        
+    
     # for arc in msp.query('ARC'):
     #     center = arc.dxf.center  
     #     radius = arc.dxf.radius   
@@ -528,46 +565,50 @@ def read_dxf_lines(file_path):
     #     for i in range(len(points)-1):
     #         lines.append((round(points[i][0],4),  round(points[i][1],4), round(points[i+1][0],4), round(points[i+1][1],4),0,nice_path,0,1))
           
-
+    counter = 0
     for polyline in msp.query('SOLID'):
         layer = polyline.dxf.layer
         
         points = polyline.get_points() 
+        coords = []
+        for i in range(len(points)):
+            coords.append((round(points[i][0],4),  round(points[i][1],4)))
         if layer in ll:
-         
-            for i in range(len(points) - 1):
-                lines.append((round(points[i][0],4),  round(points[i][1],4), round(points[i+1][0],4), round(points[i+1][1],4),lll[layer],nice_path,0,1))
+            data_base.add_polyline(nice_path+f"_solid_"+f"{counter}",nice_path,lll[layer], False, True, False)
         else:
-            for i in range(len(points) - 1):
-                lines.append((round(points[i][0],4),  round(points[i][1],4), round(points[i+1][0],4), round(points[i+1][1],4),0,nice_path,0,1))
+            data_base.add_polyline(nice_path+f"_solid_"+f"{counter}",nice_path,0, False, True, False)
+        data_base.add_coordinates(nice_path+f"_solid_"+f"{counter}", coords)
+        counter +=1
             
-
+    counter= 0
     for polyline in msp.query('LWPOLYLINE'):
         layer = polyline.dxf.layer
         points = polyline.get_points() 
-        
+        coords = []
+        for i in range(len(points)):
+            coords.append((round(points[i][0],4),  round(points[i][1],4)))
         if layer in ll:
-            for i in range(len(points) - 1):
-                lines.append((round(points[i][0],4),  round(points[i][1],4), round(points[i+1][0],4), round(points[i+1][1],4),lll[layer],nice_path,0,1))
+            data_base.add_polyline(nice_path+f"_poly_"+f"{counter}",nice_path,lll[layer], False, True, False)
         else:
-            for i in range(len(points) - 1):
-                lines.append((round(points[i][0],4),  round(points[i][1],4), round(points[i+1][0],4), round(points[i+1][1],4),0,nice_path,0,1))
-           
+            data_base.add_polyline(nice_path+f"_poly_"+f"{counter}",nice_path,0, False, True, False)
+        data_base.add_coordinates(nice_path+f"_poly_"+f"{counter}", coords)
+        counter +=1
+    counter= 0
     for hatch in msp.query('HATCH'):
         for path in hatch.paths:
-            layer = polyline.dxf.layer
+            layer = hatch.dxf.layer
             
-            points = path.vertices
+            coords = []
+            for i in range(len(points)):
+                coords.append((round(points[i][0],4),  round(points[i][1],4)))
             if layer in ll:
-                for i in range(len(points)-1):
-                    lines.append((round(points[i][0],4),  round(points[i][1],4), round(points[i+1][0],4), round(points[i+1][1],4),lll[layer],nice_path,0,1))
-                lines.append((round(points[0][0],4),  round(points[0][1],4), round(points[len(points)-1][0],4), round(points[len(points)-1][1],4),lll[layer],nice_path,0,1))
+                data_base.add_polyline(nice_path+f"_hatch_"+f"{counter}",nice_path,lll[layer], False, True, False)
             else:
-                for i in range(len(points)-1):
-                    lines.append((round(points[i][0],4),  round(points[i][1],4), round(points[i+1][0],4), round(points[i+1][1],4),0,nice_path,0,1))
-                lines.append((round(points[0][0],4),  round(points[0][1],4), round(points[len(points)-1][0],4), round(points[len(points)-1][1],4),0,nice_path,0,1))
+                data_base.add_polyline(nice_path+f"_hatch_"+f"{counter}",nice_path,0, False, True, False)
+            data_base.add_coordinates(nice_path+f"_hatch_"+f"{counter}", coords)
+            counter +=1
            
-    return lines
+    
 
 def distance(point1, point2):
     return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
@@ -593,7 +634,7 @@ def find_closest_pointt(lines, target_point,nums):### возвращает то�
     return closest_point,I,mode,min_distance
 def find_closest_lines(lines, target_point,nums):
     
-    
+    mods = []
     Nums = set(nums)
     lins = []
 
@@ -604,15 +645,16 @@ def find_closest_lines(lines, target_point,nums):
     while 1:
         closest_point,I,mode,min_distance = find_closest_pointt(lines, current_point,Nums)
 
-        if min_distance < 1:
+        if min_distance < 0.1:
             Nums.remove(I)
             lins.append(I)
+            mods.append(mode)
             if mode:
                 current_point = lines[I][1]
             else:
                 current_point = lines[I][0]
         else:
-            return lins
+            return lins,mods
 
 def dxf_to_svg(dxf_file, svg_file): 
 
@@ -1863,134 +1905,189 @@ def plot_mouse_click_callback():
     x,y = dpg.get_plot_mouse_pos()
     if dpg.get_value('change_order'):
 
-        rec = db.get_records('lines')
+        # rec = db.get_records('lines')
 
-        lines = [[(row[1],row[2]),(row[3],row[4])] for row in rec]
+        # lines = [[(row[1],row[2]),(row[3],row[4])] for row in rec]
 
 
-        l = find_closest_lines(lines,(x,y),range(len(lines)))###################
+        # l = find_closest_lines(lines,(x,y),range(len(lines)))###################
         
-        if dpg.get_value('color_1'):
-            db.set_color_where_id('lines',0,l)
-        elif dpg.get_value('color_2'):
-            db.set_color_where_id('lines',1,l)
-        elif dpg.get_value('color_3'):
-            db.set_color_where_id('lines',2,l)
-        elif dpg.get_value('color_4'):
-            db.set_color_where_id('lines',3,l)
-        elif dpg.get_value('color_5'):
-            db.set_color_where_id('lines',4,l)
-        redraw()
+        # if dpg.get_value('color_1'):
+        #     db.set_color_where_id('lines',0,l)
+        # elif dpg.get_value('color_2'):
+        #     db.set_color_where_id('lines',1,l)
+        # elif dpg.get_value('color_3'):
+        #     db.set_color_where_id('lines',2,l)
+        # elif dpg.get_value('color_4'):
+        #     db.set_color_where_id('lines',3,l)
+        # elif dpg.get_value('color_5'):
+        #     db.set_color_where_id('lines',4,l)
+
+
+        recolor()
     elif dpg.get_value('add_text'):
         delta = 0
         val = dpg.get_value('insert_numbers')
         nice_path = 'n'+val
         iter = 1
         while 1:
-            for i in db.get_unique_values('lines','parent'):
+            
+            for i in data_base.get_unique_politag():
                 if i == nice_path:
                     nice_path = 'n'+val + f' (copy {iter})'
                     iter +=1
             else: 
                 break
         dpg.add_button(label=nice_path,parent='butonss',tag=nice_path,callback=active_but)
-        lines = []
+        
         heig = int(dpg.get_value('text_size'))
         kf = 35/heig
-
+        lin_w = float(dpg.get_value('border_line_width'))
+        num = 0
         for ch in val:
-            # for l in digit_lines[ch]:
-            #     db.add_record('lines', (round(x+l[0][0] + delta,4),  round(y+l[0][1],4),round(x+l[1][0] + delta,4), round(y+l[1][1],4),0,nice_path,0,1))
-            polygon2 = chars[ch]
             
-            while 1:
+            polygon2 = chars[ch]
+            counter = 0
+            while 1:     
                 if polygon2.geom_type == 'Polygon':
                     x1, y1 = polygon2.exterior.xy
-                    
-                    
-                    for h in range(len(x1)-1):
-                        lines.append((round(x1[h]/kf+x+delta,4),  round(y1[h]/kf+y,4), round(x1[h+1]/kf+x+delta,4), round(y1[h+1]/kf+y,4),0,nice_path,0,1))
+                    coords = []
+                    for h in range(len(x1)):
+                        coords.append((round(x1[h]/kf+x+delta,4),  round(y1[h]/kf+y,4)))
                     for p in polygon2.interiors:
                         x1, y1 = p.xy
-                        for h in range(len(x1)-1):
-                            lines.append((round(x1[h]/kf+x+delta,4),  round(y1[h]/kf+y,4), round(x1[h+1]/kf+x+delta,4), round(y1[h+1]/kf+y,4),0,nice_path,0,1))
-                    polygon2 = polygon2.buffer(-0.2*kf,quad_segs=0)
+                        for h in range(len(x1)):
+                            coords.append((round(x1[h]/kf+x+delta,4),  round(y1[h]/kf+y,4)))
+                    data_base.add_polyline(nice_path+f"_{num}_"+f"{counter}",nice_path, 0, False, True, False)
+                    data_base.add_coordinates(nice_path+f"_{num}_"+f"{counter}", coords)
                 elif polygon2.geom_type == 'MultiPolygon':
+                    counter2 = 0
                     for pol in polygon2.geoms:
                         x1, y1 = pol.exterior.xy
-                        for h in range(len(x1)-1):
-                            lines.append((round(x1[h]/kf+x+delta,4),  round(y1[h]/kf+y,4), round(x1[h+1]/kf+x+delta,4), round(y1[h+1]/kf+y,4),0,nice_path,0,1))
+                        coords = []
+                        for h in range(len(x1)):
+                            coords.append((round(x1[h]/kf+x+delta,4),  round(y1[h]/kf+y,4)))
+                        data_base.add_polyline(nice_path+f"_{num}"+f"_{counter}"+f"_{counter2}",nice_path, 0, False, True, False)
+                        data_base.add_coordinates(nice_path+f"_{num}"+f"_{counter}"+f"_{counter2}", coords)
+                        counter3 = 0
                         for p in pol.interiors:
                             x1, y1 = p.xy
-                            for h in range(len(x1)-1):
-                                lines.append((round(x1[h]/kf+x+delta,4),  round(y1[h]/kf+y,4), round(x1[h+1]/kf+x+delta,4), round(y1[h+1]/kf+y,4),0,nice_path,0,1))
-                    polygon2 = polygon2.buffer(-0.2*kf,quad_segs=0)
+                            coords = []
+                            for h in range(len(x1)):
+                                coords.append((round(x1[h]/kf+x+delta,4),  round(y1[h]/kf+y,4)))
+                            data_base.add_polyline(nice_path+f"_{num}_"+f"{counter}"+f"_{counter2}"+f"_{counter3}",nice_path, 0, False, True, False)
+                            data_base.add_coordinates(nice_path+f"_{num}_"+f"{counter}"+f"_{counter2}"+f"_{counter3}", coords)
+                            counter3 +=1
+                        counter2 +=1
+                polygon2 = polygon2.buffer(-lin_w*kf,quad_segs=0)
                 if polygon2.is_empty:
                     break
+                counter+=1
             delta += char_shifts[ch]/kf
-        db.add_multiple_records('lines',lines)
+            num+=1
         redraw()
     elif dpg.get_value('movelines'):
-        rec = db.get_records_where('lines','isactive=1')
-        xx = [r[1] for r in rec]
-        xx+= [r[3] for r in rec]
-        yy = [r[2] for r in rec]
-        yy+= [r[4] for r in rec]
-        db.increment_field_value_with_condition('lines','sx','ex','sy','ey',x-min(xx),y-min(yy),'isactive',1)
+        # rec = db.get_records_where('lines','isactive=1')
+        # xx = [r[1] for r in rec]
+        # xx+= [r[3] for r in rec]
+        # yy = [r[2] for r in rec]
+        # yy+= [r[4] for r in rec]
+        # db.increment_field_value_with_condition('lines','sx','ex','sy','ey',x-min(xx),y-min(yy),'isactive',1)
+        coords = []
+        tags = data_base.get_tag_where('active=True')
+        for tag in tags:
+            coords += data_base.get_coordinates(tag)
+
+        xx = [r[0] for r in coords]
+        yy = [r[1] for r in coords]
+
+        placeholders = ', '.join(f"'{t}'" for t in tags)
+       
+        # for tag in data_base.get_tag_where('active=True'):
+
+        data_base.increment_field_value_with_condition(x-min(xx),y-min(yy),f'polyline_tag IN ({placeholders})')
+        data_base.update_polylines(tags,redraw_flag = True)
+                
         redraw()
 def recolor():
-    rec = db.get_records('lines')
-    for l in rec:
+    for tag in data_base.get_tag('color_change_flag=True'):
+        coloractive = data_base.get_color(f'tag="{tag}"')[0]
         
-        if l[7]:
-            dpg.bind_item_theme(l[0], themes[5])
-        else:
-            print(l[0])
-            dpg.bind_item_theme(l[0], themes[l[5]])
+        if coloractive[1] == 1:
+            dpg.set_value(f'color_{tag}',(255,255,255,255))
+        elif coloractive[0] == 0:
+            dpg.set_value(f'color_{tag}',(0, 191, 255, 255))
+        elif coloractive[0] == 1:
+            dpg.set_value(f'color_{tag}',(255, 20, 147, 255))
+        elif coloractive[0] == 2:
+            dpg.set_value(f'color_{tag}',(255, 215, 0, 255))
+        elif coloractive[0] == 3:
+            dpg.set_value(f'color_{tag}',(0, 255, 127, 255))
+        elif coloractive[0] == 4:
+            dpg.set_value(f'color_{tag}',(255, 69, 0, 255 ))
+        
+        data_base.update_polyline(tag,color_change_flag=False)
     
 def redraw(all=0):
-    if all:
-        rec = db.get_records('lines')
-    else:
-        rec = db.get_records_where('lines','forredraw=1')
-    
-    ids = []
-    for l in rec:
-        dpg.delete_item(f'{l[0]}')
-        dpg.add_line_series([l[1],l[3]], [l[2], l[4]], parent=Y_AXIS_TAG,tag=f'{l[0]}') 
-        ids.append(l[0])
-        if l[7]:
-            dpg.bind_item_theme(dpg.last_item(), themes[5])
-        else:
-            dpg.bind_item_theme(dpg.last_item(), themes[l[5]])
-    
-    db.update_multiple_records('lines','forredraw',ids,0)
 
+    global poliline_themes
+    
+
+    tags = data_base.get_tag('redraw_flag=True')
+    for tag in tags:
+
+        coloractive = data_base.get_color(f'tag="{tag}"')[0]
+        color = (255,255,255,255)
+        if coloractive[1] == 1:
+            color = (255,255,255,255)
+        elif coloractive[0] == 0:
+            color = (0, 191, 255, 255)
+        elif coloractive[0] == 1:
+            color = (255, 20, 147, 255)
+        elif coloractive[0] == 2:
+            color = (255, 215, 0, 255)
+        elif coloractive[0] == 3:
+            color = (0, 255, 127, 255)
+        elif coloractive[0] == 4:
+            color = (255, 69, 0, 255 )
+
+
+        dpg.delete_item(f'color_{tag}')
+        with dpg.theme() as coloured_line_theme1:
+            with dpg.theme_component():
+                dpg.add_theme_color(dpg.mvPlotCol_Line, color, category=dpg.mvThemeCat_Plots,tag=f'color_{tag}')
+        poliline_themes[f'{tag}'] = coloured_line_theme1
+        coor = data_base.get_coordinates(tag)
+        dpg.delete_item(f'{tag}')
+        dpg.add_line_series([x for x,y in coor], [y for x,y in coor], parent=Y_AXIS_TAG,tag=tag) 
+        
+        dpg.bind_item_theme(dpg.last_item(), coloured_line_theme1)
+    data_base.update_polylines(tags,redraw_flag = False)
 
 def set_color():
     
     if dpg.get_value('color_1'):                 
-        db.set_color('lines',0)
+        data_base.set_color(0)
     elif dpg.get_value('color_2'):
-        db.set_color('lines',1)
+        data_base.set_color(1)
     elif dpg.get_value('color_3'):
-        db.set_color('lines',2)
+        data_base.set_color(2)
     elif dpg.get_value('color_4'):
-        db.set_color('lines',3)
+        data_base.set_color(3)
     elif dpg.get_value('color_5'):
-        db.set_color('lines',4) 
+        data_base.set_color(4) 
 
-
-    redraw()
 def delete_l():
-    ids = db.get_id_by_field('lines','isactive',1)
-    tags = db.get_parent_by_field_unique('lines','isactive',1)
+    buts = data_base.get_unique_politag_where('active=True')
+    tags = data_base.get_tag('active=True')
     for t in tags:
         dpg.delete_item(t)
-    for i in ids:
-        
-        dpg.delete_item(f'{i}')
-    db.delete_active('lines')
+    for t in buts:
+        dpg.delete_item(t)
+    
+    placeholders = ', '.join(f"'{t}'" for t in tags)
+
+    data_base.delete_active(f'polyline_tag IN ({placeholders})')
     redraw(1)
 
 
@@ -2010,7 +2107,7 @@ def split_l():
         while sett:
             i = next(iter(sett))
 
-            l = find_closest_lines(lines_for_split,lines_for_split[i][0],sett)
+            l,m = find_closest_lines(lines_for_split,lines_for_split[i][0],sett)
             dpg.add_button(label=t + f'__{v}',parent='butonss',tag=t + f'__{v}',callback=active_but)
             nice_ids = []
             for h in l:
@@ -2059,9 +2156,9 @@ def pr(selected_files):
     global esyedaflag
     current_file = selected_files[0]
     if dpg.get_value('eraseold'):
-        for t in db.get_unique_values('lines','parent'):
+        for t in data_base.get_all_tag():
             dpg.delete_item(t)
-        db.clear_table('lines')
+        data_base.clear_tables()
         dpg.delete_item(Y_AXIS_TAG, children_only=True, slot=1)
     if '.dxf' in current_file: 
         
@@ -2091,8 +2188,8 @@ def pr(selected_files):
             #lines = read_dxf_lines_from_esyeda(current_file)
             #db.add_multiple_records('lines',lines) 
         else:
-            lines = read_dxf_lines(current_file)
-            db.add_multiple_records('lines',lines) 
+            read_dxf_lines(current_file)
+            #db.add_multiple_records('lines',lines) 
         
             redraw()
     elif '.png' in current_file:   
@@ -2106,7 +2203,7 @@ def pr(selected_files):
 ##########################################
 #############################################
 def test_callback():
-    recolor()
+    dpg.set_value('asddd', (255,255,255,255))
 ####################################################
 ####################################################
 ####################################################
@@ -2123,12 +2220,14 @@ X_AXIS_TAG = "x_axis_tag"
 Y_AXIS_TAG = "y_axis_tag"
 
 current_file = None
-themes = []
-components = []
 
+poliline_themes = {}
 esyedaflag = False
 
 db = SQLiteDatabase('example.db')
+data_base = PolylineDatabase()
+
+
 db.drop_table('lines')
 db.create_table('lines', [('sx', 'REAL'), ('sy', 'REAL'), ('ex', 'REAL'), ('ey', 'REAL'),('color', 'INTEGER'), ('parent', 'TEXT'),('isactive', 'INTEGER'),('forredraw', 'INTEGER')])
 
@@ -2163,39 +2262,6 @@ with dpg.window(label="Text Size", show=False, tag="text_size_modal", no_title_b
         dpg.add_spacer(width=50)
         dpg.add_button(label='Apply',callback=lambda:dpg.configure_item("text_size_modal", show=False))
         dpg.add_spacer(width=50)
-
-with dpg.theme(tag="coloured_line_theme1") as coloured_line_theme1:
-    with dpg.theme_component():
-        coloured_line_component1 = dpg.add_theme_color(dpg.mvPlotCol_Line, (0, 191, 255, 255), category=dpg.mvThemeCat_Plots)
-with dpg.theme(tag="coloured_line_theme2") as coloured_line_theme2:
-    with dpg.theme_component():
-        coloured_line_component2 = dpg.add_theme_color(dpg.mvPlotCol_Line, (255, 20, 147, 255), category=dpg.mvThemeCat_Plots)
-with dpg.theme(tag="coloured_line_theme3") as coloured_line_theme3:
-    with dpg.theme_component():
-        coloured_line_component3 = dpg.add_theme_color(dpg.mvPlotCol_Line, (255, 215, 0, 255), category=dpg.mvThemeCat_Plots)
-with dpg.theme(tag="coloured_line_theme4") as coloured_line_theme4:
-    with dpg.theme_component():
-        coloured_line_component4 = dpg.add_theme_color(dpg.mvPlotCol_Line, (0, 255, 127, 255), category=dpg.mvThemeCat_Plots)
-
-with dpg.theme(tag="coloured_line_theme5") as coloured_line_theme5:
-    with dpg.theme_component():
-        coloured_line_component5 = dpg.add_theme_color(dpg.mvPlotCol_Line, (255, 69, 0, 255 ), category=dpg.mvThemeCat_Plots)
-with dpg.theme(tag="coloured_line_theme6") as coloured_line_theme6:
-    with dpg.theme_component():
-        coloured_line_component6 = dpg.add_theme_color(dpg.mvPlotCol_Line, (255, 255, 255, 255 ), category=dpg.mvThemeCat_Plots)
-
-themes.append(coloured_line_theme1)
-components.append(coloured_line_component1)
-themes.append(coloured_line_theme2)
-components.append(coloured_line_component2)
-themes.append(coloured_line_theme3)
-components.append(coloured_line_component3)
-themes.append(coloured_line_theme4)
-components.append(coloured_line_component4)
-themes.append(coloured_line_theme5)
-components.append(coloured_line_component5)
-themes.append(coloured_line_theme6)
-components.append(coloured_line_component6)
 
 
 

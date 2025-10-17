@@ -6,11 +6,9 @@ class SQLiteDatabase:
         self.connection = sqlite3.connect(db_name,check_same_thread=False)
         self.cursor = self.connection.cursor()
 
-    # def create_table(self, table_name, columns_with_types):
-   
-    #     columns_definition = ', '.join([f"{col} {dtype}" for col, dtype in columns_with_types])
-    #     self.cursor.execute(f"CREATE TABLE IF NOT EXISTS {table_name} ({columns_definition})")
-    #     self.connection.commit()
+        self.base = []
+
+    
     def create_table(self, table_name, columns_with_types):
     
 
