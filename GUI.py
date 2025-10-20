@@ -22,7 +22,6 @@ def active_but(sender,app_data):
     
 
     tags = [s[1] for s in state]
-    print(state[0][4])
     data_base.update_polylines(tags,active=False if state[0][4]==1  else True)
     
     data_base.update_polylines(tags,color_change_flag=True)
@@ -42,7 +41,7 @@ def extract_black_lines(image_path, pixel_distance):
     nice_path = os.path.basename(image_path)
     iter = 1
     while 1:
-        for i in db.get_unique_values('lines','parent'):
+        for i in data_base.get_unique_politag():
             if i == nice_path:
                 nice_path = os.path.basename(image_path) + f' (copy {iter})'
                 iter +=1
@@ -231,56 +230,42 @@ def manual_clustering(multipoint, min_distance=2):
             clusters.append([point])
     return [MultiPoint(cluster) for cluster in clusters]
 def Polygon_to_lines(union_polygon,num_lines,width_lines,nice_path):
+
+    c = 0
     for k in range(num_lines):
 
         tunion_polygon = []
         if union_polygon.geom_type == 'Polygon':
             tunion_polygon.append(union_polygon.buffer(width_lines,quad_segs=0))
             xm, ym = union_polygon.exterior.xy
-            lins = []
-            lines = []
-            for i in range(len(xm)-1):
-                lins.append((xm[i],ym[i],xm[i+1],ym[i+1]))
-            lins.append((xm[len(xm)-1],ym[len(xm)-1],xm[0],ym[0]))
 
+            data_base.add_polyline(nice_path+f"{c}",nice_path,0, False, True, False)
+            data_base.add_coordinates(nice_path+f"{c}",[(x_,y_) for x_,y_ in zip(xm,ym)])
+            c+=1
             
             for inter in union_polygon.interiors:
-                    xm, ym = inter.xy
-                    for i in range(len(xm)-1):
-                        lins.append((xm[i],ym[i],xm[i+1],ym[i+1]))
-                    lins.append((xm[len(xm)-1],ym[len(xm)-1],xm[0],ym[0]))
-
-            for l in lins:
-                lines.append((round(l[0],4),  round(l[1],4), round(l[2],4), round(l[3],4),0,nice_path ,0,1))
-            print(len(lines))
-            db.add_multiple_records('lines',lines)
+                xm, ym = inter.xy
+                data_base.add_polyline(nice_path+f"{c}",nice_path,0, False, True, False)
+                data_base.add_coordinates(nice_path+f"{c}",[(x_,y_) for x_,y_ in zip(xm,ym)])
+                c+=1
+            
         else:
-            
-            lins = []
-            lines = []
-            
+           
 
             for p in union_polygon.geoms:
                 
                 tunion_polygon.append(p.buffer(width_lines,quad_segs=0))
                 
                 xm, ym = p.exterior.xy
-                
-                for i in range(len(xm)-1):
-                    lins.append((xm[i],ym[i],xm[i+1],ym[i+1]))
-                lins.append((xm[len(xm)-1],ym[len(xm)-1],xm[0],ym[0]))
-                
+                data_base.add_polyline(nice_path+f"{c}",nice_path,0, False, True, False)
+                data_base.add_coordinates(nice_path+f"{c}",[(x_,y_) for x_,y_ in zip(xm,ym)])
+                c+=1
                 for inter in p.interiors:
                     xm, ym = inter.xy
-                    
-                    for i in range(len(xm)-1):
-                        lins.append((xm[i],ym[i],xm[i+1],ym[i+1]))
-                    lins.append((xm[len(xm)-1],ym[len(xm)-1],xm[0],ym[0]))
-                    
-            for l in lins:
-                lines.append((round(l[0],4),  round(l[1],4), round(l[2],4), round(l[3],4),0,nice_path ,0,1))
-            print(len(lines))
-            db.add_multiple_records('lines',lines)
+                    data_base.add_polyline(nice_path+f"{c}",nice_path,0, False, True, False)
+                    data_base.add_coordinates(nice_path+f"{c}",[(x_,y_) for x_,y_ in zip(xm,ym)])
+                    c+=1
+            
         union_polygon = unary_union(MultiPolygon([p for p in tunion_polygon]))
             
 def read_dxf_lines_from_esyeda(sender, app_data, user_data):
@@ -301,7 +286,7 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
     nice_path = os.path.basename(user_data[0])
     iter = 1
     while 1:
-        for i in db.get_unique_values('lines','parent'):
+        for i in data_base.get_unique_politag():
             if i == nice_path:
                 nice_path = os.path.basename(user_data[0]) + f' (copy {iter})'
                 iter +=1
@@ -382,13 +367,23 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
 
         linn = lins.difference(unary_union(MultiPolygon([p for p in polygons])))
         
-        lines = []
+        c = 0
         for l in linn.geoms:
-            lines.append((round(l.coords[0][0],4),  round(l.coords[0][1],4), round(l.coords[1][0],4), round(l.coords[1][1],4),0,nice_path,0,1))
-        db.add_multiple_records('lines',lines)
+            coords = []
+            coords.append((round(l.coords[0][0],4),  round(l.coords[0][1],4)))
+            coords.append((round(l.coords[1][0],4), round(l.coords[1][1],4)))           
+           
+            data_base.add_polyline(nice_path+f"{c}" ,nice_path,0, False, True, False)
+            data_base.add_coordinates(nice_path+f"{c}",coords)
+            c+=1
+            redraw()
         Polygon_to_lines(unary_union(MultiPolygon([p for p in polygons])),1,width_lines,nice_path+ '_border')
+        
+        
         dpg.add_button(label=nice_path + '_border',parent='butonss',tag=nice_path + '_border',callback=active_but)
+        print(nice_path + '_border')
     else:
+        print('not full')
         multipolygon = MultiPolygon([p for p in polygons])
         union_polygon = unary_union(multipolygon)
         Polygon_to_lines(union_polygon,num_lines,width_lines,nice_path)
@@ -433,24 +428,47 @@ def read_dxf_lines(file_path):
             ll.append(layer.dxf.name)
             power = int(match.group(1))
             speed = int(match.group(2))
-            dpg.set_value(f"{h}1_value",power)
-            dpg.set_value(f"{h}_value",speed)
+            dpg.set_value(f"{h}_value",power)
+            dpg.set_value(f"{h}1_value",speed)
             lll[layer.dxf.name] = h - 1 
             h+=1
 
 
-    
+    border_lines = []
+    colors = []
     counter= 0
     for line in msp.query('LINE'):
-        layer = line.dxf.layer
         
+        layer = line.dxf.layer
+        border_lines.append([(round(line.dxf.start.x,4),  round(line.dxf.start.y,4)), (round(line.dxf.end.x,4), round(line.dxf.end.y,4))])
         if layer in ll:
-            
-            data_base.add_polyline(nice_path+f"_line_"+f"{counter}",nice_path,lll[layer], False, True, False)
+            colors.append(lll[layer])
         else:
-            data_base.add_polyline(nice_path+f"_line_"+f"{counter}",nice_path,0, False, True, False)
+            colors.append(0)
         data_base.add_coordinates(nice_path+f"_line_"+f"{counter}", [[round(line.dxf.start.x,4),  round(line.dxf.start.y,4)], [round(line.dxf.end.x,4), round(line.dxf.end.y,4)]])
         counter+=1
+    
+    sett = {i for i in range(len(border_lines))}
+    
+    counter = 0
+    while sett:
+        i = next(iter(sett))
+        coords = []
+        l,m = find_closest_lines(border_lines,border_lines[i][0],sett)
+        
+        
+        coords.append((round(border_lines[i][0][0],4),  round(border_lines[i][0][1],4)))
+        color = colors[i]
+        for h,j in zip(l,m):
+            if j:
+                coords.append((round(border_lines[h][1][0],4),  round(border_lines[h][1][1],4)))
+            else:
+                coords.append((round(border_lines[h][0][0],4),  round(border_lines[h][0][1],4)))
+            sett.remove(h)
+        data_base.add_polyline(nice_path+f"_3dface_"+f"{counter}",nice_path,color, False, True, False)
+        data_base.add_coordinates(nice_path+f"_3dface_"+f"{counter}", coords)
+        counter+=1
+
 
         
     hlines = []
@@ -607,16 +625,12 @@ def read_dxf_lines(file_path):
                 data_base.add_polyline(nice_path+f"_hatch_"+f"{counter}",nice_path,0, False, True, False)
             data_base.add_coordinates(nice_path+f"_hatch_"+f"{counter}", coords)
             counter +=1
-           
-    
-
 def distance(point1, point2):
     return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
 def find_closest_pointt(lines, target_point,nums):### возвращает точку, индекс линии, старт (1) или конец(0), и растояние до нее  
     closest_point = None
     min_distance = float('inf')
     I = 1
-    
     mode = 1
     for i,line in enumerate(lines):
         if i in nums:
@@ -629,19 +643,13 @@ def find_closest_pointt(lines, target_point,nums):### возвращает то�
                     mode = m
                     I = i
                 m = 0
-            
-
     return closest_point,I,mode,min_distance
 def find_closest_lines(lines, target_point,nums):
-    
     mods = []
     Nums = set(nums)
     lins = []
-
     closest_point,I,mode,min_distance = find_closest_pointt(lines, target_point,Nums)
-
     current_point = closest_point
-
     while 1:
         closest_point,I,mode,min_distance = find_closest_pointt(lines, current_point,Nums)
 
@@ -669,55 +677,33 @@ def dxf_to_svg(dxf_file, svg_file):
 def save_as_gcode():
     dpg.show_item("file_dialog_id2")
 def callback_to_gcode(sender, app_data, user_data):
-    
     current_file = app_data['file_path_name']
     gcode_lines = []
-
     gcode_lines.append("G90")
     gcode_lines.append("M4 S0")
-    rec = db.get_records('lines')
 
-    ts = [row[5] for row in rec]
-    lines = [[(row[1],row[2]),(row[3],row[4])] for row in rec]
-    set0 = {index for index, value in enumerate(ts) if value == 0}
-    set1 = {index for index, value in enumerate(ts) if value == 1}
-    set2 = {index for index, value in enumerate(ts) if value == 2}
-    set3 = {index for index, value in enumerate(ts) if value == 3}
-    set4 = {index for index, value in enumerate(ts) if value == 4}
-    sets = []
-    sets.append(set0)
-    sets.append(set1)
-    sets.append(set2)
-    sets.append(set3)
-    sets.append(set4)
-    
-    current_start = (0,0)
+    tag0 = data_base.get_tag_where('color=0')
+    tag1 = data_base.get_tag_where('color=1')
+    tag2 = data_base.get_tag_where('color=2')
+    tag3 = data_base.get_tag_where('color=3')
+    tag4 = data_base.get_tag_where('color=4')
+    tags = [tag0,tag1,tag2,tag3,tag4]
     h = 1
-    for sett in sets:
-
-        power = dpg.get_value(f"{h}1_value")
-        speed = dpg.get_value(f"{h}_value")
-        while sett:
-
-            p,j,m,d = find_closest_pointt(lines,current_start,sett)
-            if abs(current_start[0] - p[0]) > 0.01 or abs(current_start[1] - p[1]) > 0.01:
-                gcode_lines.append(f"S0")
-                gcode_lines.append(f"G0 X{round(p[0],4)} Y{round(p[1],4)}")         
-            if m:
-                gcode_lines.append(f"S{speed}")
-                gcode_lines.append(f"G1 X{round(lines[j][1][0],4)} Y{round(lines[j][1][1],4)}F{power}")
-                gcode_lines.append(f"S0")
-
-                current_start = lines[j][1]
-            else:
-                gcode_lines.append(f"S{speed}")
-                gcode_lines.append(f"G1 X{round(lines[j][0][0],4)} Y{round(lines[j][0][1],4)}F{power}")
-                gcode_lines.append(f"S0")
-                current_start = lines[j][0]
-
-            sett.remove(j)
+    for tag in tags:
+        power = dpg.get_value(f"{h}_value")
+        speed = dpg.get_value(f"{h}1_value")
         h+=1
-    
+        for t in tag:
+            coords = data_base.get_coordinates(t)
+
+            gcode_lines.append(f"G0 X{round(coords[0][0],4)} Y{round(coords[0][1],4)}")
+            gcode_lines.append(f"F{speed}")
+            gcode_lines.append(f"S{power}")
+            gcode_lines.append(f"G1 X{round(coords[1][0],4)} Y{round(coords[1][1],4)}")
+            if len(coords) > 2:
+                for coord in coords[2:]:
+                    gcode_lines.append(f"X{round(coord[0],4)} Y{round(coord[1],4)}")
+            gcode_lines.append("S0")
 
     gcode_lines.append(f"M5 S0")
     with open(current_file, 'w') as f:
@@ -730,41 +716,25 @@ def save_dxf(sender, app_data, user_data):
     current_file = app_data['file_path_name']
     doc = ezdxf.new()
     msp = doc.modelspace()
-    rec = db.get_records('lines')
 
-    ts = [row[5] for row in rec]
-    lines = [[(row[1],row[2]),(row[3],row[4])] for row in rec]
-    set0 = {index for index, value in enumerate(ts) if value == 0}
-    set1 = {index for index, value in enumerate(ts) if value == 1}
-    set2 = {index for index, value in enumerate(ts) if value == 2}
-    set3 = {index for index, value in enumerate(ts) if value == 3}
-    set4 = {index for index, value in enumerate(ts) if value == 4}
-    sets = []
-    sets.append(set0)
-    sets.append(set1)
-    sets.append(set2)
-    sets.append(set3)
-    sets.append(set4)
-    h = 0
-    current_start = (0,0)
-    for sett in sets:
-        power = dpg.get_value(f"{h+1}1_value")
-        speed = dpg.get_value(f"{h+1}_value")
-        
+    tag0 = data_base.get_tag_where('color=0')
+    tag1 = data_base.get_tag_where('color=1')
+    tag2 = data_base.get_tag_where('color=2')
+    tag3 = data_base.get_tag_where('color=3')
+    tag4 = data_base.get_tag_where('color=4')
+    tags = [tag0,tag1,tag2,tag3,tag4]
+    h = 1
+    
+    for tag in tags:
+        power = dpg.get_value(f"{h}_value")
+        speed = dpg.get_value(f"{h}1_value")
         layer_name = f"power{power}speed{speed}"
         doc.layers.new(name=layer_name, dxfattribs={'color': 7})  # 7 - цвет белый
-        while sett:
-            p,j,m,d = find_closest_pointt(lines,current_start,sett)
-
-            if m:
-                msp.add_line(lines[j][0], lines[j][1], dxfattribs={'layer': layer_name})
-                current_start = lines[j][1]
-            else:
-                msp.add_line(lines[j][1], lines[j][0], dxfattribs={'layer': layer_name})
-                current_start = lines[j][0]
-
-            sett.remove(j)
         h+=1
+        for t in tag:
+            coords = data_base.get_coordinates(t)
+            
+            msp.add_lwpolyline(coords, close=False,dxfattribs={'layer': layer_name})
     doc.saveas(current_file)
 
 
@@ -1904,24 +1874,28 @@ def plot_mouse_click_callback():
     
     x,y = dpg.get_plot_mouse_pos()
     if dpg.get_value('change_order'):
-
-        # rec = db.get_records('lines')
-
-        # lines = [[(row[1],row[2]),(row[3],row[4])] for row in rec]
-
-
-        # l = find_closest_lines(lines,(x,y),range(len(lines)))###################
+        rec = data_base.get_all_coordinates()
+        lines = []
+        for i in range(len(rec)-1):
+            lines.append([(rec[i][2],rec[i][3]),(rec[i+1][2],rec[i+1][3])])
+        clos,i,m,_ = find_closest_pointt(lines,(x,y),set(range(len(lines))))
+        tag = 1
+        if m:
+            tag = rec[i][1]
+        else:
+            tag = rec[i+1][1]
         
-        # if dpg.get_value('color_1'):
-        #     db.set_color_where_id('lines',0,l)
-        # elif dpg.get_value('color_2'):
-        #     db.set_color_where_id('lines',1,l)
-        # elif dpg.get_value('color_3'):
-        #     db.set_color_where_id('lines',2,l)
-        # elif dpg.get_value('color_4'):
-        #     db.set_color_where_id('lines',3,l)
-        # elif dpg.get_value('color_5'):
-        #     db.set_color_where_id('lines',4,l)
+        if dpg.get_value('color_1'):
+            data_base.update_polyline(tag,color=0,color_change_flag=1)
+            
+        elif dpg.get_value('color_2'):
+            data_base.update_polyline(tag,color=1,color_change_flag=1)
+        elif dpg.get_value('color_3'):
+            data_base.update_polyline(tag,color=2,color_change_flag=1)
+        elif dpg.get_value('color_4'):
+            data_base.update_polyline(tag,color=3,color_change_flag=1)
+        elif dpg.get_value('color_5'):
+            data_base.update_polyline(tag,color=4,color_change_flag=1)
 
 
         recolor()
@@ -2092,62 +2066,59 @@ def delete_l():
 
 
 def split_l():
-    for t in db.get_parent_by_field_unique('lines','isactive',1):
-        dpg.delete_item(t)     
-
-        lines_for_split = []
-        ids = []
-        for i,o in enumerate(db.get_records_where('lines',f"parent='{t}'")):   
-            lines_for_split.append([(o[1],o[2]),(o[3],o[4])])
-            ids.append(o[0])
-        sett = {i for i in range(len(lines_for_split))}
-    
-
-        v = 0
-        while sett:
-            i = next(iter(sett))
-
-            l,m = find_closest_lines(lines_for_split,lines_for_split[i][0],sett)
-            dpg.add_button(label=t + f'__{v}',parent='butonss',tag=t + f'__{v}',callback=active_but)
-            nice_ids = []
-            for h in l:
-                nice_ids.append(ids[h]) 
-                sett.remove(h)
-            db.update_multiple_records('lines','parent',nice_ids,f"'{t}__{v}'")
-            db.update_multiple_records('lines','forredraw',nice_ids,1)  
-            db.update_multiple_records('lines','isactive',nice_ids,0)
-            v+=1
-
-    redraw()
+    rec = data_base.get_polyline_where('active=1')
+    deleted_but = [rec[0][2]]
+    dpg.delete_item(rec[0][2])
+    for i,r in enumerate(rec):
+        if r[2] in deleted_but:
+            dpg.add_button(label=r[2]+f"_{i}",parent='butonss',tag=r[2]+f"_{i}",callback=active_but)
+            data_base.update_polyline(r[1],big_tag=r[2]+f"_{i}",active=0,color_change_flag=1)
+        else:
+            dpg.delete_item(r[2])   
+            deleted_but.append(r[2])
+    recolor()
 
 def optimize_():
     
     return
     #optimize.create_continuous_lines('temp.dxf',lines )
-    
-def normal_():
-    normalize_lines()
 
 def rotate_x():
     invers_lines()
-
+def rotate_y():
+    invers_lines('y')
 def normalize_lines():
-    rec = db.get_records_where('lines','isactive=1')
-    xx = [r[1] for r in rec]
-    xx+= [r[3] for r in rec]
-    yy = [r[2] for r in rec]
-    yy+= [r[4] for r in rec]
-    db.increment_field_value_with_condition('lines','sx','ex','sy','ey',-min(xx),-min(yy),'isactive',1)
+    coords = []
+    tags = data_base.get_tag_where('active=1')
+    for tag in tags:
+        coords += data_base.get_coordinates(tag)
+
+    xx = [r[0] for r in coords]
+    yy = [r[1] for r in coords]
+
+    placeholders = ', '.join(f"'{t}'" for t in tags)
+    
+    data_base.increment_field_value_with_condition(-min(xx),-min(yy),f'polyline_tag IN ({placeholders})')
+    data_base.update_polylines(tags,redraw_flag = True)
     redraw()
 
-def invers_lines():
-    rec = db.get_records_where('lines','isactive=1')
-    xx = [r[1] for r in rec]
-    xx+= [r[3] for r in rec]
-    yy = [r[2] for r in rec]
-    yy+= [r[4] for r in rec]
+def invers_lines(ocb='x'):
+    tags = data_base.get_tag_where('active=1')
 
-    db.inverse_field_value_with_condition('lines','sy','ey',max(yy) + min(yy),'isactive',1)
+    placeholders = ', '.join(f"'{t}'" for t in tags)
+    
+    
+    rec = data_base.get_coordinates_where(f'polyline_tag IN ({placeholders})')
+    
+    xx = [r[0] for r in rec]
+    yy = [r[1] for r in rec]
+  
+    if ocb == 'x':
+        data_base.inverse_field_value_with_condition('y',max(yy) + min(yy),f'polyline_tag IN ({placeholders})')
+    else:
+        data_base.inverse_field_value_with_condition('x',max(xx) + min(xx),f'polyline_tag IN ({placeholders})')
+    for t in tags:
+        data_base.update_polyline(t,redraw_flag=1)
     redraw()
     
 
@@ -2194,7 +2165,22 @@ def pr(selected_files):
             redraw()
     elif '.png' in current_file:   
         lines = extract_black_lines(current_file,0.1)
-        db.add_multiple_records('lines',lines)
+        nice_path = os.path.basename(current_file)
+        iterr = 1
+        while 1:
+            for i in data_base.get_unique_politag():
+                if i == nice_path:
+                    nice_path = os.path.basename(current_file) + f' (copy {iterr})'
+                    iterr +=1
+            else: 
+                break
+        counter = 0
+        for l in lines:
+            data_base.add_polyline(nice_path+f"{counter}",nice_path,0, False, True, False)
+            data_base.add_coordinates(nice_path+f"{counter}", [(l[0],l[1]),(l[2],l[3])])
+            counter +=1
+
+        
         redraw()
     
 
@@ -2327,8 +2313,9 @@ with dpg.viewport_menu_bar():
             dpg.add_menu_item(label="Border from EsyEDA", callback=lambda:dpg.configure_item("border_from_esyeda", show=True))
     with dpg.menu(label="Functions"):
         dpg.add_menu_item(label="Split", callback=split_l)
-        dpg.add_menu_item(label="Normalize", callback=normal_)
+        dpg.add_menu_item(label="Normalize", callback=normalize_lines)
         dpg.add_menu_item(label="Rotate X", callback=rotate_x)
+        dpg.add_menu_item(label="Rotate Y", callback=rotate_y)
         dpg.add_menu_item(label="Delete", callback=delete_l)
         dpg.add_menu_item(label="Set Color", callback=set_color)
         dpg.add_menu_item(label="test", callback=test_callback)

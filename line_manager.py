@@ -29,7 +29,15 @@ class PolylineDatabase:
                 FOREIGN KEY (polyline_tag) REFERENCES polylines(tag)
             )
         ''')
-
+        self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS photo (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tag TEXT,
+                x REAL,
+                y REAL,
+                color INTEGER
+            )
+        ''')
         self.connection.commit()
 
     def add_polyline(self, tag, big_tag, color, active, redraw_flag, color_change_flag):
@@ -106,9 +114,14 @@ class PolylineDatabase:
             VALUES (?, ?, ?)
         ''', data)
         self.connection.commit()
-    
+    def get_all_coordinates(self):
+        self.cursor.execute('SELECT * FROM coordinates ')
+        return self.cursor.fetchall()
     def get_coordinates(self, polyline_tag):
         self.cursor.execute('SELECT x, y FROM coordinates WHERE polyline_tag = ?', (polyline_tag,))
+        return self.cursor.fetchall()
+    def get_coordinates_where(self, condition):
+        self.cursor.execute(f'SELECT x, y FROM coordinates WHERE {condition}')
         return self.cursor.fetchall()
     def drop_tables(self):
         self.cursor.execute(f"DROP TABLE IF EXISTS coordinates")
@@ -138,7 +151,14 @@ class PolylineDatabase:
         self.cursor.execute(f"DELETE FROM coordinates WHERE {condition}")
         self.cursor.execute(f"DELETE FROM polylines WHERE active=1")
         self.connection.commit()
-    
+    def inverse_field_value_with_condition(self, column_name, increment_value, conditions):
+      
+        self.cursor.execute(f"""
+            UPDATE coordinates
+            SET {column_name} = ? - {column_name}
+            WHERE {conditions}
+        """, (increment_value,))
+        self.connection.commit()
 # db = PolylineDatabase()
 
 # db.add_polyline('polyline1','polylineee1', 1, True, True, False)
