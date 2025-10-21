@@ -550,10 +550,7 @@ def read_dxf_lines(file_path):
 
 
 
-    # for i in settt:
-    #     coords.append((round(hlines[i]['start'][0],4),  round(hlines[i]['start'][1],4)))
-    
-       
+   
     
     # for arc in msp.query('ARC'):
     #     center = arc.dxf.center  
@@ -567,22 +564,24 @@ def read_dxf_lines(file_path):
     #     for i in range(len(points)-1):
     #         lines.append((round(points[i][0],4),  round(points[i][1],4), round(points[i+1][0],4), round(points[i+1][1],4),0,nice_path,0,1))
             
-    # for circle in msp.query('CIRCLE'):
-    #     center = circle.dxf.center 
-    #     radius = circle.dxf.radius  
-    #     num_points = 50  
-
-    #     points = [
-    #         (
-    #             center.x + radius * math.cos(2 * math.pi * i / num_points),
-    #             center.y + radius * math.sin(2 * math.pi * i / num_points)
-    #         )
-    #         for i in range(num_points)
-    #     ]
-        
-    #     for i in range(len(points)-1):
-    #         lines.append((round(points[i][0],4),  round(points[i][1],4), round(points[i+1][0],4), round(points[i+1][1],4),0,nice_path,0,1))
-          
+    for circle in msp.query('CIRCLE'):
+        center = circle.dxf.center 
+        radius = circle.dxf.radius  
+        num_points = 50  
+        layer = circle.dxf.layer
+        points = [
+            (
+                center.x + radius * math.cos(2 * math.pi * i / num_points),
+                center.y + radius * math.sin(2 * math.pi * i / num_points)
+            )
+            for i in range(num_points)
+        ]
+        if layer in ll:
+            data_base.add_polyline(nice_path+f"_circle_"+f"{counter}",nice_path,lll[layer], False, True, False)
+        else:
+            data_base.add_polyline(nice_path+f"_circle_"+f"{counter}",nice_path,0, False, True, False)
+        data_base.add_coordinates(nice_path+f"_circle_"+f"{counter}", points)
+       
     counter = 0
     for polyline in msp.query('SOLID'):
         layer = polyline.dxf.layer
@@ -605,6 +604,7 @@ def read_dxf_lines(file_path):
         coords = []
         for i in range(len(points)):
             coords.append((round(points[i][0],4),  round(points[i][1],4)))
+        coords.append((round(points[0][0],4),  round(points[0][1],4)))
         if layer in ll:
             data_base.add_polyline(nice_path+f"_poly_"+f"{counter}",nice_path,lll[layer], False, True, False)
         else:
