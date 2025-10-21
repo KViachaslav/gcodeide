@@ -1,93 +1,56 @@
-import sqlite3
-
-class PolylineManager:
-    def __init__(self, db_name):
-        self.connection = sqlite3.connect(db_name)
-        self.cursor = self.connection.cursor()
-        self.create_tables()
-
-    def create_tables(self):
-        # Создание первой таблицы
-        self.cursor.execute('''
-            CREATE TABLE IF NOT EXISTS polylines (
-                tag TEXT PRIMARY KEY,
-                color TEXT,
-                active BOOLEAN,
-                redraw_flag BOOLEAN,
-                color_change_flag BOOLEAN
-            )
-        ''')
-        
-        # Создание второй таблицы
-        self.cursor.execute('''
-            CREATE TABLE IF NOT EXISTS segments (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                tag TEXT,
-                x_start REAL,
-                y_start REAL,
-                x_end REAL,
-                y_end REAL,
-                FOREIGN KEY (tag) REFERENCES polylines(tag)
-            )
-        ''')
-        self.connection.commit()
-
-    def add_polyline(self, tag, color, active, redraw_flag, color_change_flag):
-        self.cursor.execute('''
-            INSERT INTO polylines (tag, color, active, redraw_flag, color_change_flag)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (tag, color, active, redraw_flag, color_change_flag))
-        self.connection.commit()
-
-    def add_segment(self, tag, x_start, y_start, x_end, y_end):
-        self.cursor.execute('''
-            INSERT INTO segments (tag, x_start, y_start, x_end, y_end)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (tag, x_start, y_start, x_end, y_end))
-        self.connection.commit()
-
-    def get_polyline(self, tag):
-        self.cursor.execute('SELECT * FROM polylines WHERE tag = ?', (tag,))
-        return self.cursor.fetchone()
-
-    def get_segments(self, tag):
-        self.cursor.execute('SELECT * FROM segments WHERE tag = ?', (tag,))
-        return self.cursor.fetchall()
-
-    def update_polyline(self, tag, color=None, active=None, redraw_flag=None, color_change_flag=None):
-        updates = []
-        params = []
-
-        if color is not None:
-            updates.append("color = ?")
-            params.append(color)
-        if active is not None:
-            updates.append("active = ?")
-            params.append(active)
-        if redraw_flag is not None:
-            updates.append("redraw_flag = ?")
-            params.append(redraw_flag)
-        if color_change_flag is not None:
-            updates.append("color_change_flag = ?")
-            params.append(color_change_flag)
-
-        if updates:
-            params.append(tag)
-            self.cursor.execute(f'''
-                UPDATE polylines SET {', '.join(updates)} WHERE tag = ?
-            ''', params)
-            self.connection.commit()
-
-    def close(self):
-        self.connection.close()
-
-# Пример использования
-if __name__ == "__main__":
-    pm = PolylineManager('polylines.db')
-    pm.add_polyline('line1', 'red', True, False, False)
-    pm.add_segment('line1', 0, 0, 1, 1)
-    pm.add_segment('line1', 1, 1, 2, 3)
-    print(pm.get_polyline('line1'))
-    print(pm.get_segments('line1'))
-    pm.update_polyline('line1', color='blue')
-    pm.close()
+# !pip install ipywidgets pillow matplotlib
+ 
+import io
+import numpy as np
+import matplotlib.pyplot as plt
+import ipywidgets as widgets
+from PIL import Image
+from IPython.display import display
+ 
+# Загрузка изображения
+upload = widgets.FileUpload(accept='image/*', multiple=False)
+display(upload)
+ 
+def on_upload_change(change):
+    if upload.value:
+        img_data = list(upload.value.values())[0]['content']
+        img = Image.open(io.BytesIO(img_data)).resize((500, 500))
+        plt.imshow(img)
+        plt.axis('off')
+        plt.show()
+ 
+upload.observe(on_upload_change, names='value')
+ 
+# Создание холста и переменные
+canvas = np.ones((500, 500, 3), dtype=np.uint8) * 255
+fig, ax = plt.subplots()
+ax.imshow(canvas)
+ax.axis('off')
+start_point, end_point, tool = None, None, 'line'
+ 
+# Функция для рисования
+def draw(event):
+    global start_point, end_point
+    if event.inaxes:
+        if start_point is None:
+            start_point = (int(event.xdata), int(event.ydata))
+        else:
+            end_point = (int(event.xdata), int(event.ydata))
+            if tool == 'line':
+                ax.plot([start_point[0], end_point[0]], [start_point[1], end_point[1]], color='black')
+            elif tool == 'rectangle':
+                ax.add_patch(plt.Rectangle(start_point, end_point[0] - start_point[0], end_point[1] - start_point[1], fill=None, edgecolor='black'))
+            elif tool == 'circle':
+                radius = ((end_point[0] - start_point[0])**2 + (end_point[1] - start_point[1])**2)**0.5
+                ax.add_patch(plt.Circle(start_point, radius, fill=None, edgecolor='black'))
+            start_point, end_point = None, None
+            fig.canvas.draw()
+ 
+fig.canvas.mpl_connect('button_press_event', draw)
+ 
+# Виджет для выбора инструмента
+tool_selector = widgets.ToggleButtons(options=['line', 'rectangle', 'circle'], description='Tool:')
+tool_selector.observe(lambda change: globals().update(tool=change['new']), names='value')
+display(tool_selector)
+ 
+plt.show()

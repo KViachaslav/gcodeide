@@ -493,7 +493,7 @@ $SKPOLY
   9
 $TDCREATE
  40
-2460969.479236111
+2460970.5805092594
   9
 $TDUCREATE
  40
@@ -501,7 +501,7 @@ $TDUCREATE
   9
 $TDUPDATE
  40
-2460969.479236111
+2460970.5805092594
   9
 $TDUUPDATE
  40
@@ -553,7 +553,7 @@ $SPLINESEGS
   9
 $HANDSEED
   5
-6E
+149
   9
 $SURFTAB1
  70
@@ -933,11 +933,11 @@ $PSTYLEMODE
   9
 $FINGERPRINTGUID
   2
-{16F6146D-3F9A-4531-BF4B-C425A07363F3}
+{6D10A7B5-2E77-4C10-AC60-C7617A991240}
   9
 $VERSIONGUID
   2
-{B2123163-3FA2-4E9A-82A6-38F66C96356A}
+{E4A3D850-0D94-423F-9B66-CAD29810A460}
   9
 $EXTNAMES
 290
@@ -1615,7 +1615,7 @@ AcDbSymbolTableRecord
 100
 AcDbLayerTableRecord
   2
-power1speed10
+power100speed1000
  70
 0
  62
@@ -1631,7 +1631,7 @@ Continuous
   0
 LAYER
   5
-5A
+142
 330
 1
 100
@@ -1639,7 +1639,7 @@ AcDbSymbolTableRecord
 100
 AcDbLayerTableRecord
   2
-power2speed9
+power1speed5
  70
 0
  62
@@ -1655,7 +1655,7 @@ Continuous
   0
 LAYER
   5
-5B
+143
 330
 1
 100
@@ -1663,7 +1663,7 @@ AcDbSymbolTableRecord
 100
 AcDbLayerTableRecord
   2
-power3speed8
+power2speed6
  70
 0
  62
@@ -1679,7 +1679,7 @@ Continuous
   0
 LAYER
   5
-5D
+144
 330
 1
 100
@@ -1687,7 +1687,7 @@ AcDbSymbolTableRecord
 100
 AcDbLayerTableRecord
   2
-power4speed7
+power3speed6
  70
 0
  62
@@ -1703,7 +1703,7 @@ Continuous
   0
 LAYER
   5
-60
+145
 330
 1
 100
@@ -1711,7 +1711,7 @@ AcDbSymbolTableRecord
 100
 AcDbLayerTableRecord
   2
-power5speed6
+power100speed4
  70
 0
  62
@@ -1825,7 +1825,7 @@ ACAD
   0
 APPID
   5
-6B
+146
 330
 3
 100
@@ -1839,7 +1839,7 @@ HATCHBACKGROUNDCOLOR
   0
 APPID
   5
-6C
+147
 330
 3
 100
@@ -2155,29 +2155,33 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+5
  70
 0
  10
-23.3424
+0.0
  20
-15.0678
+0.0
  10
-23.3424
+197.0
  20
-14.1089
+0.0
  10
-24.6637
+197.0
  20
-14.1089
+120.0
  10
-24.6637
+0.0
  20
-15.0678
+120.0
+ 10
+0.0
+ 20
+0.0
   0
 LWPOLYLINE
   5
@@ -2187,29 +2191,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+22.5
  20
-15.9202
+0.0
  10
-23.3424
+22.5
  20
-16.8791
- 10
-24.6637
- 20
-16.8791
- 10
-24.6637
- 20
-15.9202
+18.0
   0
 LWPOLYLINE
   5
@@ -2219,29 +2215,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-9.4432
+22.5
  20
-3.2764
+22.0
  10
-10.4021
+22.5
  20
-3.2764
- 10
-10.4021
- 20
-4.5976
- 10
-9.4432
- 20
-4.5976
+58.0
   0
 LWPOLYLINE
   5
@@ -2251,29 +2239,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-8.5908
+22.5
  20
-3.2764
+62.0
  10
-7.6319
+22.5
  20
-3.2764
- 10
-7.6319
- 20
-4.5976
- 10
-8.5908
- 20
-4.5976
+98.0
   0
 LWPOLYLINE
   5
@@ -2283,29 +2263,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-5.2522
+22.5
  20
-4.9274
+102.0
  10
-6.2111
+22.5
  20
-4.9274
- 10
-6.2111
- 20
-6.2486
- 10
-5.2522
- 20
-6.2486
+120.0
   0
 LWPOLYLINE
   5
@@ -2315,29 +2287,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-4.3998
+24.5
  20
-4.9274
+4.0
  10
-3.4409
+24.5
  20
-4.9274
- 10
-3.4409
- 20
-6.2486
- 10
-4.3998
- 20
-6.2486
+38.0
   0
 LWPOLYLINE
   5
@@ -2347,29 +2311,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+24.5
  20
-24.0483
+42.0
  10
-23.3424
+24.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+77.0
   0
 LWPOLYLINE
   5
@@ -2379,29 +2335,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+24.5
  20
-24.0483
+82.0
  10
-23.3424
+24.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+116.0
   0
 LWPOLYLINE
   5
@@ -2411,29 +2359,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+26.5
  20
-24.0483
+0.0
  10
-23.3424
+26.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+18.0
   0
 LWPOLYLINE
   5
@@ -2443,29 +2383,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+26.5
  20
-24.0483
+22.0
  10
-23.3424
+26.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+58.0
   0
 LWPOLYLINE
   5
@@ -2475,29 +2407,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+26.5
  20
-24.0483
+62.0
  10
-23.3424
+26.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+98.0
   0
 LWPOLYLINE
   5
@@ -2507,29 +2431,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+26.5
  20
-24.0483
+102.0
  10
-23.3424
+26.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+120.0
   0
 LWPOLYLINE
   5
@@ -2539,29 +2455,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+28.5
  20
-24.0483
+4.0
  10
-23.3424
+28.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+38.0
   0
 LWPOLYLINE
   5
@@ -2571,29 +2479,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+28.5
  20
-24.0483
+42.0
  10
-23.3424
+28.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+77.0
   0
 LWPOLYLINE
   5
@@ -2603,29 +2503,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+28.5
  20
-24.0483
+82.0
  10
-23.3424
+28.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+116.0
   0
 LWPOLYLINE
   5
@@ -2635,29 +2527,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+30.5
  20
-24.0483
+0.0
  10
-23.3424
+30.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+18.0
   0
 LWPOLYLINE
   5
@@ -2667,29 +2551,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+30.5
  20
-24.0483
+22.0
  10
-23.3424
+30.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+58.0
   0
 LWPOLYLINE
   5
@@ -2699,29 +2575,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+30.5
  20
-24.0483
+62.0
  10
-23.3424
+30.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+98.0
   0
 LWPOLYLINE
   5
@@ -2731,29 +2599,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+30.5
  20
-24.0483
+102.0
  10
-23.3424
+30.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+120.0
   0
 LWPOLYLINE
   5
@@ -2763,29 +2623,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+32.5
  20
-24.0483
+4.0
  10
-23.3424
+32.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+38.0
   0
 LWPOLYLINE
   5
@@ -2795,29 +2647,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+32.5
  20
-24.0483
+42.0
  10
-23.3424
+32.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+77.0
   0
 LWPOLYLINE
   5
@@ -2827,29 +2671,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+32.5
  20
-24.0483
+82.0
  10
-23.3424
+32.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+116.0
   0
 LWPOLYLINE
   5
@@ -2859,29 +2695,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+34.5
  20
-24.0483
+0.0
  10
-23.3424
+34.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+18.0
   0
 LWPOLYLINE
   5
@@ -2891,29 +2719,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+34.5
  20
-24.0483
+22.0
  10
-23.3424
+34.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+58.0
   0
 LWPOLYLINE
   5
@@ -2923,29 +2743,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+34.5
  20
-24.0483
+62.0
  10
-23.3424
+34.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+98.0
   0
 LWPOLYLINE
   5
@@ -2955,29 +2767,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+34.5
  20
-24.0483
+102.0
  10
-23.3424
+34.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+120.0
   0
 LWPOLYLINE
   5
@@ -2987,29 +2791,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+36.5
  20
-24.0483
+4.0
  10
-23.3424
+36.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+38.0
   0
 LWPOLYLINE
   5
@@ -3019,29 +2815,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+36.5
  20
-24.0483
+42.0
  10
-23.3424
+36.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+77.0
   0
 LWPOLYLINE
   5
@@ -3051,29 +2839,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+36.5
  20
-24.0483
+82.0
  10
-23.3424
+36.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+116.0
   0
 LWPOLYLINE
   5
@@ -3083,29 +2863,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+38.5
  20
-24.0483
+0.0
  10
-23.3424
+38.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+18.0
   0
 LWPOLYLINE
   5
@@ -3115,29 +2887,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+38.5
  20
-24.0483
+22.0
  10
-23.3424
+38.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+58.0
   0
 LWPOLYLINE
   5
@@ -3147,29 +2911,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+38.5
  20
-24.0483
+62.0
  10
-23.3424
+38.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+98.0
   0
 LWPOLYLINE
   5
@@ -3179,29 +2935,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+38.5
  20
-24.0483
+102.0
  10
-23.3424
+38.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+120.0
   0
 LWPOLYLINE
   5
@@ -3211,29 +2959,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+40.5
  20
-24.0483
+4.0
  10
-23.3424
+40.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+38.0
   0
 LWPOLYLINE
   5
@@ -3243,29 +2983,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+40.5
  20
-24.0483
+42.0
  10
-23.3424
+40.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+77.0
   0
 LWPOLYLINE
   5
@@ -3275,29 +3007,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+40.5
  20
-24.0483
+82.0
  10
-23.3424
+40.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+116.0
   0
 LWPOLYLINE
   5
@@ -3307,29 +3031,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+42.5
  20
-24.0483
+0.0
  10
-23.3424
+42.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+18.0
   0
 LWPOLYLINE
   5
@@ -3339,29 +3055,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+42.5
  20
-24.0483
+22.0
  10
-23.3424
+42.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+58.0
   0
 LWPOLYLINE
   5
@@ -3371,29 +3079,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+42.5
  20
-24.0483
+62.0
  10
-23.3424
+42.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+98.0
   0
 LWPOLYLINE
   5
@@ -3403,29 +3103,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+42.5
  20
-24.0483
+102.0
  10
-23.3424
+42.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+120.0
   0
 LWPOLYLINE
   5
@@ -3435,29 +3127,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+44.5
  20
-24.0483
+4.0
  10
-23.3424
+44.5
  20
-25.0071
- 10
-24.6637
- 20
-25.0071
- 10
-24.6637
- 20
-24.0483
+38.0
   0
 LWPOLYLINE
   5
@@ -3467,29 +3151,69 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power1speed10
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+44.5
  20
-24.0483
+42.0
  10
-23.3424
+44.5
  20
-25.0071
+77.0
+  0
+LWPOLYLINE
+  5
+5A
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
  10
-24.6637
+44.5
  20
-25.0071
+82.0
  10
-24.6637
+44.5
  20
-24.0483
+116.0
+  0
+LWPOLYLINE
+  5
+5B
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+46.5
+ 20
+0.0
+ 10
+46.5
+ 20
+18.0
   0
 LWPOLYLINE
   5
@@ -3499,33 +3223,45 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power3speed8
+power100speed1000
 100
 AcDbPolyline
  90
-5
+2
  70
 0
  10
-2.936
+46.5
  20
-26.1039
+22.0
  10
-31.3691
+46.5
  20
-26.1039
+58.0
+  0
+LWPOLYLINE
+  5
+5D
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
  10
-31.3691
+46.5
  20
-2.794
+62.0
  10
-2.936
+46.5
  20
-2.794
- 10
-2.936
- 20
-26.1039
+98.0
   0
 LWPOLYLINE
   5
@@ -3535,29 +3271,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power4speed7
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-24.003
+46.5
  20
-16.2474
+102.0
  10
-18.1525
+46.5
  20
-16.2474
- 10
-12.0736
- 20
-10.1686
- 10
-12.0736
- 20
-3.937
+120.0
   0
 LWPOLYLINE
   5
@@ -3567,29 +3295,45 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power4speed7
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-24.003
+48.5
  20
-14.7406
+4.0
  10
-19.3126
+48.5
  20
-14.7406
+38.0
+  0
+LWPOLYLINE
+  5
+60
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
  10
-13.5804
+48.5
  20
-9.0084
+42.0
  10
-13.5804
+48.5
  20
-3.937
+77.0
   0
 LWPOLYLINE
   5
@@ -3599,29 +3343,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power5speed6
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-24.003
+48.5
  20
-22.8687
+82.0
  10
-15.2486
+48.5
  20
-22.8687
- 10
-5.5794
- 20
-13.1994
- 10
-5.5794
- 20
-5.588
+116.0
   0
 LWPOLYLINE
   5
@@ -3631,29 +3367,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power5speed6
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-8.2636
+50.5
  20
-3.937
+0.0
  10
-8.2636
+50.5
  20
-13.0896
- 10
-15.2314
- 20
-20.0574
- 10
-24.003
- 20
-20.0574
+18.0
   0
 LWPOLYLINE
   5
@@ -3663,29 +3391,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power5speed6
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-24.003
+50.5
  20
-18.5506
+22.0
  10
-16.8996
+50.5
  20
-18.5506
- 10
-9.7704
- 20
-11.4214
- 10
-9.7704
- 20
-3.937
+58.0
   0
 LWPOLYLINE
   5
@@ -3695,29 +3415,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power5speed6
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-4.0726
+50.5
  20
-5.588
+62.0
  10
-4.0726
+50.5
  20
-15.6296
- 10
-12.8184
- 20
-24.3754
- 10
-24.003
- 20
-24.3754
+98.0
   0
 LWPOLYLINE
   5
@@ -3727,29 +3439,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power5speed6
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-13.2532
+50.5
  20
-3.2764
+102.0
  10
-14.2121
+50.5
  20
-3.2764
- 10
-14.2121
- 20
-4.5976
- 10
-13.2532
- 20
-4.5976
+120.0
   0
 LWPOLYLINE
   5
@@ -3759,29 +3463,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power5speed6
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-12.4008
+52.5
  20
-3.2764
+4.0
  10
-11.4419
+52.5
  20
-3.2764
- 10
-11.4419
- 20
-4.5976
- 10
-12.4008
- 20
-4.5976
+38.0
   0
 LWPOLYLINE
   5
@@ -3791,29 +3487,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power5speed6
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+52.5
  20
-18.8778
+42.0
  10
-23.3424
+52.5
  20
-17.9189
- 10
-24.6637
- 20
-17.9189
- 10
-24.6637
- 20
-18.8778
+77.0
   0
 LWPOLYLINE
   5
@@ -3823,29 +3511,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power5speed6
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+52.5
  20
-19.7303
+82.0
  10
-23.3424
+52.5
  20
-20.6891
- 10
-24.6637
- 20
-20.6891
- 10
-24.6637
- 20
-19.7303
+116.0
   0
 LWPOLYLINE
   5
@@ -3855,29 +3535,21 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power5speed6
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+54.5
  20
-23.1958
+0.0
  10
-23.3424
+54.5
  20
-22.237
- 10
-24.6637
- 20
-22.237
- 10
-24.6637
- 20
-23.1958
+18.0
   0
 LWPOLYLINE
   5
@@ -3887,29 +3559,5181 @@ LWPOLYLINE
 100
 AcDbEntity
   8
-power5speed6
+power100speed1000
 100
 AcDbPolyline
  90
-4
+2
  70
 0
  10
-23.3424
+54.5
  20
-24.0483
+22.0
  10
-23.3424
+54.5
  20
-25.0071
+58.0
+  0
+LWPOLYLINE
+  5
+6B
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
  10
-24.6637
+54.5
  20
-25.0071
+62.0
  10
-24.6637
+54.5
  20
-24.0483
+98.0
+  0
+LWPOLYLINE
+  5
+6C
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+54.5
+ 20
+102.0
+ 10
+54.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+6D
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+56.5
+ 20
+4.0
+ 10
+56.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+6E
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+56.5
+ 20
+42.0
+ 10
+56.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+6F
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+56.5
+ 20
+82.0
+ 10
+56.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+70
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+58.5
+ 20
+0.0
+ 10
+58.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+71
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+58.5
+ 20
+22.0
+ 10
+58.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+72
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+58.5
+ 20
+62.0
+ 10
+58.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+73
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+58.5
+ 20
+102.0
+ 10
+58.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+74
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+60.5
+ 20
+4.0
+ 10
+60.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+75
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+60.5
+ 20
+42.0
+ 10
+60.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+76
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+60.5
+ 20
+82.0
+ 10
+60.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+77
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+62.5
+ 20
+0.0
+ 10
+62.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+78
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+62.5
+ 20
+22.0
+ 10
+62.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+79
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+62.5
+ 20
+62.0
+ 10
+62.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+7A
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+62.5
+ 20
+102.0
+ 10
+62.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+7B
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+64.5
+ 20
+4.0
+ 10
+64.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+7C
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+64.5
+ 20
+42.0
+ 10
+64.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+7D
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+64.5
+ 20
+82.0
+ 10
+64.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+7E
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+66.5
+ 20
+0.0
+ 10
+66.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+7F
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+66.5
+ 20
+22.0
+ 10
+66.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+80
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+66.5
+ 20
+62.0
+ 10
+66.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+81
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+66.5
+ 20
+102.0
+ 10
+66.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+82
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+68.5
+ 20
+4.0
+ 10
+68.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+83
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+68.5
+ 20
+42.0
+ 10
+68.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+84
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+68.5
+ 20
+82.0
+ 10
+68.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+85
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+70.5
+ 20
+0.0
+ 10
+70.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+86
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+70.5
+ 20
+22.0
+ 10
+70.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+87
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+70.5
+ 20
+62.0
+ 10
+70.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+88
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+70.5
+ 20
+102.0
+ 10
+70.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+89
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+72.5
+ 20
+4.0
+ 10
+72.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+8A
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+72.5
+ 20
+42.0
+ 10
+72.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+8B
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+72.5
+ 20
+82.0
+ 10
+72.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+8C
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+74.5
+ 20
+0.0
+ 10
+74.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+8D
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+74.5
+ 20
+22.0
+ 10
+74.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+8E
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+74.5
+ 20
+62.0
+ 10
+74.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+8F
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+74.5
+ 20
+102.0
+ 10
+74.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+90
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+76.5
+ 20
+4.0
+ 10
+76.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+91
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+76.5
+ 20
+42.0
+ 10
+76.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+92
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+76.5
+ 20
+82.0
+ 10
+76.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+93
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+78.5
+ 20
+0.0
+ 10
+78.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+94
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+78.5
+ 20
+22.0
+ 10
+78.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+95
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+78.5
+ 20
+62.0
+ 10
+78.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+96
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+78.5
+ 20
+102.0
+ 10
+78.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+97
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+80.5
+ 20
+4.0
+ 10
+80.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+98
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+80.5
+ 20
+42.0
+ 10
+80.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+99
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+80.5
+ 20
+82.0
+ 10
+80.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+9A
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+82.5
+ 20
+0.0
+ 10
+82.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+9B
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+82.5
+ 20
+22.0
+ 10
+82.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+9C
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+82.5
+ 20
+62.0
+ 10
+82.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+9D
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+82.5
+ 20
+102.0
+ 10
+82.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+9E
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+84.5
+ 20
+4.0
+ 10
+84.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+9F
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+84.5
+ 20
+42.0
+ 10
+84.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+A0
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+84.5
+ 20
+82.0
+ 10
+84.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+A1
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+86.5
+ 20
+0.0
+ 10
+86.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+A2
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+86.5
+ 20
+22.0
+ 10
+86.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+A3
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+86.5
+ 20
+62.0
+ 10
+86.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+A4
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+86.5
+ 20
+102.0
+ 10
+86.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+A5
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+88.5
+ 20
+4.0
+ 10
+88.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+A6
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+88.5
+ 20
+42.0
+ 10
+88.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+A7
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+88.5
+ 20
+82.0
+ 10
+88.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+A8
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+90.5
+ 20
+0.0
+ 10
+90.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+A9
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+90.5
+ 20
+22.0
+ 10
+90.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+AA
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+90.5
+ 20
+62.0
+ 10
+90.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+AB
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+90.5
+ 20
+102.0
+ 10
+90.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+AC
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+92.5
+ 20
+4.0
+ 10
+92.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+AD
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+92.5
+ 20
+42.0
+ 10
+92.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+AE
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+92.5
+ 20
+82.0
+ 10
+92.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+AF
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+94.5
+ 20
+0.0
+ 10
+94.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+B0
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+94.5
+ 20
+22.0
+ 10
+94.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+B1
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+94.5
+ 20
+62.0
+ 10
+94.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+B2
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+94.5
+ 20
+102.0
+ 10
+94.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+B3
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+96.5
+ 20
+4.0
+ 10
+96.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+B4
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+96.5
+ 20
+42.0
+ 10
+96.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+B5
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+96.5
+ 20
+82.0
+ 10
+96.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+B6
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+98.5
+ 20
+0.0
+ 10
+98.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+B7
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+98.5
+ 20
+22.0
+ 10
+98.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+B8
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+98.5
+ 20
+62.0
+ 10
+98.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+B9
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+98.5
+ 20
+102.0
+ 10
+98.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+BA
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+100.5
+ 20
+4.0
+ 10
+100.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+BB
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+100.5
+ 20
+42.0
+ 10
+100.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+BC
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+100.5
+ 20
+82.0
+ 10
+100.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+BD
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+102.5
+ 20
+0.0
+ 10
+102.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+BE
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+102.5
+ 20
+22.0
+ 10
+102.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+BF
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+102.5
+ 20
+62.0
+ 10
+102.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+C0
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+102.5
+ 20
+102.0
+ 10
+102.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+C1
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+104.5
+ 20
+4.0
+ 10
+104.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+C2
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+104.5
+ 20
+42.0
+ 10
+104.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+C3
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+104.5
+ 20
+82.0
+ 10
+104.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+C4
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+106.5
+ 20
+0.0
+ 10
+106.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+C5
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+106.5
+ 20
+22.0
+ 10
+106.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+C6
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+106.5
+ 20
+62.0
+ 10
+106.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+C7
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+106.5
+ 20
+102.0
+ 10
+106.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+C8
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+108.5
+ 20
+4.0
+ 10
+108.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+C9
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+108.5
+ 20
+42.0
+ 10
+108.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+CA
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+108.5
+ 20
+82.0
+ 10
+108.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+CB
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+110.5
+ 20
+0.0
+ 10
+110.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+CC
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+110.5
+ 20
+22.0
+ 10
+110.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+CD
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+110.5
+ 20
+62.0
+ 10
+110.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+CE
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+110.5
+ 20
+102.0
+ 10
+110.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+CF
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+112.5
+ 20
+4.0
+ 10
+112.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+D0
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+112.5
+ 20
+42.0
+ 10
+112.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+D1
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+112.5
+ 20
+82.0
+ 10
+112.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+D2
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+114.5
+ 20
+0.0
+ 10
+114.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+D3
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+114.5
+ 20
+22.0
+ 10
+114.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+D4
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+114.5
+ 20
+62.0
+ 10
+114.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+D5
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+114.5
+ 20
+102.0
+ 10
+114.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+D6
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+116.5
+ 20
+4.0
+ 10
+116.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+D7
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+116.5
+ 20
+42.0
+ 10
+116.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+D8
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+116.5
+ 20
+82.0
+ 10
+116.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+D9
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+118.5
+ 20
+0.0
+ 10
+118.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+DA
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+118.5
+ 20
+22.0
+ 10
+118.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+DB
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+118.5
+ 20
+62.0
+ 10
+118.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+DC
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+118.5
+ 20
+102.0
+ 10
+118.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+DD
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+120.5
+ 20
+4.0
+ 10
+120.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+DE
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+120.5
+ 20
+42.0
+ 10
+120.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+DF
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+120.5
+ 20
+82.0
+ 10
+120.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+E0
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+122.5
+ 20
+0.0
+ 10
+122.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+E1
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+122.5
+ 20
+22.0
+ 10
+122.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+E2
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+122.5
+ 20
+62.0
+ 10
+122.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+E3
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+122.5
+ 20
+102.0
+ 10
+122.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+E4
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+124.5
+ 20
+4.0
+ 10
+124.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+E5
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+124.5
+ 20
+42.0
+ 10
+124.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+E6
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+124.5
+ 20
+82.0
+ 10
+124.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+E7
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+126.5
+ 20
+0.0
+ 10
+126.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+E8
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+126.5
+ 20
+22.0
+ 10
+126.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+E9
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+126.5
+ 20
+62.0
+ 10
+126.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+EA
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+126.5
+ 20
+102.0
+ 10
+126.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+EB
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+128.5
+ 20
+4.0
+ 10
+128.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+EC
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+128.5
+ 20
+42.0
+ 10
+128.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+ED
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+128.5
+ 20
+82.0
+ 10
+128.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+EE
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+130.5
+ 20
+0.0
+ 10
+130.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+EF
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+130.5
+ 20
+22.0
+ 10
+130.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+F0
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+130.5
+ 20
+62.0
+ 10
+130.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+F1
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+130.5
+ 20
+102.0
+ 10
+130.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+F2
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+132.5
+ 20
+4.0
+ 10
+132.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+F3
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+132.5
+ 20
+42.0
+ 10
+132.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+F4
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+132.5
+ 20
+82.0
+ 10
+132.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+F5
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+134.5
+ 20
+0.0
+ 10
+134.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+F6
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+134.5
+ 20
+22.0
+ 10
+134.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+F7
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+134.5
+ 20
+62.0
+ 10
+134.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+F8
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+134.5
+ 20
+102.0
+ 10
+134.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+F9
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+136.5
+ 20
+4.0
+ 10
+136.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+FA
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+136.5
+ 20
+42.0
+ 10
+136.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+FB
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+136.5
+ 20
+82.0
+ 10
+136.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+FC
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+138.5
+ 20
+0.0
+ 10
+138.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+FD
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+138.5
+ 20
+22.0
+ 10
+138.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+FE
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+138.5
+ 20
+62.0
+ 10
+138.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+FF
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+138.5
+ 20
+102.0
+ 10
+138.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+100
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+140.5
+ 20
+4.0
+ 10
+140.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+101
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+140.5
+ 20
+42.0
+ 10
+140.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+102
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+140.5
+ 20
+82.0
+ 10
+140.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+103
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+142.5
+ 20
+0.0
+ 10
+142.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+104
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+142.5
+ 20
+22.0
+ 10
+142.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+105
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+142.5
+ 20
+62.0
+ 10
+142.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+106
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+142.5
+ 20
+102.0
+ 10
+142.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+107
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+144.5
+ 20
+4.0
+ 10
+144.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+108
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+144.5
+ 20
+42.0
+ 10
+144.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+109
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+144.5
+ 20
+82.0
+ 10
+144.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+10A
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+146.5
+ 20
+0.0
+ 10
+146.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+10B
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+146.5
+ 20
+22.0
+ 10
+146.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+10C
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+146.5
+ 20
+62.0
+ 10
+146.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+10D
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+146.5
+ 20
+102.0
+ 10
+146.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+10E
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+148.5
+ 20
+4.0
+ 10
+148.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+10F
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+148.5
+ 20
+42.0
+ 10
+148.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+110
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+148.5
+ 20
+82.0
+ 10
+148.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+111
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+150.5
+ 20
+0.0
+ 10
+150.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+112
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+150.5
+ 20
+22.0
+ 10
+150.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+113
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+150.5
+ 20
+62.0
+ 10
+150.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+114
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+150.5
+ 20
+102.0
+ 10
+150.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+115
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+152.5
+ 20
+4.0
+ 10
+152.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+116
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+152.5
+ 20
+42.0
+ 10
+152.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+117
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+152.5
+ 20
+82.0
+ 10
+152.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+118
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+154.5
+ 20
+0.0
+ 10
+154.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+119
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+154.5
+ 20
+22.0
+ 10
+154.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+11A
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+154.5
+ 20
+62.0
+ 10
+154.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+11B
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+154.5
+ 20
+102.0
+ 10
+154.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+11C
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+156.5
+ 20
+4.0
+ 10
+156.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+11D
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+156.5
+ 20
+42.0
+ 10
+156.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+11E
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+156.5
+ 20
+82.0
+ 10
+156.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+11F
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+158.5
+ 20
+0.0
+ 10
+158.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+120
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+158.5
+ 20
+22.0
+ 10
+158.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+121
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+158.5
+ 20
+62.0
+ 10
+158.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+122
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+158.5
+ 20
+102.0
+ 10
+158.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+123
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+160.5
+ 20
+4.0
+ 10
+160.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+124
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+160.5
+ 20
+42.0
+ 10
+160.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+125
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+160.5
+ 20
+82.0
+ 10
+160.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+126
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+162.5
+ 20
+0.0
+ 10
+162.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+127
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+162.5
+ 20
+22.0
+ 10
+162.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+128
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+162.5
+ 20
+62.0
+ 10
+162.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+129
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+162.5
+ 20
+102.0
+ 10
+162.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+12A
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+164.5
+ 20
+4.0
+ 10
+164.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+12B
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+164.5
+ 20
+42.0
+ 10
+164.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+12C
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+164.5
+ 20
+82.0
+ 10
+164.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+12D
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+166.5
+ 20
+0.0
+ 10
+166.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+12E
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+166.5
+ 20
+22.0
+ 10
+166.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+12F
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+166.5
+ 20
+62.0
+ 10
+166.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+130
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+166.5
+ 20
+102.0
+ 10
+166.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+131
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+168.5
+ 20
+4.0
+ 10
+168.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+132
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+168.5
+ 20
+42.0
+ 10
+168.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+133
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+168.5
+ 20
+82.0
+ 10
+168.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+134
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+170.5
+ 20
+0.0
+ 10
+170.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+135
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+170.5
+ 20
+22.0
+ 10
+170.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+136
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+170.5
+ 20
+62.0
+ 10
+170.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+137
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+170.5
+ 20
+102.0
+ 10
+170.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+138
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+172.5
+ 20
+4.0
+ 10
+172.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+139
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+172.5
+ 20
+42.0
+ 10
+172.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+13A
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+172.5
+ 20
+82.0
+ 10
+172.5
+ 20
+116.0
+  0
+LWPOLYLINE
+  5
+13B
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+174.5
+ 20
+0.0
+ 10
+174.5
+ 20
+18.0
+  0
+LWPOLYLINE
+  5
+13C
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+174.5
+ 20
+22.0
+ 10
+174.5
+ 20
+58.0
+  0
+LWPOLYLINE
+  5
+13D
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+174.5
+ 20
+62.0
+ 10
+174.5
+ 20
+98.0
+  0
+LWPOLYLINE
+  5
+13E
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+174.5
+ 20
+102.0
+ 10
+174.5
+ 20
+120.0
+  0
+LWPOLYLINE
+  5
+13F
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+176.5
+ 20
+4.0
+ 10
+176.5
+ 20
+38.0
+  0
+LWPOLYLINE
+  5
+140
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+176.5
+ 20
+42.0
+ 10
+176.5
+ 20
+77.0
+  0
+LWPOLYLINE
+  5
+141
+330
+17
+100
+AcDbEntity
+  8
+power100speed1000
+100
+AcDbPolyline
+ 90
+2
+ 70
+0
+ 10
+176.5
+ 20
+82.0
+ 10
+176.5
+ 20
+116.0
   0
 ENDSEC
   0
@@ -4901,7 +9725,7 @@ CREATED_BY_EZDXF
   3
 WRITTEN_BY_EZDXF
 350
-6D
+148
   0
 DICTIONARYVAR
   5
@@ -4913,11 +9737,11 @@ DictionaryVariables
 280
 0
   1
-1.4.2 @ 2025-10-20T08:30:06.547586+00:00
+1.4.2 @ 2025-10-21T10:55:56.619712+00:00
   0
 DICTIONARYVAR
   5
-6D
+148
 330
 2D
 100
@@ -4925,7 +9749,7 @@ DictionaryVariables
 280
 0
   1
-1.4.2 @ 2025-10-20T08:30:06.558586+00:00
+1.4.2 @ 2025-10-21T10:55:56.661232+00:00
   0
 ENDSEC
   0

@@ -16,7 +16,7 @@ from shapely.geometry import Point, LineString, MultiPoint,Polygon,MultiPolygon,
 from shapely.ops import unary_union
 import re
 from line_manager import PolylineDatabase
-
+import serial.tools.list_ports
 def active_but(sender,app_data):
     state = data_base.get_polyline_where(f"big_tag='{sender}'")
     
@@ -610,6 +610,18 @@ def read_dxf_lines(file_path):
         else:
             data_base.add_polyline(nice_path+f"_poly_"+f"{counter}",nice_path,0, False, True, False)
         data_base.add_coordinates(nice_path+f"_poly_"+f"{counter}", coords)
+        counter +=1
+    
+    counter= 0
+    for polyline in msp.query('POLYLINE'):
+        layer = polyline.dxf.layer
+        points = polyline.vertices
+        
+        if layer in ll:
+            data_base.add_polyline(nice_path+f"_poly_"+f"{counter}",nice_path,lll[layer], False, True, False)
+        else:
+            data_base.add_polyline(nice_path+f"_poly_"+f"{counter}",nice_path,0, False, True, False)
+        data_base.add_coordinates(nice_path+f"_poly_"+f"{counter}", [(p.dxf.location.x,p.dxf.location.y)for p in points])
         counter +=1
     counter= 0
     for hatch in msp.query('HATCH'):
@@ -2183,13 +2195,60 @@ def pr(selected_files):
         
         redraw()
     
-
+def calback_but1():
+    gcode_l = 'G28\n'
+    dpg.set_value('multiline_input', gcode_l)
+def calback_but2():
+    gcode_l = 'G91\nG1 X0 Y10 F1000\nG90\n'
+    dpg.set_value('multiline_input', gcode_l)
+def calback_but3():
+    return
+def calback_but4():
+    gcode_l = 'G91\nG1 X-10 Y0 F1000\nG90\n'
+    dpg.set_value('multiline_input', gcode_l)
+def calback_but5():
+    gcode_l = 'G92 X0 Y0\n'
+    dpg.set_value('multiline_input', gcode_l)
+def calback_but6():
+    gcode_l = 'G91\nG1 X10 Y0 F1000\nG90\n'
+    dpg.set_value('multiline_input', gcode_l)
+def calback_but7():
+    return
+def calback_but8():
+    gcode_l = 'G91\nG1 X0 Y-10 F1000\nG90\n'
+    dpg.set_value('multiline_input', gcode_l)
+def calback_but9():
+    return
     
 ###########################################
 ##########################################
 #############################################
 def test_callback():
-    dpg.set_value('asddd', (255,255,255,255))
+    dpg.add_button(label="col",parent='butonss',tag="col",callback=active_but)
+    data_base.add_coordinates(f"5", [(0,0),(197,0),(197,120),(0,120),(0,0)])
+    data_base.add_polyline(f"5","col",0, False, True, False)
+    h = 22.5
+    for col in range(39):
+        data_base.add_polyline(f"{col}1","col",0, False, True, False)
+        data_base.add_polyline(f"{col}2","col",0, False, True, False)
+        data_base.add_polyline(f"{col}3","col",0, False, True, False)
+        data_base.add_polyline(f"{col}4","col",0, False, True, False)
+        data_base.add_coordinates(f"{col}1", [(col*4+h,0),(col*4+h,18)])
+        data_base.add_coordinates(f"{col}2", [(col*4+h,22),(col*4+h,58)])
+        data_base.add_coordinates(f"{col}3", [(col*4+h,62),(col*4+h,98)])
+        data_base.add_coordinates(f"{col}4", [(col*4+h,102),(col*4+h,120)])
+        data_base.add_polyline(f"{col}5","col",0, False, True, False)
+        data_base.add_polyline(f"{col}6","col",0, False, True, False)
+        data_base.add_polyline(f"{col}7","col",0, False, True, False)
+        
+        data_base.add_coordinates(f"{col}5", [(col*4+2+h,4),(col*4+2+h,38)])
+        data_base.add_coordinates(f"{col}6", [(col*4+2+h,42),(col*4+2+h,77)])
+        data_base.add_coordinates(f"{col}7", [(col*4+2+h,82),(col*4+2+h,116)])
+        
+
+
+
+    redraw()
 ####################################################
 ####################################################
 ####################################################
@@ -2198,7 +2257,6 @@ def esye():
     global esyedaflag
     fd.show_file_dialog()
     esyedaflag = True
-
 
 dpg.create_context()
 
@@ -2210,12 +2268,9 @@ current_file = None
 poliline_themes = {}
 esyedaflag = False
 
-db = SQLiteDatabase('example.db')
 data_base = PolylineDatabase()
 
 
-db.drop_table('lines')
-db.create_table('lines', [('sx', 'REAL'), ('sy', 'REAL'), ('ex', 'REAL'), ('ey', 'REAL'),('color', 'INTEGER'), ('parent', 'TEXT'),('isactive', 'INTEGER'),('forredraw', 'INTEGER')])
 
 with dpg.window(label="Delete Files", show=False, tag="modal_id", no_title_bar=True):
     dpg.add_text("Layers")
@@ -2312,6 +2367,8 @@ with dpg.viewport_menu_bar():
             dpg.add_menu_item(label="Text Size", callback=lambda:dpg.configure_item("text_size_modal", show=True))
             dpg.add_menu_item(label="Border from EsyEDA", callback=lambda:dpg.configure_item("border_from_esyeda", show=True))
     with dpg.menu(label="Functions"):
+        
+
         dpg.add_menu_item(label="Split", callback=split_l)
         dpg.add_menu_item(label="Normalize", callback=normalize_lines)
         dpg.add_menu_item(label="Rotate X", callback=rotate_x)
@@ -2319,6 +2376,8 @@ with dpg.viewport_menu_bar():
         dpg.add_menu_item(label="Delete", callback=delete_l)
         dpg.add_menu_item(label="Set Color", callback=set_color)
         dpg.add_menu_item(label="test", callback=test_callback)
+    
+
 
     with dpg.menu(label="Widget Items"):
         dpg.add_checkbox(label="Pick Me", callback=print_me)
@@ -2336,11 +2395,11 @@ with dpg.window(pos=(0,0),width=900, height=725,tag='papa'):
                     dpg.add_file_extension(".gcode", color=(255, 0, 255, 255), custom_text="[GCODE]")
 
             
-            with dpg.plot(label="DXF Plot", width=600, height=600, tag="plot",no_menus=True, no_box_select=True) as plot:
-                dpg.add_plot_axis(dpg.mvXAxis, label="X-Axis", tag=X_AXIS_TAG)
+            with dpg.plot( width=600, height=600, tag="plot",no_menus=True, no_box_select=True) as plot:
+                dpg.add_plot_axis(dpg.mvXAxis, label="X", tag=X_AXIS_TAG)
                 
             
-                yaxis = dpg.add_plot_axis(dpg.mvYAxis, label="Y-Axis", tag=Y_AXIS_TAG)
+                yaxis = dpg.add_plot_axis(dpg.mvYAxis, label="Y", tag=Y_AXIS_TAG)
                 
                 dpg.set_axis_limits_constraints(Y_AXIS_TAG,-10,310)
                 dpg.set_axis_limits_constraints(X_AXIS_TAG,-10,310)
@@ -2384,7 +2443,7 @@ with dpg.window(pos=(0,0),width=900, height=725,tag='papa'):
 
 
         with dpg.group():
-            dpg.add_input_text(multiline=True, label="", default_value="", tag="multiline_input", readonly=True,width=300,height=600)
+            dpg.add_input_text(multiline=True, label="", default_value="", tag="multiline_input", readonly=False,width=300,height=600)
             dpg.add_checkbox(label="erase old",default_value=True,tag='eraseold')
             with dpg.group(horizontal=True):
                 
@@ -2398,9 +2457,29 @@ with dpg.item_handler_registry() as registry:
 dpg.bind_item_handler_registry(plot, registry)
 
 
-dpg.add_window(pos=(900,0),width=200, height=725,tag='butonss',label='lines')
-   
+dpg.add_window(pos=(900,0),width=200, height=525,tag='butonss',label='lines')
 
+
+with dpg.window(pos=(900,544),width=200, height=200,tag='pult',label=''):
+   
+        
+    with dpg.group(horizontal=True,tag='forcombo'):
+        dpg.add_button(label="check", callback=test_callback)
+        dpg.add_button(label="load", callback=test_callback)
+        dpg.add_combo(label="Port", items=['port','ne port'],width=60,tag='com_tag')
+    
+    with dpg.group(horizontal=True):
+        dpg.add_button(label='home',width=40,height=40,callback=calback_but1)
+        dpg.add_button(label='^',width=40,height=40,callback=calback_but2)
+        dpg.add_button(label='1',width=40,height=40,callback=calback_but3)
+    with dpg.group(horizontal=True):
+        dpg.add_button(label='<',width=40,height=40,callback=calback_but4)
+        dpg.add_button(label='0',width=40,height=40,callback=calback_but5)
+        dpg.add_button(label='>',width=40,height=40,callback=calback_but6)
+    with dpg.group(horizontal=True):
+        dpg.add_button(label='1',width=40,height=40,callback=calback_but7)
+        dpg.add_button(label='v',width=40,height=40,callback=calback_but8)
+        dpg.add_button(label='1',width=40,height=40,callback=calback_but9)
 dpg.create_viewport(width=1115, height=785, title="GCODE IDE")
 dpg.setup_dearpygui()
 dpg.show_viewport()

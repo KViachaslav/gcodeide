@@ -1,40 +1,81 @@
-import dearpygui.dearpygui as dpg
-from math import sin
+import matplotlib.pyplot as plt
+from fontTools.ttLib import TTFont
 
-# creating data to use in the series
-sindatax = []
-sindatay = []
-for i in range(0, 100):
-    sindatax.append(i/100)
-    sindatay.append(0.5 + 0.5*sin(50*i/100))
+from fontTools.ttLib import TTFont
 
-# You can use the style editor to test themes at runtime and find the right constants for colors and styles
-dpg.show_style_editor()
+# Загрузка TTF файла
+font_path = 'font.ttf'
+font = TTFont(font_path)
 
-# themes applied to plots REQUIRE category to be set to plots
-# because plots are containers plots will propagate themes
-with dpg.theme() as our_plot_theme:
-    dpg.add_theme_color(dpg.mvPlotCol_PlotBg, (100, 0, 0, 50), category=dpg.mvThemeCat_Plots)
-    dpg.add_theme_color(dpg.mvPlotCol_Line, (0, 255, 0, 255), category=dpg.mvThemeCat_Plots)
-    dpg.add_theme_color(dpg.mvPlotCol_XAxis, (0, 255, 255, 255), category=dpg.mvThemeCat_Plots)
+# Получение таблицы 'glyf' для доступа к контурным данным
+glyf_table = font['glyf']
 
-with dpg.theme() as series_theme:
-    dpg.add_theme_color(dpg.mvPlotCol_Line, (150, 0, 100, 255), category=dpg.mvThemeCat_Plots)
+# Пример получения геометрии для конкретного глифа
+glyph_name = 'A'  # Замените на нужное имя глифа
+glyph = glyf_table[glyph_name]
+
+# Печать контуров глифа
+if glyph.isComposite():
+    print(f"{glyph_name} is a composite glyph")
+    for component in glyph.components:
+        print(f"Component: {component}")
+else:
+    print(f"{glyph_name} contours: {glyph.coordinates}")
+    
+# x = [xx for (xx,yy) in glyph.coordinates]
+# y = [yy for (xx,yy) in glyph.coordinates]
 
 
-with dpg.window(label="Tutorial"):
+# plt.plot(x, y, color='black')
+# plt.title(f"Glyph: {glyph_name}")
+# plt.axis('equal')
+# plt.xlim(min(x) - 10, max(x) + 10)
+# plt.ylim(min(y) - 10, max(y) + 10)
 
-    # create plot
-    with dpg.plot(label="Line Series", height=400, width=400) as plot:
+# plt.show()
 
-        # REQUIRED: create x and y axes
-        dpg.add_plot_axis(dpg.mvXAxis, label="x")
-        axis_y = dpg.add_plot_axis(dpg.mvYAxis, label="y")
 
-        # series belong to a y axis
-        our_series = dpg.add_line_series((0, 1), (.5, .75), label="straight line", parent=axis_y)
+from shapely.geometry import Polygon, MultiPoint
+from scipy.spatial import ConvexHull
 
-dpg.set_item_theme(plot, our_plot_theme)
-dpg.set_item_theme(our_series, series_theme)
+# Массив точек
+# points = [(0, 0), (4, 0), (4, 4), (0, 4), 
+#           (1, 1), (1, 3), (3, 3), (3, 1)]
+points = [(x,y) for (x,y) in glyph.coordinates]
+# Преобразование в массив NumPy для использования в ConvexHull
+import numpy as np
+np_points = np.array(points)
 
-dpg.start_dearpygui()
+# Создание выпуклой оболочки
+hull = ConvexHull(np_points)
+
+# Получение точек наружного контура
+outer_contour = [tuple(np_points[i]) for i in hull.vertices]
+
+# Получение внутренних точек
+inner_points = [point for point in points if tuple(point) not in outer_contour]
+
+# Создание полигона
+polygon = Polygon(outer_contour, [inner_points])
+
+# Вывод информации о полигоне
+print("Наружный контур:", outer_contour)
+print("Внутренние точки:", inner_points)
+print("Полигон:", polygon)
+x, y = polygon.exterior.xy
+
+# Рисуем полигон
+plt.fill(x, y, alpha=0.1, fc='blue', ec='black')
+for inter in polygon.interiors:
+    x, y = inter.xy
+
+# Рисуем полигон
+    plt.fill(x, y, alpha=0.1, fc='blue', ec='black')
+
+
+plt.title('Polygon from Shapely')
+plt.xlabel('X-axis')
+plt.ylabel('Y-axis')
+plt.grid()
+plt.axis('equal')
+plt.show()
