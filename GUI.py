@@ -17,6 +17,8 @@ from shapely.ops import unary_union
 import re
 from line_manager import PolylineDatabase
 import serial.tools.list_ports
+import serial
+import time
 def active_but(sender,app_data):
     state = data_base.get_polyline_where(f"big_tag='{sender}'")
     
@@ -2194,7 +2196,51 @@ def pr(selected_files):
 
         
         redraw()
+def check_com_callback():
+    ports = serial.tools.list_ports.comports()
+    dpg.delete_item('com_tag')
+    dpg.add_combo(label="Port", items=[port.device for port in ports],width=60,tag='com_tag',parent='forcombo')
     
+def load_gcode_callback():
+
+
+    PORT = dpg.get_value('com_tag') 
+    BAUDRATE = 115200
+
+
+    gcode_commands = dpg.get_value('multiline_input').split('\n')
+    print(gcode_commands)
+    try:
+       
+        ser = serial.Serial(PORT, BAUDRATE, timeout=1)
+        time.sleep(2)  
+
+        ser.write(b'\r\n\r\n')
+        time.sleep(2)
+        ser.flushInput() 
+
+        print("Подключено к GRBL.")
+
+        for line in gcode_commands:
+            if line != '':
+                l = line.strip()
+                print(f"Отправка: {l}")
+                ser.write((l + '\n').encode('utf-8')) 
+
+                grbl_out = ser.readline().decode('utf-8').strip()
+                print(f"Ответ GRBL: {grbl_out}")
+
+        print("Отправка G-code завершена.")
+
+    except serial.SerialException as e:
+        print(f"Ошибка последовательного порта: {e}")
+
+    finally:
+        if 'ser' in locals() and ser.is_open:
+            ser.close()
+            print("Порт закрыт.")
+
+
 def calback_but1():
     gcode_l = 'G28\n'
     dpg.set_value('multiline_input', gcode_l)
@@ -2202,7 +2248,19 @@ def calback_but2():
     gcode_l = 'G91\nG1 X0 Y10 F1000\nG90\n'
     dpg.set_value('multiline_input', gcode_l)
 def calback_but3():
-    return
+    dpg.add_button(label="sh",parent='butonss',tag="sh",callback=active_but)
+    w = float(dpg.get_value('border_line_width'))
+    print(round(10/w))
+    points1 = [(i*w,0)for i in range(round(10/w))]
+    points2 = [(i*w,10)for i in range(round(10/w))]
+    for i in range(0,len(points1),2):
+        
+        data_base.add_coordinates(f"{i}", [points1[i],points2[i]])
+        data_base.add_coordinates(f"{i+1}", [points2[i+1],points1[i+1]])
+        data_base.add_polyline(f"{i}","sh",0, False, True, False)
+        data_base.add_polyline(f"{i+1}","sh",0, False, True, False)
+
+    redraw()
 def calback_but4():
     gcode_l = 'G91\nG1 X-10 Y0 F1000\nG90\n'
     dpg.set_value('multiline_input', gcode_l)
@@ -2213,12 +2271,75 @@ def calback_but6():
     gcode_l = 'G91\nG1 X10 Y0 F1000\nG90\n'
     dpg.set_value('multiline_input', gcode_l)
 def calback_but7():
-    return
+    dpg.add_button(label="sh",parent='butonss',tag="sh",callback=active_but)
+    w = float(dpg.get_value('border_line_width'))
+    print(round(10/w))
+    points1 = [(0,i*w)for i in range(round(10/w))]
+    points2 = [(10,i*w)for i in range(round(10/w))]
+    for i in range(0,len(points1),2):
+        
+        data_base.add_coordinates(f"{i}", [points1[i],points2[i]])
+        data_base.add_coordinates(f"{i+1}", [points2[i+1],points1[i+1]])
+        data_base.add_polyline(f"{i}","sh",0, False, True, False)
+        data_base.add_polyline(f"{i+1}","sh",0, False, True, False)
+
+    redraw()
 def calback_but8():
     gcode_l = 'G91\nG1 X0 Y-10 F1000\nG90\n'
     dpg.set_value('multiline_input', gcode_l)
+
+def calculate_point(reference_point, angle_degrees, distance):
+    angle_radians = math.radians(angle_degrees)
+    new_x = reference_point[0] + distance * math.cos(angle_radians)
+    new_y = reference_point[1] + distance * math.sin(angle_radians)
+    
+    return (new_x, new_y) 
 def calback_but9():
-    return
+    
+    radius = 92.4
+    radius2 = 92.4 + 48
+
+
+    angle_degrees = 126.5
+    num_points = 45
+
+    angles = np.linspace(np.pi, np.deg2rad(angle_degrees)+np.pi, num_points)
+
+    points = [(radius * np.cos(angle), radius * np.sin(angle)) for angle in reversed(angles)]
+    points2 = [(radius2 * np.cos(angle), radius2 * np.sin(angle)) for angle in angles]
+
+    T1 = [((radius + 4) * np.cos(angle), (radius + 4) * np.sin(angle)) for angle in angles] 
+    T2 = [((radius + 22) * np.cos(angle), (radius + 22) * np.sin(angle)) for angle in angles] 
+    T3 = [((radius + 26) * np.cos(angle), (radius + 26) * np.sin(angle)) for angle in angles]
+    T4 = [((radius + 44) * np.cos(angle), (radius + 44) * np.sin(angle)) for angle in angles]
+    T5 = [((radius + 10) * np.cos(angle), (radius + 10) * np.sin(angle)) for angle in angles]
+    T6 = [((radius + 14) * np.cos(angle), (radius + 14) * np.sin(angle)) for angle in angles]
+    T7 = [((radius + 34) * np.cos(angle), (radius + 34) * np.sin(angle)) for angle in angles]
+    T8 = [((radius + 38) * np.cos(angle), (radius + 38) * np.sin(angle)) for angle in angles]
+    
+    dpg.add_button(label="arc",parent='butonss',tag="arc",callback=active_but)
+    data_base.add_coordinates(f"1", points + [(points[len(points)-1][0],points[len(points)-1][1]+10),((points2[0][0],points2[0][1]+10))] + points2 + [calculate_point(points2[len(points)-1],-90 + angle_degrees,10),calculate_point(points[0],-90 + angle_degrees,10),points[0]])
+    data_base.add_polyline(f"1","arc",0, False, True, False)
+    # data_base.add_coordinates(f"2", points2)
+    # data_base.add_polyline(f"2","arc",0, False, True, False)
+    for i in range(len(T1)):
+        if i %2 == 0:
+            data_base.add_coordinates(f"{T3[i]}_{T4[i]}", [T4[i],T3[i]])
+            data_base.add_polyline(f"{T3[i]}_{T4[i]}","arc",0, False, True, False)
+            data_base.add_coordinates(f"{T1[i]}_{T2[i]}", [T2[i],T1[i]])
+            data_base.add_polyline(f"{T1[i]}_{T2[i]}","arc",0, False, True, False)
+            
+        else:
+            data_base.add_coordinates(f"{points[len(points)-1-i]}_{T5[i]}", [points[len(points)-1-i],T5[i]])
+            data_base.add_polyline(f"{points[len(points)-1-i]}_{T5[i]}","arc",0, False, True, False)
+            data_base.add_coordinates(f"{T6[i]}_{T7[i]}", [T6[i],T7[i]])
+            data_base.add_polyline(f"{T6[i]}_{T7[i]}","arc",0, False, True, False)
+            data_base.add_coordinates(f"{T8[i]}_{points2[i]}", [T8[i],points2[i]])
+            data_base.add_polyline(f"{T8[i]}_{points2[i]}","arc",0, False, True, False)
+
+    
+
+    redraw()
     
 ###########################################
 ##########################################
@@ -2464,22 +2585,22 @@ with dpg.window(pos=(900,544),width=200, height=200,tag='pult',label=''):
    
         
     with dpg.group(horizontal=True,tag='forcombo'):
-        dpg.add_button(label="check", callback=test_callback)
-        dpg.add_button(label="load", callback=test_callback)
+        dpg.add_button(label="check", callback=check_com_callback)
+        dpg.add_button(label="load", callback=load_gcode_callback)
         dpg.add_combo(label="Port", items=['port','ne port'],width=60,tag='com_tag')
     
     with dpg.group(horizontal=True):
         dpg.add_button(label='home',width=40,height=40,callback=calback_but1)
         dpg.add_button(label='^',width=40,height=40,callback=calback_but2)
-        dpg.add_button(label='1',width=40,height=40,callback=calback_but3)
+        dpg.add_button(label='ver',width=40,height=40,callback=calback_but3)
     with dpg.group(horizontal=True):
         dpg.add_button(label='<',width=40,height=40,callback=calback_but4)
         dpg.add_button(label='0',width=40,height=40,callback=calback_but5)
         dpg.add_button(label='>',width=40,height=40,callback=calback_but6)
     with dpg.group(horizontal=True):
-        dpg.add_button(label='1',width=40,height=40,callback=calback_but7)
+        dpg.add_button(label='hor',width=40,height=40,callback=calback_but7)
         dpg.add_button(label='v',width=40,height=40,callback=calback_but8)
-        dpg.add_button(label='1',width=40,height=40,callback=calback_but9)
+        dpg.add_button(label='arc',width=40,height=40,callback=calback_but9)
 dpg.create_viewport(width=1115, height=785, title="GCODE IDE")
 dpg.setup_dearpygui()
 dpg.show_viewport()
