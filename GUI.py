@@ -2174,8 +2174,7 @@ def pr(selected_files):
             #db.add_multiple_records('lines',lines) 
         else:
             read_dxf_lines(current_file)
-            #db.add_multiple_records('lines',lines) 
-        
+          
             redraw()
     elif '.png' in current_file:   
         lines = extract_black_lines(current_file,0.1)
@@ -2248,19 +2247,7 @@ def calback_but2():
     gcode_l = 'G91\nG1 X0 Y10 F1000\nG90\n'
     dpg.set_value('multiline_input', gcode_l)
 def calback_but3():
-    dpg.add_button(label="sh",parent='butonss',tag="sh",callback=active_but)
-    w = float(dpg.get_value('border_line_width'))
-    print(round(10/w))
-    points1 = [(i*w,0)for i in range(round(10/w))]
-    points2 = [(i*w,10)for i in range(round(10/w))]
-    for i in range(0,len(points1),2):
-        
-        data_base.add_coordinates(f"{i}", [points1[i],points2[i]])
-        data_base.add_coordinates(f"{i+1}", [points2[i+1],points1[i+1]])
-        data_base.add_polyline(f"{i}","sh",0, False, True, False)
-        data_base.add_polyline(f"{i+1}","sh",0, False, True, False)
-
-    redraw()
+    return
 def calback_but4():
     gcode_l = 'G91\nG1 X-10 Y0 F1000\nG90\n'
     dpg.set_value('multiline_input', gcode_l)
@@ -2271,19 +2258,7 @@ def calback_but6():
     gcode_l = 'G91\nG1 X10 Y0 F1000\nG90\n'
     dpg.set_value('multiline_input', gcode_l)
 def calback_but7():
-    dpg.add_button(label="sh",parent='butonss',tag="sh",callback=active_but)
-    w = float(dpg.get_value('border_line_width'))
-    print(round(10/w))
-    points1 = [(0,i*w)for i in range(round(10/w))]
-    points2 = [(10,i*w)for i in range(round(10/w))]
-    for i in range(0,len(points1),2):
-        
-        data_base.add_coordinates(f"{i}", [points1[i],points2[i]])
-        data_base.add_coordinates(f"{i+1}", [points2[i+1],points1[i+1]])
-        data_base.add_polyline(f"{i}","sh",0, False, True, False)
-        data_base.add_polyline(f"{i+1}","sh",0, False, True, False)
-
-    redraw()
+    return
 def calback_but8():
     gcode_l = 'G91\nG1 X0 Y-10 F1000\nG90\n'
     dpg.set_value('multiline_input', gcode_l)
@@ -2296,51 +2271,164 @@ def calculate_point(reference_point, angle_degrees, distance):
     return (new_x, new_y) 
 def calback_but9():
     
-    radius = 92.4
-    radius2 = 92.4 + 48
+    return
+def izgib_callback():
+    dpg.configure_item("IZGIB", show=False)
+    a = float(dpg.get_value('a'))
+    b = float(dpg.get_value('b'))
+    c = float(dpg.get_value('c'))
+    d = float(dpg.get_value('d'))
+    numlins = int(dpg.get_value('numlins'))
+    w = float(dpg.get_value('w'))
 
 
-    angle_degrees = 126.5
-    num_points = 45
+    dpg.add_button(label="col",parent='butonss',tag="col",callback=active_but)
+    data_base.add_coordinates(f"5", [(0,0),(a+b+c,0),(a+b+c,d),(0,d),(0,0)])
+    data_base.add_polyline(f"5","col",0, False, True, False)
+    lenlin1 = (d-(numlins-1) * w)/(numlins-1)
+    lenlin2 = (d-(numlins) * w)/(numlins-1)
+    mas1 = [0,lenlin1/2,lenlin1/2+w]
+    mas2 = [w,w+lenlin2]
+    
+    if numlins > 2:
+        for i in range(numlins-2):
+            mas1.append(mas1[-1] + lenlin1)
+            mas1.append(mas1[-1] + w)
+            mas2.append(mas2[-1] + w)
+            mas2.append(mas2[-1] + lenlin2)
+    mas1.append(d)
+    for col in range(round(b/w)):
+        if col != 0:
+            for i in range(numlins):
+                data_base.add_polyline(f"{col}_{i}","col",0, False, True, False)
+                data_base.add_coordinates(f"{col}_{i}", [(col*w+a,mas1[i*2]),(col*w+a,mas1[i*2+1])])
+        for i in reversed(range(numlins-1)):
+            data_base.add_polyline(f"{col}_{i+numlins}","col",0, False, True, False)
+            data_base.add_coordinates(f"{col}_{i+numlins}", [(col*w+w/2+a,mas2[i*2]),(col*w+w/2+a,mas2[i*2+1])])
+    
+    redraw()
+def konus_callback():
+    dpg.configure_item("KONUS", show=False)
+    l = float(dpg.get_value('l'))
+    L = float(dpg.get_value('L'))
+    d = float(dpg.get_value('d_'))
+    num_points = int(dpg.get_value('numpoints'))
+    a = float(dpg.get_value('a_'))
+    w = float(dpg.get_value('w_'))
+    numlins = int(dpg.get_value('numlins_'))
+    radius = (d*l)/(L-l)
+    radius2 = radius + d
+    
 
+    angle_degrees = (l*180)/(np.pi * radius)
+    
     angles = np.linspace(np.pi, np.deg2rad(angle_degrees)+np.pi, num_points)
 
     points = [(radius * np.cos(angle), radius * np.sin(angle)) for angle in reversed(angles)]
     points2 = [(radius2 * np.cos(angle), radius2 * np.sin(angle)) for angle in angles]
-
-    T1 = [((radius + 4) * np.cos(angle), (radius + 4) * np.sin(angle)) for angle in angles] 
-    T2 = [((radius + 22) * np.cos(angle), (radius + 22) * np.sin(angle)) for angle in angles] 
-    T3 = [((radius + 26) * np.cos(angle), (radius + 26) * np.sin(angle)) for angle in angles]
-    T4 = [((radius + 44) * np.cos(angle), (radius + 44) * np.sin(angle)) for angle in angles]
-    T5 = [((radius + 10) * np.cos(angle), (radius + 10) * np.sin(angle)) for angle in angles]
-    T6 = [((radius + 14) * np.cos(angle), (radius + 14) * np.sin(angle)) for angle in angles]
-    T7 = [((radius + 34) * np.cos(angle), (radius + 34) * np.sin(angle)) for angle in angles]
-    T8 = [((radius + 38) * np.cos(angle), (radius + 38) * np.sin(angle)) for angle in angles]
+    lenlin1 = (d-(numlins-1) * w)/(numlins-1)
+    lenlin2 = (d-(numlins) * w)/(numlins-1)
+    mas1 = [0,lenlin1/2,lenlin1/2+w]
+    mas2 = [w,w+lenlin2]
+    
+    if numlins > 2:
+        for i in range(numlins-2):
+            mas1.append(mas1[-1] + lenlin1)
+            mas1.append(mas1[-1] + w)
+            mas2.append(mas2[-1] + w)
+            mas2.append(mas2[-1] + lenlin2)
+    mas1.append(d)
+    T = []
+    TT = []
+    for m in mas1:
+        T.append([((radius + m) * np.cos(angle), (radius + m) * np.sin(angle)) for angle in angles])
+    for m in mas2:
+        TT.append([((radius + m) * np.cos(angle), (radius + m) * np.sin(angle)) for angle in angles])
+    # T1 = [((radius + 4) * np.cos(angle), (radius + 4) * np.sin(angle)) for angle in angles] 
+    # T2 = [((radius + 22) * np.cos(angle), (radius + 22) * np.sin(angle)) for angle in angles] 
+    # T3 = [((radius + 26) * np.cos(angle), (radius + 26) * np.sin(angle)) for angle in angles]
+    # T4 = [((radius + 44) * np.cos(angle), (radius + 44) * np.sin(angle)) for angle in angles]
+    # T5 = [((radius + 10) * np.cos(angle), (radius + 10) * np.sin(angle)) for angle in angles]
+    # T6 = [((radius + 14) * np.cos(angle), (radius + 14) * np.sin(angle)) for angle in angles]
+    # T7 = [((radius + 34) * np.cos(angle), (radius + 34) * np.sin(angle)) for angle in angles]
+    # T8 = [((radius + 38) * np.cos(angle), (radius + 38) * np.sin(angle)) for angle in angles]
     
     dpg.add_button(label="arc",parent='butonss',tag="arc",callback=active_but)
-    data_base.add_coordinates(f"1", points + [(points[len(points)-1][0],points[len(points)-1][1]+10),((points2[0][0],points2[0][1]+10))] + points2 + [calculate_point(points2[len(points)-1],-90 + angle_degrees,10),calculate_point(points[0],-90 + angle_degrees,10),points[0]])
+    data_base.add_coordinates(f"1", points + [(points[len(points)-1][0],points[len(points)-1][1]+a),((points2[0][0],points2[0][1]+a))] + points2 + [calculate_point(points2[len(points)-1],-90 + angle_degrees,a),calculate_point(points[0],-90 + angle_degrees,a),points[0]])
     data_base.add_polyline(f"1","arc",0, False, True, False)
-    # data_base.add_coordinates(f"2", points2)
-    # data_base.add_polyline(f"2","arc",0, False, True, False)
-    for i in range(len(T1)):
+    print(T[0])
+    for i in range(len(T[0])):
         if i %2 == 0:
-            data_base.add_coordinates(f"{T3[i]}_{T4[i]}", [T4[i],T3[i]])
-            data_base.add_polyline(f"{T3[i]}_{T4[i]}","arc",0, False, True, False)
-            data_base.add_coordinates(f"{T1[i]}_{T2[i]}", [T2[i],T1[i]])
-            data_base.add_polyline(f"{T1[i]}_{T2[i]}","arc",0, False, True, False)
+            for j in range(numlins):
+                data_base.add_coordinates(f"{T[j*2][i]}_{T[j*2+1][i]}", [T[j*2+1][i],T[j*2][i]])
+                data_base.add_polyline(f"{T[j*2][i]}_{T[j*2+1][i]}","arc",0, False, True, False)
+            
             
         else:
-            data_base.add_coordinates(f"{points[len(points)-1-i]}_{T5[i]}", [points[len(points)-1-i],T5[i]])
-            data_base.add_polyline(f"{points[len(points)-1-i]}_{T5[i]}","arc",0, False, True, False)
-            data_base.add_coordinates(f"{T6[i]}_{T7[i]}", [T6[i],T7[i]])
-            data_base.add_polyline(f"{T6[i]}_{T7[i]}","arc",0, False, True, False)
-            data_base.add_coordinates(f"{T8[i]}_{points2[i]}", [T8[i],points2[i]])
-            data_base.add_polyline(f"{T8[i]}_{points2[i]}","arc",0, False, True, False)
+            for j in reversed(range(numlins-1)):
+                data_base.add_coordinates(f"{TT[j*2][i]}_{TT[j*2+1][i]}", [TT[j*2][i],TT[j*2+1][i]])
+                data_base.add_polyline(f"{TT[j*2][i]}_{TT[j*2+1][i]}","arc",0, False, True, False)
+
+
+            
 
     
 
     redraw()
+def horizont_callback():
+    dpg.add_button(label="horizont",parent='butonss',tag="horizont",callback=active_but)
+    w = float(dpg.get_value('border_line_width'))
+    print(round(10/w))
+    points1 = [(0,i*w)for i in range(round(10/w))]
+    points2 = [(10,i*w)for i in range(round(10/w))]
+    for i in range(0,len(points1),2):
+        
+        data_base.add_coordinates(f"{i}horizont", [points1[i],points2[i]])
+        data_base.add_coordinates(f"{i+1}horizont", [points2[i+1],points1[i+1]])
+        data_base.add_polyline(f"{i}horizont","horizont",0, False, True, False)
+        data_base.add_polyline(f"{i+1}horizont","horizont",0, False, True, False)
+
+    redraw()
+
+def vertical_callback(): 
+    dpg.add_button(label="vertical",parent='butonss',tag="vertical",callback=active_but)
+    w = float(dpg.get_value('border_line_width'))
+    print(round(10/w))
+    points1 = [(i*w,0)for i in range(round(10/w))]
+    points2 = [(i*w,10)for i in range(round(10/w))]
+    for i in range(0,len(points1),2):
+        
+        data_base.add_coordinates(f"{i}vertical", [points1[i],points2[i]])
+        data_base.add_coordinates(f"{i+1}vertical", [points2[i+1],points1[i+1]])
+        data_base.add_polyline(f"{i}vertical","vertical",0, False, True, False)
+        data_base.add_polyline(f"{i+1}vertical","vertical",0, False, True, False)
+
+    redraw()
+def diagonal_callback(): 
+    dpg.add_button(label="diagonal",parent='butonss',tag="diagonal",callback=active_but)
+    w = float(dpg.get_value('border_line_width')) * 1.4142
     
+    points1 = [(i*w,0)for i in range(1,round(10/w))]
+    points2 = [(0,i*w)for i in range(1,round(10/w))]
+
+    points11 = [(i*w,10)for i in reversed(range(round(10/w)))]
+    points22 = [(10,i*w)for i in reversed(range(round(10/w)))]
+
+    for i in range(0,len(points1),2):
+        
+        data_base.add_coordinates(f"{i}diagonal", [points1[i],points2[i]])
+        data_base.add_coordinates(f"{i+1}diagonal", [points2[i+1],points1[i+1]])
+        data_base.add_polyline(f"{i}diagonal","diagonal",0, False, True, False)
+        data_base.add_polyline(f"{i+1}diagonal","diagonal",0, False, True, False)
+
+    for i in range(0,len(points1),2):
+        
+        data_base.add_coordinates(f"{i}_diagonal", [points11[i],points22[i]])
+        data_base.add_coordinates(f"{i+1}_diagonal", [points22[i+1],points11[i+1]])
+        data_base.add_polyline(f"{i}_diagonal","diagonal",0, False, True, False)
+        data_base.add_polyline(f"{i+1}_diagonal","diagonal",0, False, True, False)
+        
+    redraw()
 ###########################################
 ##########################################
 #############################################
@@ -2426,6 +2514,71 @@ with dpg.window(label="Text Size", show=False, tag="text_size_modal", no_title_b
         dpg.add_spacer(width=50)
 
 
+with dpg.window(label="IZGIB", show=False, tag="IZGIB", no_title_bar=True,pos=(400,100)):
+    dpg.add_text("IZGIB")
+    dpg.add_separator()
+    with dpg.group(horizontal=True):
+        dpg.add_text("a")      
+        dpg.add_input_text(width=50,scientific=True,tag='a',default_value='10')
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_text("b")      
+        dpg.add_input_text(width=50,scientific=True,tag='b',default_value='157')
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_text("c")      
+        dpg.add_input_text(width=50,scientific=True,tag='c',default_value='10')
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_text("d")      
+        dpg.add_input_text(width=50,scientific=True,tag='d',default_value='100')
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_text("number lines")      
+        dpg.add_input_text(width=50,scientific=True,tag='numlins',default_value='3')
+    with dpg.group(horizontal=True):
+        dpg.add_text("width")      
+        dpg.add_input_text(width=50,scientific=True,tag='w',default_value='4')
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_spacer(width=50)
+        dpg.add_button(label='Apply',callback=izgib_callback)
+        dpg.add_spacer(width=50)
+
+with dpg.window(label="KONUS", show=False, tag="KONUS", no_title_bar=True,pos=(400,100)):
+    dpg.add_text("KONUS")
+    dpg.add_separator()
+    with dpg.group(horizontal=True):
+        dpg.add_text("l")      
+        dpg.add_input_text(width=50,scientific=True,tag='l',default_value='103.6')
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_text("L")      
+        dpg.add_input_text(width=50,scientific=True,tag='L',default_value='157')
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_text("d")      
+        dpg.add_input_text(width=50,scientific=True,tag='d_',default_value='48')
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_text("number points")      
+        dpg.add_input_text(width=50,scientific=True,tag='numpoints',default_value='45')
+    with dpg.group(horizontal=True):
+        dpg.add_text("a")      
+        dpg.add_input_text(width=50,scientific=True,tag='a_',default_value='10')
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_text("w")      
+        dpg.add_input_text(width=50,scientific=True,tag='w_',default_value='4')
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_text("number lines")      
+        dpg.add_input_text(width=50,scientific=True,tag='numlins_',default_value='4')
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_spacer(width=50)
+        dpg.add_button(label='Apply',callback=konus_callback)
+        dpg.add_spacer(width=50)
 
 
 with dpg.theme() as plot_theme:
@@ -2497,9 +2650,11 @@ with dpg.viewport_menu_bar():
         dpg.add_menu_item(label="Delete", callback=delete_l)
         dpg.add_menu_item(label="Set Color", callback=set_color)
         dpg.add_menu_item(label="test", callback=test_callback)
-    
-
-
+        dpg.add_menu_item(label="horizont line", callback=horizont_callback)
+        dpg.add_menu_item(label="vertical line", callback=vertical_callback)
+        dpg.add_menu_item(label="diagonal line", callback=diagonal_callback)
+        dpg.add_menu_item(label="konus", callback=lambda:dpg.configure_item("KONUS", show=True)) 
+        dpg.add_menu_item(label="izgib", callback=lambda:dpg.configure_item("IZGIB", show=True))   
     with dpg.menu(label="Widget Items"):
         dpg.add_checkbox(label="Pick Me", callback=print_me)
         dpg.add_button(label="Press Me", callback=print_me)
