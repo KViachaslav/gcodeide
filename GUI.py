@@ -1,7 +1,9 @@
 import dearpygui.dearpygui as dpg
 from fdialog import FileDialog
 import optimize
-
+import zipfile
+import xml.etree.ElementTree as ET
+from pathlib import Path
 import dearpygui.dearpygui as dpg
 import ezdxf
 import numpy as np
@@ -447,7 +449,7 @@ def read_dxf_lines(file_path):
     for line in msp.query('LINE'):
         
         layer = line.dxf.layer
-        border_lines.append([(round(line.dxf.start.x,4),  round(line.dxf.start.y,4)), (round(line.dxf.end.x,4), round(line.dxf.end.y,4))])
+        #border_lines.append([(round(line.dxf.start.x,4),  round(line.dxf.start.y,4)), (round(line.dxf.end.x,4), round(line.dxf.end.y,4))])
         if layer in ll:
             colors.append(lll[layer])
             data_base.add_polyline(nice_path+f"_line_"+f"{counter}",nice_path,lll[layer], False, True, False)
@@ -455,9 +457,50 @@ def read_dxf_lines(file_path):
             colors.append(0)
             data_base.add_polyline(nice_path+f"_line_"+f"{counter}",nice_path,0, False, True, False)
         data_base.add_coordinates(nice_path+f"_line_"+f"{counter}", [[round(line.dxf.start.x,4),  round(line.dxf.start.y,4)], [round(line.dxf.end.x,4), round(line.dxf.end.y,4)]])
-        redraw()
+        
         counter+=1
-    
+    for spline in msp.query('SPLINE'):
+        layer = spline.dxf.layer
+        
+        control_points = list(spline.control_points)
+        fit_points = list(spline.fit_points)
+        
+        spline_coords = []
+        
+        if len(fit_points)!= 0:
+            spline_coords = [[round(p[0], 4), round(p[1], 4)] for p in fit_points]
+        
+        elif control_points:
+            
+            degree = spline.dxf.degree
+            num_segments = max(10, len(control_points) * 5)  
+            
+            for i in range(num_segments + 1):
+                t = i / num_segments
+                try:
+                    point = spline.evaluate_point(t)
+                    spline_coords.append([round(point.x, 4), round(point.y, 4)])
+                except:
+                   
+                    spline_coords = [[round(p[0], 4), round(p[1], 4)] for p in control_points]
+                    break
+        
+        if not spline_coords and control_points:
+            spline_coords = [[round(p[0], 4), round(p[1], 4)] for p in control_points]
+        
+        if len(spline_coords) > 1:
+            if layer in ll:
+                colors.append(lll[layer])
+                data_base.add_polyline(nice_path + f"_spline_{counter}", nice_path, lll[layer], False, True, False)
+            else:
+                colors.append(0)
+                data_base.add_polyline(nice_path + f"_spline_{counter}", nice_path, 0, False, True, False)
+            
+            data_base.add_coordinates(nice_path + f"_spline_{counter}", spline_coords)
+            counter += 1
+
+
+
     # sett = {i for i in range(len(border_lines))}
     
     # counter = 0
@@ -591,7 +634,7 @@ def read_dxf_lines(file_path):
                 center.x + radius * math.cos(2 * math.pi * i / num_points),
                 center.y + radius * math.sin(2 * math.pi * i / num_points)
             )
-            for i in range(num_points)
+            for i in list(range(num_points)) + [0]
         ]
         if layer in ll:
             data_base.add_polyline(nice_path+f"_circle_"+f"{counter}",nice_path,lll[layer], False, True, False)
@@ -1064,8 +1107,340 @@ def invers_lines(ocb='x'):
     for t in tags:
         data_base.update_polyline(t,redraw_flag=1)
     redraw()
-    
 
+
+def parse_coordinates_from_string(coord_str):
+    """
+    Парсит координаты из строки вида "(-9.7, 1.37)" или "(-9.7, 1.37, 0)".
+    Возвращает (x, y, z) или None при ошибке.
+    """
+    # Убираем пробелы и скобки
+    coord_str = coord_str.strip().strip('()')
+    if not coord_str:
+        return None
+    
+    # Ищем числа: float с запятыми (напр. -9.7,1.37,0)
+    numbers = re.findall(r'[-+]?\d*\.?\d+', coord_str)
+    
+    if len(numbers) == 2:  # (x, y) — 2D
+        try:
+            x = float(numbers[0])
+            y = float(numbers[1])
+            z = 0.0  # По умолчанию для 2D
+            return (x, y, z)
+        except ValueError:
+            return None
+    elif len(numbers) == 3:  # (x, y, z) — 3D
+        try:
+            x = float(numbers[0])
+            y = float(numbers[1])
+            z = float(numbers[2])
+            return (x, y, z)
+        except ValueError:
+            return None
+    else:
+        print(f"Предупреждение: Некорректный формат координат '{coord_str}' (ожидалось 2 или 3 числа)")
+        return None
+
+def midpoint_between_two_points(pointA, pointB):
+   
+    x1, y1 = pointA[0], pointA[1]
+    x2, y2 = pointB[0], pointB[1]
+    
+    cx = (x1 + x2) / 2.0
+    cy = (y1 + y2) / 2.0
+    
+    return (cx, cy)    
+
+def extract_points_from_ggb(ggb_file_path):
+    nice_path = find_nice_path(ggb_file_path)
+    dpg.add_button(label=nice_path,parent='butonss',tag=nice_path,callback=active_but)
+    points = {}
+    segments = [] 
+    
+    try:
+        with zipfile.ZipFile(ggb_file_path, 'r') as zip_ref:
+            xml_content = zip_ref.read('geogebra.xml').decode('utf-8')
+            print(xml_content)
+    except Exception as e:
+        print(f"Ошибка при чтении ZIP: {e}")
+        return points, segments
+    
+    try:
+        root = ET.fromstring(xml_content)
+    except ET.ParseError as e:
+        print(f"Ошибка парсинга XML: {e}")
+        return points, segments
+    
+    for elem in root.iter('element'):
+        if elem.get('type') == 'point':
+            label = elem.get('label', 'unnamed')
+            coords_elem = elem.find('coords')  # <coords x="..." y="..." z="..."/>
+            if coords_elem is not None:
+                x = float(coords_elem.get('x', 0.0))
+                y = float(coords_elem.get('y', 0.0))
+                points[label] = (x, y)
+    counter = 0
+    for command in root.iter('command'):
+        cmd_name = command.get('name')
+        
+
+
+
+        if cmd_name == 'Segment' or cmd_name == 'Vector':
+            input_elem = command.find('input')
+            if input_elem is not None:
+                a0 = input_elem.get('a0')  # Первая точка
+                a1 = input_elem.get('a1')  # Вторая точка
+                output = command.find('output')
+                
+                if a0 in points and a1 in points:
+                    segments.append((points[a0], points[a1]))
+                    data_base.add_polyline(nice_path+f"_seg_"+f"{counter}",nice_path,0, False, True, False)
+                    
+                    data_base.add_coordinates(nice_path+f"_seg_"+f"{counter}", [points[a0], points[a1]])
+        elif cmd_name == 'Semicircle':
+            input_elem = command.find('input') 
+            a0 = input_elem.get('a0') 
+            a1 = input_elem.get('a1')   
+            c = midpoint_between_two_points(points[a0],points[a1])   
+            r = distance(points[a0],points[a1])/2
+            num_points = 50  
+                
+            start_angle = math.atan2(points[a1][1] - c[1], points[a1][0] - c[0])
+    
+            angles = [start_angle + (math.pi * i / (num_points + 1)) for i in range(num_points + 2)]
+            
+            pointss = [
+                (
+                    c[0] + r * math.cos(angle),
+                    c[1] + r * math.sin(angle)
+                )
+                for angle in angles
+            ]
+            
+            data_base.add_polyline(nice_path+f"_circle_"+f"{counter}",nice_path,0, False, True, False)
+            data_base.add_coordinates(nice_path+f"_circle_"+f"{counter}", pointss) 
+        elif cmd_name == 'CircleArc'or cmd_name == 'CircleSector':
+            input_elem = command.find('input') 
+            a0 = input_elem.get('a0') 
+            a1 = input_elem.get('a1') 
+            a2 = input_elem.get('a2')
+            c = points[a0]
+            r = distance(points[a0],points[a1])
+            num_points = 20  
+                
+            start_angle = math.atan2(points[a1][1] - c[1], points[a1][0] - c[0])
+            end_angle = math.atan2(points[a2][1] - c[1], points[a2][0] - c[0])
+
+            angles = [start_angle + ( i * (end_angle - start_angle)/num_points) for i in range(num_points)]
+            
+            pointss = [
+                (
+                    c[0] + r * math.cos(angle),
+                    c[1] + r * math.sin(angle)
+                )
+                for angle in angles
+            ]
+            if cmd_name == 'CircleSector':
+                pointss.append(c)
+                pointss.append(pointss[0])
+            data_base.add_polyline(nice_path+f"_circle_"+f"{counter}",nice_path,0, False, True, False)
+            data_base.add_coordinates(nice_path+f"_circle_"+f"{counter}", pointss) 
+        elif cmd_name == 'CircumcircleArc' or cmd_name == 'CircumcircleSector':
+            input_elem = command.find('input') 
+            a0 = input_elem.get('a0') 
+            a1 = input_elem.get('a1') 
+            a2 = input_elem.get('a2')
+            pointA = points[a0]
+            pointB = points[a1]
+            pointC = points[a2]
+            xa, ya = pointA
+            xb, yb = pointB
+            xc, yc = pointC
+            
+            D = 2 * (xa * (yb - yc) + xb * (yc - ya) + xc * (ya - yb))
+            
+            cx = ((xa**2 + ya**2) * (yb - yc) + (xb**2 + yb**2) * (yc - ya) + (xc**2 + yc**2) * (ya - yb)) / D
+            cy = ((xa**2 + ya**2) * (xc - xb) + (xb**2 + yb**2) * (xa - xc) + (xc**2 + yc**2) * (xb - xa)) / D
+            
+            c = (cx, cy)
+            r = distance(c, pointA)  
+            
+            rB = distance(c, pointB)
+            rC = distance(c, pointC)
+            if abs(r - rB) > 1e-6 or abs(r - rC) > 1e-6:
+                
+                r = (r + rB + rC) / 3  
+
+            num_points = 40  
+                
+            start_angle = math.atan2(points[a0][1] - c[1], points[a0][0] - c[0])
+            end_angle = math.atan2(points[a2][1] - c[1], points[a2][0] - c[0])
+
+            angles = [start_angle + ( i * (end_angle - start_angle)/num_points) for i in range(num_points)]
+            
+            pointss = [
+                (
+                    c[0] + r * math.cos(angle),
+                    c[1] + r * math.sin(angle)
+                )
+                for angle in angles
+            ]
+            if cmd_name == 'CircumcircleSector':
+                pointss.append(c)
+                pointss.append(pointss[0])
+            data_base.add_polyline(nice_path+f"_circle_"+f"{counter}",nice_path,0, False, True, False)
+            data_base.add_coordinates(nice_path+f"_circle_"+f"{counter}", pointss) 
+
+        # elif cmd_name == 'CircleSector':
+        #     input_elem = command.find('input') 
+        #     a0 = input_elem.get('a0') 
+        #     a1 = input_elem.get('a1') 
+        #     a2 = input_elem.get('a2')
+            
+        elif cmd_name == 'Circle':
+
+            input_elem = command.find('input')
+            
+            if input_elem is not None:
+                center_label = input_elem.get('a0') 
+                radius_input = input_elem.get('a1')  
+
+                a2 = input_elem.get('a2')
+                if a2 is not None:  # Circle[3 точки]
+                    pointA = points[center_label]
+                    pointB = points[radius_input]
+                    pointC = points[a2]
+                    xa, ya = pointA
+                    xb, yb = pointB
+                    xc, yc = pointC
+                    
+                   
+                    D = 2 * (xa * (yb - yc) + xb * (yc - ya) + xc * (ya - yb))
+                    
+                    # Координаты центра
+                    cx = ((xa**2 + ya**2) * (yb - yc) + (xb**2 + yb**2) * (yc - ya) + (xc**2 + yc**2) * (ya - yb)) / D
+                    cy = ((xa**2 + ya**2) * (xc - xb) + (xb**2 + yb**2) * (xa - xc) + (xc**2 + yc**2) * (xb - xa)) / D
+                    
+                    center_coords = (cx, cy)
+                    radius = distance(center_coords, pointA)  
+                    
+                    rB = distance(center_coords, pointB)
+                    rC = distance(center_coords, pointC)
+                    if abs(radius - rB) > 1e-6 or abs(radius - rC) > 1e-6:
+                        print(f"Предупреждение: Разные радиусы (rA={radius:.6f}, rB={rB:.6f}, rC={rC:.6f})")
+                        radius = (radius + rB + rC) / 3  
+                    
+
+
+                else:
+                    center_coords = points[center_label]
+                        
+                    
+                    radius = None
+                    
+                    
+                    if radius_input is not None:
+                        # Вариант 1: Число (напр. "2" или "-1.5")
+                        if re.match(r'^[-+]?\d*\.?\d+$', radius_input):
+                            
+                            radius = abs(float(radius_input))
+                                  
+                        # Вариант 2: Сегмент (Segment[G, H])
+                        elif radius_input.startswith('Segment[') and radius_input.endswith(']'):
+                            seg_points_str = radius_input[8:-1] 
+                            seg_points = [p.strip() for p in seg_points_str.split(',')]
+                            if len(seg_points) == 2:
+                                p1_label, p2_label = seg_points
+                                if p1_label in points and p2_label in points:
+                                    p1_coords = points[p1_label]
+                                    p2_coords = points[p2_label]
+                                    radius = distance(p1_coords, p2_coords)
+                                    
+                            
+                        
+                    
+                        elif isinstance(radius_input, str) and radius_input.startswith('(') and radius_input.endswith(')'):
+                            radius_point_coords = parse_coordinates_from_string(radius_input)
+                            if radius_point_coords:
+                                radius = distance(center_coords, radius_point_coords)
+                                
+                        
+                        # Вариант 4: Label существующей точки "P"
+                        elif isinstance(radius_input, str) and radius_input in points:
+                            radius_point_coords = points[radius_input]
+                            radius = distance(center_coords, radius_point_coords)
+                            
+
+
+
+
+                num_points = 50  
+                
+                pointss = [
+                    (
+                        center_coords[0] + radius * math.cos(2 * math.pi * i / num_points),
+                        center_coords[1] + radius * math.sin(2 * math.pi * i / num_points)
+                    )
+                    for i in list(range(num_points)) + [0]
+                ]
+                
+                data_base.add_polyline(nice_path+f"_circle_"+f"{counter}",nice_path,0, False, True, False)
+                data_base.add_coordinates(nice_path+f"_circle_"+f"{counter}", pointss)   
+        elif cmd_name == 'Polygon' or  cmd_name == 'PolyLine':
+           
+            input_elem = command.find('input')
+            output = command.find('output')
+            poly_label = output.get('a0') if output is not None else f"poly_{len(segments)}"
+            
+            if input_elem is not None:
+                # Извлекаем все точки вершин (a0, a1, a2, ... — переменное число)
+                vertices = []
+                i = 0
+                while True:
+                    vertex_label = input_elem.get(f'a{i}')
+                    if vertex_label is None:
+                        break
+                    if vertex_label in points:
+                        vertices.append(vertex_label)
+                    else:
+                        print(f"Предупреждение: Полigon '{poly_label}' ссылается на неизвестную точку '{vertex_label}'")
+                    i += 1
+                
+                  
+                    
+                data_base.add_polyline(nice_path+f"_p_"+f"{counter}",nice_path,0, False, True, False)
+                for j in range(len(vertices)-1):
+                    start_vertex = vertices[j]
+                    end_vertex = vertices[(j + 1)] 
+                    
+                    segments.append((points[start_vertex], points[end_vertex]))
+                    data_base.add_coordinates(nice_path+f"_p_"+f"{counter}", [points[start_vertex], points[end_vertex]])
+                if cmd_name == 'Polygon':
+                    start_vertex = vertices[len(vertices)-1]
+                    end_vertex = vertices[0] 
+                    segments.append((points[start_vertex], points[end_vertex]))
+                    data_base.add_coordinates(nice_path+f"_p_"+f"{counter}", [points[start_vertex], points[end_vertex]])
+        else:
+            print(cmd_name)    
+        counter+=1            
+    
+    return points, segments
+
+
+
+def find_nice_path(path):
+    nice_path = path
+    iterr = 1
+    while 1:
+        for i in data_base.get_unique_politag():
+            if i == nice_path:
+                nice_path = path + f' (copy {iterr})'
+                iterr +=1
+        else: 
+            break
+    return nice_path
 
 def pr(selected_files):
     global esyedaflag
@@ -1099,10 +1474,7 @@ def pr(selected_files):
             dpg.add_button(label="OK", width=75, parent='hor_grouph',callback=read_dxf_lines_from_esyeda,user_data=ll,tag='OK')
             dpg.add_button(label="Cancel", width=75, parent='hor_grouph', callback=lambda: dpg.configure_item("modal_id", show=False),tag='CANCEL')
             dpg.configure_item("modal_id", show=True)
-            #dpg.configure_item("modal_id", modal=True)
             
-            #lines = read_dxf_lines_from_esyeda(current_file)
-            #db.add_multiple_records('lines',lines) 
         else:
             read_dxf_lines(current_file)
           
@@ -1123,9 +1495,12 @@ def pr(selected_files):
             data_base.add_polyline(nice_path+f"{counter}",nice_path,0, False, True, False)
             data_base.add_coordinates(nice_path+f"{counter}", [(l[0],l[1]),(l[2],l[3])])
             counter +=1
+        redraw()
+    elif ".ggb" in current_file:
+        points, segm = extract_points_from_ggb(current_file)
+        redraw()
 
         
-        redraw()
 def check_com_callback():
     ports = serial.tools.list_ports.comports()
     dpg.delete_item('com_tag')
