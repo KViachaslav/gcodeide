@@ -21,6 +21,9 @@ from line_manager import PolylineDatabase
 import serial.tools.list_ports
 import serial
 import time
+import xml.etree.ElementTree as ET
+import re
+from scipy.special import comb
 def active_but(sender,app_data):
     state = data_base.get_polyline_where(f"big_tag='{sender}'")
     
@@ -1151,6 +1154,33 @@ def midpoint_between_two_points(pointA, pointB):
     cy = (y1 + y2) / 2.0
     
     return (cx, cy)    
+def bernstein_poly(i, n, t):
+    """Полином Бернштейна"""
+    return comb(n, i) * (t**(n - i)) * ((1 - t)**i)
+
+def bezier_curve_points(points, num_points=100):
+    """
+    Вычисляет точки кривой Безье.
+    points: список кортежей или NumPy массив (N, 2) контрольных точек.
+    num_points: количество точек для построения кривой.
+    """
+    points = np.array(points)
+    n_points = len(points)
+    n_degree = n_points - 1  # Степень кривой
+    
+    t = np.linspace(0.0, 1.0, num_points)
+    
+    curve_points = np.zeros((num_points, 2))
+    
+    for i in range(n_points):
+        # Вычисление полинома Бернштейна для каждой контрольной точки
+        B_i = bernstein_poly(i, n_degree, t)
+        
+        # Умножение на контрольную точку и накопление
+        # points[i] - это [X_i, Y_i]
+        curve_points += np.outer(B_i, points[i])
+        
+    return curve_points
 
 def extract_points_from_ggb(ggb_file_path):
     nice_path = find_nice_path(ggb_file_path)
@@ -1427,6 +1457,152 @@ def extract_points_from_ggb(ggb_file_path):
         counter+=1            
     
     return points, segments
+def extract_coordinates(d_string,currx,curry):
+    # Регулярное выражение для извлечения команд и координат
+    pattern = r'([MLHVCSQTAZmlhvcsqtaz])|([-+]?\d*\.\d+|[-+]?\d+)'
+    tokens = re.findall(pattern, d_string)
+    
+    x_coords = []
+    y_coords = []
+    XYX = True
+    big = False
+    current_x, current_y = currx, curry  
+    coordinates_after_c = []
+    collecting = False
+    for token in tokens:
+    
+        command, value = token
+        
+        if command:
+            previous_command = command
+
+            if len(coordinates_after_c)!= 0:
+                    
+                curve_array = bezier_curve_points([[coordinates_after_c[i*2],coordinates_after_c[i*2+1]] for i in range(int(len(coordinates_after_c)/2))], num_points=60)
+                x_coords.extend([x[0] for x in curve_array])
+                y_coords.extend([x[1] for x in curve_array])
+
+            if command in ['C', 'c']:
+                
+
+
+                collecting = True 
+                if command == 'C':
+                    big = True
+                else:
+                    big = False
+                coordinates_after_c = []
+            else:
+                
+                collecting = False
+            if  command in ['Z', 'z']:
+                x_coords.append(x_coords[0])
+                y_coords.append(y_coords[0])
+        elif value and collecting:
+            value = float(value)
+            if XYX:
+                if big:
+                    coordinates_after_c.append(value)
+                    current_x = value
+                else:
+                    current_x = value
+                    coordinates_after_c.append(current_x+value)
+                    current_x += value
+                XYX = False
+            else: 
+                XYX = True
+                if big:
+                    coordinates_after_c.append(value)
+                    current_y = value
+                else:
+                    coordinates_after_c.append(current_y + value)
+                    current_y += value
+        elif value:
+            value = float(value)
+            if previous_command in ['M']:  
+                if XYX:  
+                    current_x = value           
+                    XYX = False
+                else:  
+                    XYX = True
+                    
+                    current_y = value
+                    previous_command = "L"
+            elif previous_command in ['L']:  
+                if XYX:  
+                    
+                    x_coords.append(value)
+                    current_x = value           
+                    
+                    XYX = False
+                else:  
+                    XYX = True
+                    
+                    y_coords.append(value)
+                    current_y = value
+                    
+            elif previous_command in ['m']:  
+                if XYX:  
+                    
+                    current_x += value
+                    XYX = False
+                else:  
+                    XYX = True
+                    previous_command = 'l'
+                    current_y += value
+            elif previous_command in ['l']:  
+                if XYX:  
+                    
+                    x_coords.append(current_x + value)
+                    current_x += value
+                    XYX = False
+                else:  
+                    XYX = True
+                    
+                    y_coords.append(current_y + value)
+                    current_y += value
+            elif previous_command == 'C' or previous_command == 'c':  
+                
+                continue
+            elif previous_command in ['h']:  # Horizontal line
+                x_coords.append(current_x + value)
+                y_coords.append(current_y)
+                current_x += value
+            elif previous_command in ['H']:  # Horizontal line
+                x_coords.append( value)
+                y_coords.append(current_y)
+                current_x = value
+            elif previous_command in ['v']:  # Vertical line
+                y_coords.append(current_y + value)
+                x_coords.append(current_x)
+                current_y += value
+            elif previous_command in ['V']:  # Vertical line
+                y_coords.append(value)
+                x_coords.append(current_x)
+                current_y = value
+    return x_coords, y_coords,current_x,current_y
+
+def extract_points_from_svg(path):
+    nice_path = find_nice_path(path)
+    dpg.add_button(label=nice_path,parent='butonss',tag=nice_path,callback=active_but)
+    tree = ET.parse(path)
+    root = tree.getroot()
+    counter = 0
+    
+    for element in root.iter():
+        if element.tag.endswith('path') and 'd' in element.attrib:
+            d_string = element.attrib['d']
+            
+            xx,yy,ccx,ccy = extract_coordinates(d_string,0,0)
+            
+            data_base.add_polyline(nice_path+f"{counter}",nice_path,0, False, True, False)
+                    
+            data_base.add_coordinates(nice_path+f"{counter}", [(x,y) for x,y in zip(xx,yy)])
+        elif 'x' in element.attrib and 'y' in element.attrib:
+            x = float(element.attrib['x'])
+            y = float(element.attrib['y'])
+            print(f"Element - ID: {element.attrib.get('id', 'N/A')}, x: {x}, y: {y}")
+        counter +=1
 
 
 
@@ -1498,6 +1674,9 @@ def pr(selected_files):
         redraw()
     elif ".ggb" in current_file:
         points, segm = extract_points_from_ggb(current_file)
+        redraw()
+    elif ".svg" in current_file:
+        extract_points_from_svg(current_file)
         redraw()
 
         
