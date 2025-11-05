@@ -24,6 +24,10 @@ import time
 import xml.etree.ElementTree as ET
 import re
 from scipy.special import comb
+import dxfgrabber
+from scipy.interpolate import CubicSpline
+from scipy.interpolate import splprep, splev,splrep,BSpline
+
 def active_but(sender,app_data):
     state = data_base.get_polyline_where(f"big_tag='{sender}'")
     
@@ -406,6 +410,143 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
 
 
 
+def read_dxf_with_grabber(file_path):
+    nice_path = find_nice_path(os.path.basename(file_path))
+    
+    dpg.add_button(label=nice_path,parent='butonss',tag=nice_path,callback=active_but)
+    dxf = dxfgrabber.readfile(file_path)
+    print(dxf.header.get('$INSUNITS'))
+    ll = []
+    lll = {}
+    pattern = r'^power(\d+)speed(\d+)$'
+    h = 1
+    for layer in dxf.layers:
+        match = re.match(pattern, layer.name)
+        if match:
+            ll.append(layer.name)
+            power = int(match.group(1))
+            speed = int(match.group(2))
+            dpg.set_value(f"{h}_value",power)
+            dpg.set_value(f"{h}1_value",speed)
+            lll[layer.name] = h - 1 
+            h+=1
+    counter = 0
+    for entity in dxf.entities:
+        
+        if entity.dxftype == 'LINE':
+            #print(f"Start: {entity.start}, End: {entity.end}")
+            data_base.add_polyline(nice_path+f"_line_"+f"{counter}",nice_path,0, False, True, False)
+            data_base.add_coordinates(nice_path+f"_line_"+f"{counter}", [[entity.start[0],entity.start[1]], [entity.end[0],entity.end[1]]])
+        
+        elif entity.dxftype == 'CIRCLE':
+            print(f"Center: {entity.center}, Radius: {entity.radius}")
+            print(f"Type: {entity.dxftype}, Layer: {entity.layer}")
+    
+        elif entity.dxftype == 'SPLINE':
+        
+            degree = entity.degree
+            
+           
+            if hasattr(entity, 'knots') and entity.knots:
+                
+                knot_vector = np.array(entity.knots)
+                control_points = np.array(entity.control_points)
+                
+                x = control_points[:, 0]
+                y = control_points[:, 1]
+                
+                
+                weights = getattr(entity, 'weights', None) 
+                if weights is not None and not all(w == 1.0 for w in weights):
+                    print(f"Предупреждение: Сплайн является NURBS. Используется нерациональное приближение.")
+                
+                try:
+                    
+                    u_min = knot_vector[degree]
+                    u_max = knot_vector[len(knot_vector) - degree - 1]
+                    u_range = np.linspace(u_min, u_max, 20)
+                    
+                    spline_x = BSpline(knot_vector, x, degree)
+                    spline_y = BSpline(knot_vector, y, degree)
+                    
+                    curve_x = spline_x(u_range)
+                    curve_y = spline_y(u_range)
+                    
+                    # ax.plot(curve_x, curve_y, '-', label=f'Сплайн {spline_count} (BSpline)')
+                    data_base.add_polyline(nice_path+f"_spline_"+f"{counter}",nice_path,0, False, True, False)
+                    data_base.add_coordinates(nice_path+f"_spline_"+f"{counter}", [(x,y)for x,y, in zip(curve_x,curve_y)])
+        
+                    
+                except Exception as e:
+                    print(f"Ошибка SciPy при обработке BSpline : {e}")
+
+            elif hasattr(entity, 'fit_points') and entity.fit_points:
+                
+                fit_points = np.array(entity.fit_points)
+                x = fit_points[:, 0]
+                y = fit_points[:, 1]
+                
+                try:
+                    # Используем splprep для автоматической генерации узлов и коэффициентов
+                    tck, u = splprep([x, y], k=degree, s=0) 
+                    u_new = np.linspace(u.min(), u.max(), 20)
+                    curve_points = splev(u_new, tck)
+                    
+                    # Отрисовка
+                    #ax.plot(curve_points[0], curve_points[1], '--', label=f'Сплайн {spline_count} (Интерполяция)')
+                    data_base.add_polyline(nice_path+f"_spline_"+f"{counter}",nice_path,0, False, True, False)
+                    data_base.add_coordinates(nice_path+f"_spline_"+f"{counter}", [(x,y)for x,y, in zip(curve_points[0],curve_points[1])])
+        
+                except Exception as e:
+                    print(f"Ошибка SciPy при интерполяции (Fit Points) : {e}")
+
+            else:
+                print(f"Сплайн пропущен: Нет ни knots, ни fit_points.")
+
+
+        elif entity.dxftype == 'ARC':
+            print(f"Center: {entity.center}, Radius: {entity.radius}, Start Angle: {entity.start_angle}, End Angle: {entity.end_angle}")
+            print(f"Type: {entity.dxftype}, Layer: {entity.layer}")
+        
+        elif entity.dxftype == 'LWPOLYLINE':
+           
+            layer = entity.layer
+            points = entity.points 
+            coords = []
+            for i in range(len(points)):
+                coords.append((round(points[i][0],4),  round(points[i][1],4)))
+            if entity.is_closed:
+                coords.append((round(points[0][0],4),  round(points[0][1],4)))
+            if layer in ll:
+                data_base.add_polyline(nice_path+f"_lwpoly_"+f"{counter}",nice_path,lll[layer], False, True, False)
+            else:
+                data_base.add_polyline(nice_path+f"_lwpoly_"+f"{counter}",nice_path,0, False, True, False)
+            data_base.add_coordinates(nice_path+f"_lwpoly_"+f"{counter}", coords)
+
+        elif entity.dxftype == 'POLYLINE':
+            
+            layer = entity.layer
+            points = entity.points 
+            coords = []
+            for i in range(len(points)):
+                coords.append((round(points[i][0],4),  round(points[i][1],4)))
+            if entity.is_closed:
+                coords.append((round(points[0][0],4),  round(points[0][1],4)))
+            if layer in ll:
+                data_base.add_polyline(nice_path+f"_lwpoly_"+f"{counter}",nice_path,lll[layer], False, True, False)
+            else:
+                data_base.add_polyline(nice_path+f"_lwpoly_"+f"{counter}",nice_path,0, False, True, False)
+            data_base.add_coordinates(nice_path+f"_lwpoly_"+f"{counter}", coords)
+        elif entity.dxftype == 'HATCH':
+            print(f"Pattern Type: {entity.pattern_type}, Loop Count: {len(entity.loops)}")
+            print(f"Type: {entity.dxftype}, Layer: {entity.layer}")
+        
+        elif entity.dxftype == '3DFACE':
+            print(f"Vertices: {entity.points}")
+            print(f"Type: {entity.dxftype}, Layer: {entity.layer}")
+        else:
+            print(f"{entity.dxftype}")
+        counter+=1
 
 
 
@@ -415,15 +556,8 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
 
 
 def read_dxf_lines(file_path):
-    nice_path = os.path.basename(file_path)
-    iterr = 1
-    while 1:
-        for i in data_base.get_unique_politag():
-            if i == nice_path:
-                nice_path = os.path.basename(file_path) + f' (copy {iterr})'
-                iterr +=1
-        else: 
-            break
+    nice_path = find_nice_path(os.path.basename(file_path))
+    
     dpg.add_button(label=nice_path,parent='butonss',tag=nice_path,callback=active_but)
     doc = ezdxf.readfile(file_path)
     msp = doc.modelspace()
@@ -1652,8 +1786,8 @@ def pr(selected_files):
             dpg.configure_item("modal_id", show=True)
             
         else:
-            read_dxf_lines(current_file)
-          
+            # read_dxf_lines(current_file)
+            read_dxf_with_grabber(current_file)
             redraw()
     elif '.png' in current_file:   
         lines = extract_black_lines(current_file,0.1)
@@ -1678,6 +1812,67 @@ def pr(selected_files):
     elif ".svg" in current_file:
         extract_points_from_svg(current_file)
         redraw()
+def join_callback():
+    tags = data_base.get_polylines_tag()
+    tt = set([t[0] for t in tags])
+    while tt:
+        tag = list(tt)[0]
+        tt.remove(tag)
+        left_tag = tag
+        right_tag = tag
+        points = data_base.get_coordinates(tag)
+        joi = points
+
+
+        if len(points) > 0:
+
+            while True:
+                
+                beg = data_base.get_all_coordinates_where(f"x={joi[0][0]} and y = {joi[0][1]} and polyline_tag != '{left_tag}'")
+                end = data_base.get_all_coordinates_where(f"x={joi[len(joi)-1][0]} and y = {joi[len(joi)-1][1]} and polyline_tag != '{right_tag}'")
+                #print(left_tag,right_tag)
+                if beg != [] or end!=[]:
+
+                    if beg != []:
+                        dpg.delete_item(f'{beg[0][1]}')
+                        poi = data_base.get_coordinates(beg[0][1])  
+                        if len(poi)>0:
+                            if beg[0][1] in tt:
+                                tt.remove(beg[0][1])
+                            left_tag = beg[0][1]
+                            if poi[len(poi)-1][0] == points[0][0] and poi[len(poi)-1][1] == points[0][1]:
+                                joi = poi + joi
+                            else:
+                                joi =  poi + poi[::-1]
+                            data_base.delete(f"polyline_tag = '{beg[0][1]}'",f"tag = '{beg[0][1]}'")
+
+                    joi += points
+                    if end!=[]:
+                        dpg.delete_item(f'{end[0][1]}')
+                        poi = data_base.get_coordinates(end[0][1])  
+                        if len(poi)>0:
+                            if end[0][1] in tt:
+                                tt.remove(end[0][1])
+                            right_tag = end[0][1]
+                            if poi[0][0] == points[len(points)-1][0] and poi[0][1] == points[len(points)-1][1]:
+                                joi += poi
+                            else:
+                                joi += poi[::-1]
+                            data_base.delete(f"polyline_tag = '{end[0][1]}'",f"tag = '{end[0][1]}'")
+                    data_base.delete(f"polyline_tag = '{tag}'",f"tag = ' '")
+                    dpg.delete_item(f'{tag}')
+                else:
+                    break
+                if len(joi)> 500:
+                    data_base.add_coordinates(tag, joi)  
+                    break
+                
+            data_base.add_coordinates(tag, joi)
+            data_base.update_polyline(tag,redraw_flag=1) 
+                
+
+    redraw()
+
 
         
 def check_com_callback():
@@ -2126,6 +2321,7 @@ with dpg.viewport_menu_bar():
         dpg.add_menu_item(label="Delete", callback=delete_l)
         dpg.add_menu_item(label="Set Color", callback=set_color)
         dpg.add_menu_item(label="test", callback=test_callback)
+        dpg.add_menu_item(label="Join", callback=join_callback)
           
 
 

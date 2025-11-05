@@ -88,6 +88,9 @@ class PolylineDatabase:
     def get_polyline_where(self, condition):
         self.cursor.execute(f'SELECT * FROM polylines WHERE {condition}')
         return self.cursor.fetchall()
+    def get_polylines_tag(self):
+        self.cursor.execute(f'SELECT tag FROM polylines')
+        return self.cursor.fetchall()
     def get_polyline(self, tag):
         self.cursor.execute('SELECT * FROM polylines WHERE tag = ?', (tag,))
         return self.cursor.fetchall()
@@ -116,6 +119,9 @@ class PolylineDatabase:
         self.connection.commit()
     def get_all_coordinates(self):
         self.cursor.execute('SELECT * FROM coordinates ')
+        return self.cursor.fetchall()
+    def get_all_coordinates_where(self, condition):
+        self.cursor.execute(f'SELECT * FROM coordinates WHERE {condition}')
         return self.cursor.fetchall()
     def get_coordinates(self, polyline_tag):
         self.cursor.execute('SELECT x, y FROM coordinates WHERE polyline_tag = ?', (polyline_tag,))
@@ -150,6 +156,10 @@ class PolylineDatabase:
     def delete_active(self,condition):
         self.cursor.execute(f"DELETE FROM coordinates WHERE {condition}")
         self.cursor.execute(f"DELETE FROM polylines WHERE active=1")
+        self.connection.commit()
+    def delete(self,condition1,condition2):
+        self.cursor.execute(f"DELETE FROM coordinates WHERE {condition1}")
+        self.cursor.execute(f"DELETE FROM polylines WHERE {condition2}")
         self.connection.commit()
     def inverse_field_value_with_condition(self, column_name, increment_value, conditions):
       

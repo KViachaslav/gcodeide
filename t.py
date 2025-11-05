@@ -1,55 +1,79 @@
-from svg.path import parse_path, Line, CubicBezier, Arc
+import dxfgrabber
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.interpolate import BSpline, splprep, splev # Импортируем обе функции
 
-def svg_path_to_points(path_string, num_samples=50):
-    """
-    Преобразует строку SVG-пути в массив точек (x, y).
-
-    :param path_string: Строка из атрибута 'd' SVG-пути.
-    :param num_samples: Количество точек для интерполяции на всем пути.
-    :return: Массив точек в формате [(x1, y1), (x2, y2), ...].
-    """
+def plot_dxf_spline_fixed(dxf_file_path):
     
-    # 1. Парсинг строки пути
-    path = parse_path(path_string)
+    try:
+        dwg = dxfgrabber.readfile(dxf_file_path)
+    except FileNotFoundError:
+        print(f"Ошибка: Файл '{dxf_file_path}' не найден.")
+        return
     
-    # 2. Вычисление общей длины пути
-    path_length = path.length()
     
-    # 3. Генерация точек
-    points = []
+    spline_count = 0
     
-    # Определяем шаг для получения равноотстоящих точек
-    step_size = path_length / (num_samples - 1) 
+    for entity in dwg.entities:
+        if entity.dxftype == 'SPLINE':
+            spline_count += 1
+            
+            degree = entity.degree
+            
+           
+            if hasattr(entity, 'knots') and entity.knots:
+                
+                knot_vector = np.array(entity.knots)
+                control_points = np.array(entity.control_points)
+                
+                x = control_points[:, 0]
+                y = control_points[:, 1]
+                
+                
+                weights = getattr(entity, 'weights', None) 
+                if weights is not None and not all(w == 1.0 for w in weights):
+                    print(f"Предупреждение: Сплайн {spline_count} является NURBS. Используется нерациональное приближение.")
+                
+                try:
+                    
+                    u_min = knot_vector[degree]
+                    u_max = knot_vector[len(knot_vector) - degree - 1]
+                    u_range = np.linspace(u_min, u_max, 100)
+                    
+                    spline_x = BSpline(knot_vector, x, degree)
+                    spline_y = BSpline(knot_vector, y, degree)
+                    
+                    curve_x = spline_x(u_range)
+                    curve_y = spline_y(u_range)
+                    
+                    ax.plot(curve_x, curve_y, '-', label=f'Сплайн {spline_count} (BSpline)')
+                    
+                    
+                except Exception as e:
+                    print(f"Ошибка SciPy при обработке BSpline {spline_count}: {e}")
 
-    for i in range(num_samples):
-        # Вычисляем параметр t, где 0 <= t <= path_length
-        t = i * step_size
-        
-        # Метод point(t) возвращает комплексное число (x + y*j),
-        # где x - координата по оси X, а y - по оси Y
-        complex_point = path.point(t)
-        
-        # Извлекаем координаты и добавляем их в массив
-        x = complex_point.real
-        y = complex_point.imag
-        points.append((x, y))
-        
-    return points
+            elif hasattr(entity, 'fit_points') and entity.fit_points:
+                
+                fit_points = np.array(entity.fit_points)
+                x = fit_points[:, 0]
+                y = fit_points[:, 1]
+                
+                try:
+                    # Используем splprep для автоматической генерации узлов и коэффициентов
+                    tck, u = splprep([x, y], k=degree, s=0) 
+                    u_new = np.linspace(u.min(), u.max(), 100)
+                    curve_points = splev(u_new, tck)
+                    
+                    # Отрисовка
+                    ax.plot(curve_points[0], curve_points[1], '--', label=f'Сплайн {spline_count} (Интерполяция)')
+                    
+                except Exception as e:
+                    print(f"Ошибка SciPy при интерполяции (Fit Points) {spline_count}: {e}")
 
-# --- Пример использования ---
+            else:
+                print(f"Сплайн {spline_count} пропущен: Нет ни knots, ни fit_points.")
 
-# Путь с абсолютными (M, L) и относительными (c, l) командами:
-# M 10 10 - Move to (10, 10) (абсолютная)
-# L 100 10 - Line to (100, 10) (абсолютная)
-# c 0 50 50 50 50 0 - Cubic Bezier (относительная)
-# l -50 0 - Line (относительная, обратно на 50 по X)
-svg_d_attribute = "M 10 10 L 100 10 c 0 50 50 50 50 0 l -50 0"
 
-array_of_points = svg_path_to_points(svg_d_attribute, num_samples=100)
+    
 
-print(f"Первые 5 точек: {array_of_points[:5]}")
-print(f"Последние 5 точек: {array_of_points[-5:]}")
-
-# Для работы с массивом точек можно преобразовать его, например, в NumPy
-# import numpy as np
-# points_array = np.array(array_of_points)
+plot_dxf_spline_fixed("puuppu.dxf")
