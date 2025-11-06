@@ -1,79 +1,75 @@
-import dxfgrabber
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.interpolate import BSpline, splprep, splev # Импортируем обе функции
+import sqlite3
+from shapely.geometry import LineString, MultiLineString, shape
+from shapely.ops import linemerge
 
-def plot_dxf_spline_fixed(dxf_file_path):
+# 1. Настройка и подключение к базе данных
+DATABASE_NAME = 'polylines.db'
+
+def merge_polylines(db_name):
     
+    conn = None
     try:
-        dwg = dxfgrabber.readfile(dxf_file_path)
-    except FileNotFoundError:
-        print(f"Ошибка: Файл '{dxf_file_path}' не найден.")
-        return
-    
-    
-    spline_count = 0
-    
-    for entity in dwg.entities:
-        if entity.dxftype == 'SPLINE':
-            spline_count += 1
+        conn = sqlite3.connect(db_name)
+        cursor = conn.cursor()
+
             
-            degree = entity.degree
+        cursor.execute('''
+            SELECT polyline_tag, x, y, id 
+            FROM coordinates 
+            ORDER BY polyline_tag, id
+        ''')
+        all_data = cursor.fetchall()
+        
+        # Группировка точек в ломаные линии по polyline_tag
+        lines_to_merge = []
+        current_tag = None
+        current_points = []
+        
+        for tag, x, y, order in all_data:
+            if tag != current_tag and current_points:
+                if len(current_points) >= 2:
+                    lines_to_merge.append(LineString(current_points))
+                current_points = []
             
-           
-            if hasattr(entity, 'knots') and entity.knots:
-                
-                knot_vector = np.array(entity.knots)
-                control_points = np.array(entity.control_points)
-                
-                x = control_points[:, 0]
-                y = control_points[:, 1]
-                
-                
-                weights = getattr(entity, 'weights', None) 
-                if weights is not None and not all(w == 1.0 for w in weights):
-                    print(f"Предупреждение: Сплайн {spline_count} является NURBS. Используется нерациональное приближение.")
-                
-                try:
-                    
-                    u_min = knot_vector[degree]
-                    u_max = knot_vector[len(knot_vector) - degree - 1]
-                    u_range = np.linspace(u_min, u_max, 100)
-                    
-                    spline_x = BSpline(knot_vector, x, degree)
-                    spline_y = BSpline(knot_vector, y, degree)
-                    
-                    curve_x = spline_x(u_range)
-                    curve_y = spline_y(u_range)
-                    
-                    ax.plot(curve_x, curve_y, '-', label=f'Сплайн {spline_count} (BSpline)')
-                    
-                    
-                except Exception as e:
-                    print(f"Ошибка SciPy при обработке BSpline {spline_count}: {e}")
+            current_tag = tag
+            current_points.append((x, y))
 
-            elif hasattr(entity, 'fit_points') and entity.fit_points:
-                
-                fit_points = np.array(entity.fit_points)
-                x = fit_points[:, 0]
-                y = fit_points[:, 1]
-                
-                try:
-                    # Используем splprep для автоматической генерации узлов и коэффициентов
-                    tck, u = splprep([x, y], k=degree, s=0) 
-                    u_new = np.linspace(u.min(), u.max(), 100)
-                    curve_points = splev(u_new, tck)
-                    
-                    # Отрисовка
-                    ax.plot(curve_points[0], curve_points[1], '--', label=f'Сплайн {spline_count} (Интерполяция)')
-                    
-                except Exception as e:
-                    print(f"Ошибка SciPy при интерполяции (Fit Points) {spline_count}: {e}")
+        if current_points and len(current_points) >= 2:
+             lines_to_merge.append(LineString(current_points))
+             
+        if not lines_to_merge:
+            print("Нет ломаных линий для слияния.")
+            return []
 
-            else:
-                print(f"Сплайн {spline_count} пропущен: Нет ни knots, ни fit_points.")
+        # 5. Выполнение слияния
+        # linemerge работает с MultiLineString или списком LineStrings
+        merged_geometry = linemerge(lines_to_merge)
+
+        # 6. Обработка результата
+        results = []
+        if merged_geometry.geom_type == 'LineString':
+            results.append(merged_geometry)
+        elif merged_geometry.geom_type == 'MultiLineString':
+            # MultiLineString содержит несколько объединенных ломаных
+            results.extend(merged_geometry.geoms)
+        
+        return results
+
+    except sqlite3.Error as e:
+        print(f"Ошибка SQLite: {e}")
+        return []
+    finally:
+        if conn:
+            conn.close()
+
+results = merge_polylines(DATABASE_NAME)
 
 
-    
-
-plot_dxf_spline_fixed("puuppu.dxf")
+for i, line in enumerate(results):
+    print(f"Объединенная линия {i+1} ({line.geom_type}):")
+    # Преобразование координат в список для вывода
+    coords = list(line.coords)
+    print(f"  Начало: {coords[0]}")
+    print(f"  Конец: {coords[-1]}")
+    # print(f"  Все координаты: {coords}") 
+    print(f"  Количество вершин: {len(coords)}")

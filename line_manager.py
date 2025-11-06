@@ -1,4 +1,6 @@
 import sqlite3
+from shapely.geometry import LineString, MultiLineString, shape
+from shapely.ops import linemerge
 
 class PolylineDatabase:
     def __init__(self, db_name='polylines.db'):
@@ -98,7 +100,19 @@ class PolylineDatabase:
         self.cursor.execute(f'SELECT tag FROM polylines WHERE {condition}')
         return [row[0] for row in self.cursor.fetchall()]
     
-   
+    def fetch_tags_with_same_big_tag(self, tag_value):
+        
+        
+        self.cursor.execute("""
+        SELECT tag 
+        FROM polylines 
+        WHERE big_tag = (SELECT big_tag FROM polylines WHERE tag = ?);
+        """, (tag_value,))
+        tags = self.cursor.fetchall()
+        
+        
+        return [tag[0] for tag in tags]
+
     def get_color(self,condition):
         
         self.cursor.execute(f'SELECT color, active FROM polylines WHERE {condition}')
@@ -169,24 +183,52 @@ class PolylineDatabase:
             WHERE {conditions}
         """, (increment_value,))
         self.connection.commit()
-# db = PolylineDatabase()
+    def merge_polylines(self,):
+       
+        try:        
+            self.cursor.execute('''
+                SELECT polyline_tag, x, y, id 
+                FROM coordinates 
+                ORDER BY polyline_tag, id
+            ''')
+            all_data = self.cursor.fetchall()
+            
+            # Группировка точек в ломаные линии по polyline_tag
+            lines_to_merge = []
+            current_tag = None
+            current_points = []
+            
+            for tag, x, y, order in all_data:
+                
+                if tag != current_tag and current_points:
+                    if len(current_points) >= 2:
+                        lines_to_merge.append(LineString(current_points))
+                    current_points = []
+                
+                current_tag = tag
+                current_points.append((x, y))
 
-# db.add_polyline('polyline1','polylineee1', 1, True, True, False)
+            if current_points and len(current_points) >= 2:
+                lines_to_merge.append(LineString(current_points))
+                
+            if not lines_to_merge:
+                print("Нет ломаных линий для слияния.")
+                return []
 
-# db.update_polyline('polyline1', color=3, active=True)
+            merged_geometry = linemerge(lines_to_merge)
 
-# polyline = db.get_polyline('polyline1')
-# print(polyline)
-# coordinates = [
-#         (0, 0),
-#         (1, 1),
-#         (2, 2)
-#     ]
-    
-# db.add_coordinates('polyline1', coordinates)
+            results = []
+            if merged_geometry.geom_type == 'LineString':
+                results.append(merged_geometry)
+            elif merged_geometry.geom_type == 'MultiLineString':
+                
+                results.extend(merged_geometry.geoms)
+            
+            return results
 
-# coordinates = db.get_coordinates('polyline1')
-# print(coordinates)
+        except sqlite3.Error as e:
+            print(f"Ошибка SQLite: {e}")
+            return []
+        
 
 
-# db.close()

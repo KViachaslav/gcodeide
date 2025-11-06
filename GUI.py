@@ -28,10 +28,9 @@ import dxfgrabber
 from scipy.interpolate import CubicSpline
 from scipy.interpolate import splprep, splev,splrep,BSpline
 
-def active_but(sender,app_data):
+def active_but(sender):
     state = data_base.get_polyline_where(f"big_tag='{sender}'")
     
-
     tags = [s[1] for s in state]
     data_base.update_polylines(tags,active=False if state[0][4]==1  else True)
     
@@ -1085,12 +1084,7 @@ def plot_mouse_click_callback():
             num+=1
         redraw()
     elif dpg.get_value('movelines'):
-        # rec = db.get_records_where('lines','isactive=1')
-        # xx = [r[1] for r in rec]
-        # xx+= [r[3] for r in rec]
-        # yy = [r[2] for r in rec]
-        # yy+= [r[4] for r in rec]
-        # db.increment_field_value_with_condition('lines','sx','ex','sy','ey',x-min(xx),y-min(yy),'isactive',1)
+       
         coords = []
         tags = data_base.get_tag_where('active=True')
         for tag in tags:
@@ -1107,6 +1101,28 @@ def plot_mouse_click_callback():
         data_base.update_polylines(tags,redraw_flag = True)
                 
         redraw()
+    elif dpg.get_value('select'):
+        rec = data_base.get_all_coordinates()
+        lines = []
+        for i in range(len(rec)-1):
+            lines.append([(rec[i][2],rec[i][3]),(rec[i+1][2],rec[i+1][3])])
+        clos,i,m,_ = find_closest_pointt(lines,(x,y),set(range(len(lines))))
+        tagg = 1
+        if m:
+            tagg = rec[i][1]
+        else:
+            tagg = rec[i+1][1]
+        
+        tags = data_base.fetch_tags_with_same_big_tag(tagg)
+        
+        for tag in tags:
+            print(tag)
+            #data_base.update_polyline(tag,active=1,color_change_flag=True)
+            # print(data_base.get_unique_politag_where(f"tag='{tag[0]}'"))
+            active_but(data_base.get_unique_politag_where(f"tag='{tag}'")[0])    
+
+
+        recolor()
 def recolor():
     for tag in data_base.get_tag('color_change_flag=True'):
         coloractive = data_base.get_color(f'tag="{tag}"')[0]
@@ -1813,64 +1829,24 @@ def pr(selected_files):
         extract_points_from_svg(current_file)
         redraw()
 def join_callback():
+   
+    results = data_base.merge_polylines()
     tags = data_base.get_polylines_tag()
-    tt = set([t[0] for t in tags])
-    while tt:
-        tag = list(tt)[0]
-        tt.remove(tag)
-        left_tag = tag
-        right_tag = tag
-        points = data_base.get_coordinates(tag)
-        joi = points
-
-
-        if len(points) > 0:
-
-            while True:
-                
-                beg = data_base.get_all_coordinates_where(f"x={joi[0][0]} and y = {joi[0][1]} and polyline_tag != '{left_tag}'")
-                end = data_base.get_all_coordinates_where(f"x={joi[len(joi)-1][0]} and y = {joi[len(joi)-1][1]} and polyline_tag != '{right_tag}'")
-                #print(left_tag,right_tag)
-                if beg != [] or end!=[]:
-
-                    if beg != []:
-                        dpg.delete_item(f'{beg[0][1]}')
-                        poi = data_base.get_coordinates(beg[0][1])  
-                        if len(poi)>0:
-                            if beg[0][1] in tt:
-                                tt.remove(beg[0][1])
-                            left_tag = beg[0][1]
-                            if poi[len(poi)-1][0] == points[0][0] and poi[len(poi)-1][1] == points[0][1]:
-                                joi = poi + joi
-                            else:
-                                joi =  poi + poi[::-1]
-                            data_base.delete(f"polyline_tag = '{beg[0][1]}'",f"tag = '{beg[0][1]}'")
-
-                    joi += points
-                    if end!=[]:
-                        dpg.delete_item(f'{end[0][1]}')
-                        poi = data_base.get_coordinates(end[0][1])  
-                        if len(poi)>0:
-                            if end[0][1] in tt:
-                                tt.remove(end[0][1])
-                            right_tag = end[0][1]
-                            if poi[0][0] == points[len(points)-1][0] and poi[0][1] == points[len(points)-1][1]:
-                                joi += poi
-                            else:
-                                joi += poi[::-1]
-                            data_base.delete(f"polyline_tag = '{end[0][1]}'",f"tag = '{end[0][1]}'")
-                    data_base.delete(f"polyline_tag = '{tag}'",f"tag = ' '")
-                    dpg.delete_item(f'{tag}')
-                else:
-                    break
-                if len(joi)> 500:
-                    data_base.add_coordinates(tag, joi)  
-                    break
-                
-            data_base.add_coordinates(tag, joi)
-            data_base.update_polyline(tag,redraw_flag=1) 
-                
-
+    print(tags)
+    for t in tags:
+        
+        dpg.delete_item(f'{t[0]}')
+    but = data_base.get_unique_politag()
+    for b in but:
+        dpg.delete_item(f'{b[0]}')
+    data_base.clear_tables()
+    dpg.add_button(label='join',parent='butonss',tag='join',callback=active_but)
+    for i, line in enumerate(results):
+        
+        data_base.add_polyline(f"{i+1}{line.geom_type}",'join',0, False, True, False)
+        data_base.add_coordinates(f"{i+1}{line.geom_type}", list(line.coords))
+        
+        
     redraw()
 
 
@@ -2404,7 +2380,7 @@ with dpg.window(pos=(0,0),width=900, height=725,tag='papa'):
                 dpg.add_input_text(width=50,scientific=True,tag='insert_numbers',default_value='123')
             dpg.add_checkbox(label="change order",default_value=False,tag='change_order',callback=rasberitesb)
             dpg.add_checkbox(label="move lines",default_value=False,tag='movelines',callback=rasberitesb)
-    
+            dpg.add_checkbox(label="select",default_value=False,tag='select',callback=rasberitesb)
 with dpg.item_handler_registry() as registry:
     dpg.add_item_clicked_handler(button=dpg.mvMouseButton_Right, callback=plot_mouse_click_callback)
 dpg.bind_item_handler_registry(plot, registry)
