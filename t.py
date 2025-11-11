@@ -1,75 +1,72 @@
-import sqlite3
-from shapely.geometry import LineString, MultiLineString, shape
-from shapely.ops import linemerge
+import numpy as np
 
-# 1. Настройка и подключение к базе данных
-DATABASE_NAME = 'polylines.db'
+def rotate_points(points, center, angle_degrees):
+    """
+    Поворачивает массив точек относительно заданного центра на заданный угол.
 
-def merge_polylines(db_name):
+    :param points: Двумерный массив точек (N, 2), где N — количество точек.
+    :param center: Кортеж или массив (2,) — координаты центра вращения (cx, cy).
+    :param angle_degrees: Угол поворота в градусах (положительный — против часовой стрелки).
+    :return: Новый массив повернутых точек (N, 2).
+    """
+    # 1. Преобразуем угол из градусов в радианы
+    angle_radians = np.deg2rad(angle_degrees)
     
-    conn = None
-    try:
-        conn = sqlite3.connect(db_name)
-        cursor = conn.cursor()
+    # 2. Вычисляем косинус и синус угла
+    cos_theta = np.cos(angle_radians)
+    sin_theta = np.sin(angle_radians)
+    
+    # 3. Создаем матрицу вращения 2x2
+    # R = [[cos(theta), -sin(theta)], 
+    #      [sin(theta),  cos(theta)]]
+    rotation_matrix = np.array([
+        [cos_theta, -sin_theta],
+        [sin_theta, cos_theta]
+    ])
+    
+    # 4. Смещаем точки: P_shift = P - C
+    # NumPy позволяет вычесть массив центра (1, 2) из массива точек (N, 2).
+    center = np.array(center)
+    points_shifted = points - center
+    
+    # 5. Применяем вращение: P_rotated = P_shift @ R^T (или R, в зависимости от конвенции)
+    # Используем оператор @ (или np.dot) для матричного умножения.
+    # points_shifted - это (N, 2), rotation_matrix - (2, 2). Результат будет (N, 2).
+    points_rotated_shifted = points_shifted @ rotation_matrix.T
+    
+    # 6. Обратное смещение: P_final = P_rotated + C
+    points_final = points_rotated_shifted + center
+    
+    return points_final
 
-            
-        cursor.execute('''
-            SELECT polyline_tag, x, y, id 
-            FROM coordinates 
-            ORDER BY polyline_tag, id
-        ''')
-        all_data = cursor.fetchall()
-        
-        # Группировка точек в ломаные линии по polyline_tag
-        lines_to_merge = []
-        current_tag = None
-        current_points = []
-        
-        for tag, x, y, order in all_data:
-            if tag != current_tag and current_points:
-                if len(current_points) >= 2:
-                    lines_to_merge.append(LineString(current_points))
-                current_points = []
-            
-            current_tag = tag
-            current_points.append((x, y))
+# --- ИСПОЛЬЗОВАНИЕ ПРИМЕРА ---
 
-        if current_points and len(current_points) >= 2:
-             lines_to_merge.append(LineString(current_points))
-             
-        if not lines_to_merge:
-            print("Нет ломаных линий для слияния.")
-            return []
+# Исходные точки (массив N x 2)
+# Точка (1, 0)
+# Точка (2, 1)
+# Точка (1, 2)
+points_array = np.array([
+    [1.0, 0.0], 
+    [2.0, 1.0], 
+    [1.0, 2.0]
+])
 
-        # 5. Выполнение слияния
-        # linemerge работает с MultiLineString или списком LineStrings
-        merged_geometry = linemerge(lines_to_merge)
+# Центр вращения
+center_point = (1.0, 1.0) 
 
-        # 6. Обработка результата
-        results = []
-        if merged_geometry.geom_type == 'LineString':
-            results.append(merged_geometry)
-        elif merged_geometry.geom_type == 'MultiLineString':
-            # MultiLineString содержит несколько объединенных ломаных
-            results.extend(merged_geometry.geoms)
-        
-        return results
+# Угол поворота (например, 90 градусов против часовой стрелки)
+angle = 90.0
 
-    except sqlite3.Error as e:
-        print(f"Ошибка SQLite: {e}")
-        return []
-    finally:
-        if conn:
-            conn.close()
+print(f"Исходные точки:\n{points_array}")
+print(f"Центр вращения: {center_point}")
+print(f"Угол вращения: {angle} градусов")
 
-results = merge_polylines(DATABASE_NAME)
+# Выполняем поворот
+rotated_points = rotate_points(points_array, center_point, angle)
 
-
-for i, line in enumerate(results):
-    print(f"Объединенная линия {i+1} ({line.geom_type}):")
-    # Преобразование координат в список для вывода
-    coords = list(line.coords)
-    print(f"  Начало: {coords[0]}")
-    print(f"  Конец: {coords[-1]}")
-    # print(f"  Все координаты: {coords}") 
-    print(f"  Количество вершин: {len(coords)}")
+print("\nПовернутые точки (с точностью до двух знаков после запятой):")
+# Ожидаемые координаты после поворота на 90 градусов вокруг (1, 1):
+# (1, 0) -> (2, 1)
+# (2, 1) -> (1, 2)
+# (1, 2) -> (0, 1)
+print(np.round(rotated_points, 2))

@@ -140,6 +140,14 @@ class PolylineDatabase:
     def get_coordinates(self, polyline_tag):
         self.cursor.execute('SELECT x, y FROM coordinates WHERE polyline_tag = ?', (polyline_tag,))
         return self.cursor.fetchall()
+    def get_coordinates_with_id(self, polyline_tag):
+        self.cursor.execute('SELECT id, x, y FROM coordinates WHERE polyline_tag = ?', (polyline_tag,))
+        return self.cursor.fetchall()
+    def update(self,update_queries):
+        self.cursor.execute("BEGIN TRANSACTION;")
+        self.cursor.executemany("UPDATE coordinates SET x = ?, y = ? WHERE id = ?;", update_queries)
+        self.cursor.execute("COMMIT;")
+
     def get_coordinates_where(self, condition):
         self.cursor.execute(f'SELECT x, y FROM coordinates WHERE {condition}')
         return self.cursor.fetchall()
@@ -166,6 +174,12 @@ class PolylineDatabase:
     def set_color(self, new_value):
         
         self.cursor.execute(f"UPDATE polylines SET color = ? WHERE active = 1", (new_value,))
+        self.connection.commit()
+    def select_all(self,):
+        self.cursor.execute(f"UPDATE polylines SET active = True, color_change_flag = True WHERE active = False")
+        self.connection.commit()
+    def hide_all(self,):
+        self.cursor.execute(f"UPDATE polylines SET active = False, color_change_flag = True WHERE active = True")
         self.connection.commit()
     def delete_active(self,condition):
         self.cursor.execute(f"DELETE FROM coordinates WHERE {condition}")

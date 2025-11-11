@@ -486,13 +486,12 @@ def read_dxf_with_grabber(file_path):
                 y = fit_points[:, 1]
                 
                 try:
-                    # Используем splprep для автоматической генерации узлов и коэффициентов
+                
                     tck, u = splprep([x, y], k=degree, s=0) 
                     u_new = np.linspace(u.min(), u.max(), 20)
                     curve_points = splev(u_new, tck)
                     
-                    # Отрисовка
-                    #ax.plot(curve_points[0], curve_points[1], '--', label=f'Сплайн {spline_count} (Интерполяция)')
+                    
                     data_base.add_polyline(nice_path+f"_spline_"+f"{counter}",nice_path,0, False, True, False)
                     data_base.add_coordinates(nice_path+f"_spline_"+f"{counter}", [(x,y)for x,y, in zip(curve_points[0],curve_points[1])])
         
@@ -546,11 +545,6 @@ def read_dxf_with_grabber(file_path):
         else:
             print(f"{entity.dxftype}")
         counter+=1
-
-
-
-
-
 
 
 
@@ -920,6 +914,8 @@ def callback_to_gcode(sender, app_data, user_data):
     dpg.set_value('multiline_input',"\n".join(gcode_lines))
 def save_as_dxf():
     dpg.show_item("file_dialog_id1")
+def save_sel_as_dxf():
+    dpg.show_item("file_dialog_id11")
 def save_dxf(sender, app_data, user_data):
     current_file = app_data['file_path_name']
     doc = ezdxf.new()
@@ -944,7 +940,30 @@ def save_dxf(sender, app_data, user_data):
             
             msp.add_lwpolyline(coords, close=False,dxfattribs={'layer': layer_name})
     doc.saveas(current_file)
+def save_sel_dxf(sender, app_data, user_data):
+    current_file = app_data['file_path_name']
+    doc = ezdxf.new()
+    msp = doc.modelspace()
 
+    tag0 = data_base.get_tag_where('color=0 AND active=True')
+    tag1 = data_base.get_tag_where('color=1 AND active=True')
+    tag2 = data_base.get_tag_where('color=2 AND active=True')
+    tag3 = data_base.get_tag_where('color=3 AND active=True')
+    tag4 = data_base.get_tag_where('color=4 AND active=True')
+    tags = [tag0,tag1,tag2,tag3,tag4]
+    h = 1
+    
+    for tag in tags:
+        power = dpg.get_value(f"{h}_value")
+        speed = dpg.get_value(f"{h}1_value")
+        layer_name = f"power{power}speed{speed}"
+        doc.layers.new(name=layer_name, dxfattribs={'color': 7})  # 7 - цвет белый
+        h+=1
+        for t in tag:
+            coords = data_base.get_coordinates(t)
+            
+            msp.add_lwpolyline(coords, close=False,dxfattribs={'layer': layer_name})
+    doc.saveas(current_file)
 
 def check_callback(sender):
     for i in ['color_1','color_2','color_3','color_4','color_5']:
@@ -983,15 +1002,43 @@ char_shifts = {'1':16,
 
 def rasberitesb(sender,app_data):
     if app_data:
-        if sender == 'change_order':
-            dpg.set_value('add_text',False)
-            dpg.set_value('movelines',False)
-        if sender == 'add_text':
-            dpg.set_value('change_order',False)
-            dpg.set_value('movelines',False)
-        if sender == 'movelines':
-            dpg.set_value('change_order',False)
-            dpg.set_value('add_text',False)
+        
+        for s in ['change_order','add_text','movelines','select','rotate']:
+            if sender != s:
+                dpg.set_value(s,False)
+
+def calback_reselect(sender):
+    
+    if dpg.get_item_label("selectall") == 'select all':
+        data_base.select_all()
+        dpg.set_item_label("selectall", "hide all")
+    else:
+        data_base.hide_all()
+        dpg.set_item_label("selectall", "select all")
+    
+    recolor()
+
+def rotate_points(points, center, angle_degrees):
+    
+    angle_radians = np.deg2rad(angle_degrees)
+    
+    cos_theta = np.cos(angle_radians)
+    sin_theta = np.sin(angle_radians)
+    
+    rotation_matrix = np.array([
+        [cos_theta, -sin_theta],
+        [sin_theta, cos_theta]
+    ])
+    
+    center = np.array(center)
+    points_shifted = points - center
+    
+    points_rotated_shifted = points_shifted @ rotation_matrix.T
+    
+    points_final = points_rotated_shifted + center
+    
+    return points_final
+
 
 def plot_mouse_click_callback():
     
@@ -1123,6 +1170,74 @@ def plot_mouse_click_callback():
 
 
         recolor()
+    elif dpg.get_value('rotate'):
+        
+
+        coords = []
+        tags = data_base.get_tag_where('active=True')
+        
+
+        CENTER_X = 0
+        CENTER_Y = 0
+        ANGLE_RAD = np.tan(-x/y)
+        
+
+        COS_A = math.cos(ANGLE_RAD)
+        SIN_A = math.sin(ANGLE_RAD)
+        update_queries = []
+        for tag in tags:
+            points = data_base.get_coordinates_with_id(tag)
+
+            
+
+            for id, x, y in points:
+                
+                x_prime = x - CENTER_X
+                y_prime = y - CENTER_Y
+
+                x_new_prime = x_prime * COS_A - y_prime * SIN_A
+                y_new_prime = x_prime * SIN_A + y_prime * COS_A
+
+                x_new = x_new_prime + CENTER_X
+                y_new = y_new_prime + CENTER_Y
+
+                update_queries.append((x_new, y_new, id))
+        data_base.update(update_queries)
+        data_base.update_polylines(tags,redraw_flag = True)
+        redraw()
+def call_rot():
+    coords = []
+    tags = data_base.get_tag_where('active=True')
+    
+
+    CENTER_X = 0
+    CENTER_Y = 0
+    ANGLE_RAD = math.radians(-float(dpg.get_value('rotate_angle')))
+    
+
+    COS_A = math.cos(ANGLE_RAD)
+    SIN_A = math.sin(ANGLE_RAD)
+    update_queries = []
+    for tag in tags:
+        points = data_base.get_coordinates_with_id(tag)
+
+        
+
+        for id, x, y in points:
+            
+            x_prime = x - CENTER_X
+            y_prime = y - CENTER_Y
+
+            x_new_prime = x_prime * COS_A - y_prime * SIN_A
+            y_new_prime = x_prime * SIN_A + y_prime * COS_A
+
+            x_new = x_new_prime + CENTER_X
+            y_new = y_new_prime + CENTER_Y
+
+            update_queries.append((x_new, y_new, id))
+    data_base.update(update_queries)
+    data_base.update_polylines(tags,redraw_flag = True)
+    redraw()     
 def recolor():
     for tag in data_base.get_tag('color_change_flag=True'):
         coloractive = data_base.get_color(f'tag="{tag}"')[0]
@@ -1829,15 +1944,16 @@ def pr(selected_files):
         extract_points_from_svg(current_file)
         redraw()
 def join_callback():
-   
+    
     results = data_base.merge_polylines()
     tags = data_base.get_polylines_tag()
-    print(tags)
+    
     for t in tags:
         
         dpg.delete_item(f'{t[0]}')
     but = data_base.get_unique_politag()
     for b in but:
+        print(f'{b[0]}')
         dpg.delete_item(f'{b[0]}')
     data_base.clear_tables()
     dpg.add_button(label='join',parent='butonss',tag='join',callback=active_but)
@@ -2282,7 +2398,7 @@ with dpg.viewport_menu_bar():
         dpg.add_menu_item(label="Open DXF from EsyEDA", callback=esye)
         dpg.add_menu_item(label="Save As Gcode", callback=save_as_gcode)
         dpg.add_menu_item(label="Save As DXF", callback=save_as_dxf)
-        
+        dpg.add_menu_item(label="Save Selected As DXF", callback=save_sel_as_dxf)
         
         with dpg.menu(label="Settings"):
             dpg.add_menu_item(label="Text Size", callback=lambda:dpg.configure_item("text_size_modal", show=True))
@@ -2319,6 +2435,8 @@ with dpg.window(pos=(0,0),width=900, height=725,tag='papa'):
     with dpg.group(horizontal=True):
         with dpg.group():
             with dpg.file_dialog(directory_selector=False, show=False, callback=save_dxf, id="file_dialog_id1", width=700 ,height=400):
+                    dpg.add_file_extension(".dxf", color=(255, 0, 255, 255), custom_text="[DXF]")
+            with dpg.file_dialog(directory_selector=False, show=False, callback=save_sel_dxf, id="file_dialog_id11", width=700 ,height=400):
                     dpg.add_file_extension(".dxf", color=(255, 0, 255, 255), custom_text="[DXF]")
             with dpg.file_dialog(directory_selector=False, show=False, callback=callback_to_gcode, id="file_dialog_id2", width=700 ,height=400):
                     dpg.add_file_extension(".gcode", color=(255, 0, 255, 255), custom_text="[GCODE]")
@@ -2380,7 +2498,13 @@ with dpg.window(pos=(0,0),width=900, height=725,tag='papa'):
                 dpg.add_input_text(width=50,scientific=True,tag='insert_numbers',default_value='123')
             dpg.add_checkbox(label="change order",default_value=False,tag='change_order',callback=rasberitesb)
             dpg.add_checkbox(label="move lines",default_value=False,tag='movelines',callback=rasberitesb)
-            dpg.add_checkbox(label="select",default_value=False,tag='select',callback=rasberitesb)
+            with dpg.group(horizontal=True):
+                dpg.add_checkbox(label="select",default_value=False,tag='select',callback=rasberitesb)
+                dpg.add_button(label='select all',callback=calback_reselect,tag='selectall')
+            with dpg.group(horizontal=True):
+                dpg.add_checkbox(label="rotate",default_value=False,tag='rotate',callback=rasberitesb)
+                dpg.add_input_text( label="", default_value="", tag="rotate_angle", readonly=False,scientific=True,width=150)
+                dpg.add_button(label='call',tag='r',callback=call_rot)
 with dpg.item_handler_registry() as registry:
     dpg.add_item_clicked_handler(button=dpg.mvMouseButton_Right, callback=plot_mouse_click_callback)
 dpg.bind_item_handler_registry(plot, registry)
