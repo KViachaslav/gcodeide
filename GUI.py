@@ -280,7 +280,7 @@ def Polygon_to_lines(union_polygon,num_lines,width_lines,nice_path):
             
 def read_dxf_lines_from_esyeda(sender, app_data, user_data):
 
-    for_buffer = 0.07
+    for_buffer = 0.1
 
     doc = ezdxf.readfile(user_data[0])
     full = dpg.get_value('varradio') == 'full'
@@ -371,7 +371,7 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
     lins = []
     if full:
         ex = shapely.envelope(unary_union(MultiPolygon([p for p in border])))
-        print(ex.xy[0],ex.xy[1])
+        
         if ex.geom_type == "Polygon":
             xm, ym = ex.exterior.xy
             xmin = min(xm)
