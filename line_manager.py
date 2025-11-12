@@ -147,7 +147,66 @@ class PolylineDatabase:
         self.cursor.execute("BEGIN TRANSACTION;")
         self.cursor.executemany("UPDATE coordinates SET x = ?, y = ? WHERE id = ?;", update_queries)
         self.cursor.execute("COMMIT;")
+    def xz(self, X,Y,polyline_tag):
 
+        #distance_formula = f"((x - {X}) * (x - {X})) + ((y - {Y}) * (y - {Y}))"
+        #placeholders = ', '.join('?' for i in range(len(polyline_tag)))
+        # sql_query = f"""
+        # SELECT 
+        #     *, 
+        #     {distance_formula} AS distance_sq
+        # FROM coordinates WHERE polyline_tag IN ({placeholders})
+        # ORDER BY 
+        #     distance_sq ASC
+        # LIMIT 1;
+        # """
+        
+        placeholders = ', '.join(['?'] * len(polyline_tag))
+    
+        distance_formula = f"((x - {X}) * (x - {X})) + ((y - {Y}) * (y - {Y}))"
+        
+        sql_query = f"""
+        WITH RankedPoints AS (
+            SELECT
+                *,
+                ROW_NUMBER() OVER (PARTITION BY polyline_tag ORDER BY id ASC) AS rn,
+                COUNT(*) OVER (PARTITION BY polyline_tag) AS max_rn
+            FROM 
+                coordinates
+            WHERE
+                polyline_tag IN ({placeholders})
+        ),
+
+        FirstAndLastPoints AS (
+            SELECT 
+                T.* FROM 
+                coordinates T
+            INNER JOIN 
+                RankedPoints RP ON T.id = RP.id
+            WHERE
+                RP.rn = 1 OR RP.rn = RP.max_rn
+        )
+
+        SELECT 
+            *, 
+            {distance_formula} AS distance_sq
+        FROM 
+            FirstAndLastPoints
+        ORDER BY 
+            distance_sq ASC
+        LIMIT 1;
+        """
+
+
+
+        self.cursor.execute(sql_query, polyline_tag)
+        return self.cursor.fetchall()
+
+
+        # placeholders = ', '.join('?' for i in range(len(polyline_tag)-2))
+        # self.cursor.execute(f'SELECT x, y, polyline_tag, SQRT(POWER(x - ?, 2) + POWER(y - ?, 2)) AS distance FROM coordinates WHERE polyline_tag IN ({placeholders}) ORDER BY distance LIMIT 1', (polyline_tag,))
+        # return self.cursor.fetchall()
+        
     def get_coordinates_where(self, condition):
         self.cursor.execute(f'SELECT x, y FROM coordinates WHERE {condition}')
         return self.cursor.fetchall()

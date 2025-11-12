@@ -9,7 +9,7 @@ import ezdxf
 import numpy as np
 import math
 import svgwrite
-from db import SQLiteDatabase
+
 from PIL import Image
 import os
 from ezdxf import colors
@@ -889,6 +889,7 @@ def callback_to_gcode(sender, app_data, user_data):
     tag2 = data_base.get_tag_where('color=2')
     tag3 = data_base.get_tag_where('color=3')
     tag4 = data_base.get_tag_where('color=4')
+
     tags = [tag0,tag1,tag2,tag3,tag4]
     h = 1
     for tag in tags:
@@ -906,6 +907,62 @@ def callback_to_gcode(sender, app_data, user_data):
                 for coord in coords[2:]:
                     gcode_lines.append(f"X{round(coord[0],4)} Y{round(coord[1],4)}")
             gcode_lines.append("S0")
+
+    gcode_lines.append(f"M5 S0")
+    with open(current_file, 'w') as f:
+        f.write("\n".join(gcode_lines))
+
+    dpg.set_value('multiline_input',"\n".join(gcode_lines))
+def callback_to_gcode2(sender, app_data, user_data):
+    current_file = app_data['file_path_name']
+    gcode_lines = []
+    gcode_lines.append("G90")
+    gcode_lines.append("M4 S0")
+
+    tag0 = data_base.get_tag_where('color=0')
+    tag1 = data_base.get_tag_where('color=1')
+    tag2 = data_base.get_tag_where('color=2')
+    tag3 = data_base.get_tag_where('color=3')
+    tag4 = data_base.get_tag_where('color=4')
+
+    tags = [tag0,tag1,tag2,tag3,tag4]
+    h = 1
+    curr_pos = [0,0]
+    for tag in tags:
+        power = dpg.get_value(f"{h}_value")
+        speed = dpg.get_value(f"{h}1_value")
+
+        sett = set(tag)
+
+        while sett:
+            poly = data_base.xz(curr_pos[0],curr_pos[1],list(sett))
+            
+            sett.remove(poly[0][1])
+            coords = data_base.get_coordinates(poly[0][1])
+            if coords[0][0] != poly[0][2] or coords[0][1] != poly[0][3]:
+                coords = coords[::-1]
+            gcode_lines.append(f"G0 X{round(coords[0][0],4)} Y{round(coords[0][1],4)}")
+            gcode_lines.append(f"F{speed}")
+            gcode_lines.append(f"S{power}")
+            gcode_lines.append(f"G1 X{round(coords[1][0],4)} Y{round(coords[1][1],4)}")
+            if len(coords) > 2:
+                for coord in coords[2:]:
+                    gcode_lines.append(f"X{round(coord[0],4)} Y{round(coord[1],4)}")
+            gcode_lines.append("S0")
+
+
+        # h+=1
+        # for t in tag:
+        #     coords = data_base.get_coordinates(t)
+
+        #     gcode_lines.append(f"G0 X{round(coords[0][0],4)} Y{round(coords[0][1],4)}")
+        #     gcode_lines.append(f"F{speed}")
+        #     gcode_lines.append(f"S{power}")
+        #     gcode_lines.append(f"G1 X{round(coords[1][0],4)} Y{round(coords[1][1],4)}")
+        #     if len(coords) > 2:
+        #         for coord in coords[2:]:
+        #             gcode_lines.append(f"X{round(coord[0],4)} Y{round(coord[1],4)}")
+        #     gcode_lines.append("S0")
 
     gcode_lines.append(f"M5 S0")
     with open(current_file, 'w') as f:
@@ -1003,7 +1060,7 @@ char_shifts = {'1':16,
 def rasberitesb(sender,app_data):
     if app_data:
         
-        for s in ['change_order','add_text','movelines','select','rotate']:
+        for s in ['change_order','add_text','movelines','select','rotate','center']:
             if sender != s:
                 dpg.set_value(s,False)
 
@@ -1177,8 +1234,9 @@ def plot_mouse_click_callback():
         tags = data_base.get_tag_where('active=True')
         
 
-        CENTER_X = 0
-        CENTER_Y = 0
+        CENTER_X = float(dpg.get_value('x_center'))
+        CENTER_Y = float(dpg.get_value('y_center'))
+        print(CENTER_X,CENTER_Y)
         ANGLE_RAD = np.tan(-x/y)
         
 
@@ -1205,13 +1263,18 @@ def plot_mouse_click_callback():
         data_base.update(update_queries)
         data_base.update_polylines(tags,redraw_flag = True)
         redraw()
+    elif dpg.get_value('center'):
+        dpg.set_value('x_center',x)
+        dpg.set_value('y_center',y)
+        dpg.set_value("series_center",[[x],[y]])
+        
 def call_rot():
-    coords = []
+    
     tags = data_base.get_tag_where('active=True')
     
 
-    CENTER_X = 0
-    CENTER_Y = 0
+    CENTER_X = float(dpg.get_value('x_center'))
+    CENTER_Y = float(dpg.get_value('y_center'))
     ANGLE_RAD = math.radians(-float(dpg.get_value('rotate_angle')))
     
 
@@ -1891,6 +1954,8 @@ def pr(selected_files):
             dpg.delete_item(t)
         data_base.clear_tables()
         dpg.delete_item(Y_AXIS_TAG, children_only=True, slot=1)
+        dpg.add_scatter_series([float(dpg.get_value('x_center'))], [float(dpg.get_value('y_center'))], parent=Y_AXIS_TAG, tag="series_center")
+        dpg.bind_item_theme("series_center", "plot_theme")
     if '.dxf' in current_file: 
         
 
@@ -2196,31 +2261,9 @@ def diagonal_callback():
 ##########################################
 #############################################
 def test_callback():
-    dpg.add_button(label="col",parent='butonss',tag="col",callback=active_but)
-    data_base.add_coordinates(f"5", [(0,0),(197,0),(197,120),(0,120),(0,0)])
-    data_base.add_polyline(f"5","col",0, False, True, False)
-    h = 22.5
-    for col in range(39):
-        data_base.add_polyline(f"{col}1","col",0, False, True, False)
-        data_base.add_polyline(f"{col}2","col",0, False, True, False)
-        data_base.add_polyline(f"{col}3","col",0, False, True, False)
-        data_base.add_polyline(f"{col}4","col",0, False, True, False)
-        data_base.add_coordinates(f"{col}1", [(col*4+h,0),(col*4+h,18)])
-        data_base.add_coordinates(f"{col}2", [(col*4+h,22),(col*4+h,58)])
-        data_base.add_coordinates(f"{col}3", [(col*4+h,62),(col*4+h,98)])
-        data_base.add_coordinates(f"{col}4", [(col*4+h,102),(col*4+h,120)])
-        data_base.add_polyline(f"{col}5","col",0, False, True, False)
-        data_base.add_polyline(f"{col}6","col",0, False, True, False)
-        data_base.add_polyline(f"{col}7","col",0, False, True, False)
-        
-        data_base.add_coordinates(f"{col}5", [(col*4+2+h,4),(col*4+2+h,38)])
-        data_base.add_coordinates(f"{col}6", [(col*4+2+h,42),(col*4+2+h,77)])
-        data_base.add_coordinates(f"{col}7", [(col*4+2+h,82),(col*4+2+h,116)])
-        
-
-
-
-    redraw()
+    tag0 = data_base.get_tag_where('color=0')
+    print(tag0)
+    print(data_base.xz(0,0,tag0))
 ####################################################
 ####################################################
 ####################################################
@@ -2342,6 +2385,12 @@ with dpg.window(label="KONUS", show=False, tag="KONUS", no_title_bar=True,pos=(4
         dpg.add_spacer(width=50)
         dpg.add_button(label='Apply',callback=konus_callback)
         dpg.add_spacer(width=50)
+with dpg.theme(tag="plot_theme"):
+        
+        with dpg.theme_component(dpg.mvScatterSeries):
+            dpg.add_theme_color(dpg.mvPlotCol_Line, (255, 0, 0), category=dpg.mvThemeCat_Plots)
+            dpg.add_theme_style(dpg.mvPlotStyleVar_Marker, dpg.mvPlotMarker_Plus, category=dpg.mvThemeCat_Plots)
+            dpg.add_theme_style(dpg.mvPlotStyleVar_MarkerSize, 6, category=dpg.mvThemeCat_Plots)
 
 
 with dpg.theme() as plot_theme:
@@ -2430,7 +2479,7 @@ with dpg.viewport_menu_bar():
         dpg.add_color_picker(label="Color Me", callback=print_me)      
 
 
-with dpg.window(pos=(0,0),width=900, height=725,tag='papa'):
+with dpg.window(pos=(0,0),width=900, height=775,tag='papa'):
     
     with dpg.group(horizontal=True):
         with dpg.group():
@@ -2438,7 +2487,7 @@ with dpg.window(pos=(0,0),width=900, height=725,tag='papa'):
                     dpg.add_file_extension(".dxf", color=(255, 0, 255, 255), custom_text="[DXF]")
             with dpg.file_dialog(directory_selector=False, show=False, callback=save_sel_dxf, id="file_dialog_id11", width=700 ,height=400):
                     dpg.add_file_extension(".dxf", color=(255, 0, 255, 255), custom_text="[DXF]")
-            with dpg.file_dialog(directory_selector=False, show=False, callback=callback_to_gcode, id="file_dialog_id2", width=700 ,height=400):
+            with dpg.file_dialog(directory_selector=False, show=False, callback=callback_to_gcode2, id="file_dialog_id2", width=700 ,height=400):
                     dpg.add_file_extension(".gcode", color=(255, 0, 255, 255), custom_text="[GCODE]")
 
             
@@ -2447,7 +2496,8 @@ with dpg.window(pos=(0,0),width=900, height=725,tag='papa'):
                 
             
                 yaxis = dpg.add_plot_axis(dpg.mvYAxis, label="Y", tag=Y_AXIS_TAG)
-                
+                dpg.add_scatter_series([0], [0], parent=Y_AXIS_TAG, tag="series_center")
+                dpg.bind_item_theme("series_center", "plot_theme")
                 # dpg.set_axis_limits_constraints(Y_AXIS_TAG,-10,310)
                 # dpg.set_axis_limits_constraints(X_AXIS_TAG,-10,310)
             
@@ -2481,10 +2531,21 @@ with dpg.window(pos=(0,0),width=900, height=725,tag='papa'):
                     dpg.bind_item_theme(dpg.last_item(), coloured_Core_theme5)
                     dpg.add_input_text(width=50,scientific=True,tag='5_value',default_value='100')
                     dpg.add_input_text(width=50,scientific=True,tag='51_value',default_value='1000')
+                with dpg.group():
+                    with dpg.group(horizontal=True):
+                        dpg.add_spacer(width=20)
+                        dpg.add_text("Center")
+                        
+                    
+                    with dpg.group(horizontal=True):
+                        with dpg.group():
+                            dpg.add_text("X")
+                            dpg.add_input_text(width=50,scientific=True,tag='x_center',default_value='0')   
+                        with dpg.group(): 
+                            dpg.add_text("Y")
+                            dpg.add_input_text(width=50,scientific=True,tag='y_center',default_value='0')  
 
-
-                
-                
+                    dpg.add_checkbox(label="edit",default_value=False,tag='center',callback=rasberitesb)
 
 
 
@@ -2503,8 +2564,8 @@ with dpg.window(pos=(0,0),width=900, height=725,tag='papa'):
                 dpg.add_button(label='select all',callback=calback_reselect,tag='selectall')
             with dpg.group(horizontal=True):
                 dpg.add_checkbox(label="rotate",default_value=False,tag='rotate',callback=rasberitesb)
-                dpg.add_input_text( label="", default_value="", tag="rotate_angle", readonly=False,scientific=True,width=150)
-                dpg.add_button(label='call',tag='r',callback=call_rot)
+                dpg.add_input_text( label="", default_value="", tag="rotate_angle", readonly=False,scientific=True,width=50)
+                dpg.add_button(label='rotate',tag='r',callback=call_rot)
 with dpg.item_handler_registry() as registry:
     dpg.add_item_clicked_handler(button=dpg.mvMouseButton_Right, callback=plot_mouse_click_callback)
 dpg.bind_item_handler_registry(plot, registry)
@@ -2533,7 +2594,7 @@ with dpg.window(pos=(900,544),width=200, height=200,tag='pult',label=''):
         dpg.add_button(label='hor',width=40,height=40,callback=calback_but7)
         dpg.add_button(label='v',width=40,height=40,callback=calback_but8)
         dpg.add_button(label='arc',width=40,height=40,callback=calback_but9)
-dpg.create_viewport(width=1115, height=785, title="GCODE IDE")
+dpg.create_viewport(width=1115, height=825, title="GCODE IDE")
 dpg.setup_dearpygui()
 dpg.show_viewport()
 dpg.start_dearpygui()
