@@ -87,6 +87,9 @@ class PolylineDatabase:
     def get_tag_where(self, condition):
         self.cursor.execute(f'SELECT tag FROM polylines WHERE {condition}')
         return [row[0] for row in self.cursor.fetchall()]
+    def get_bigtag_where(self, condition):
+        self.cursor.execute(f'SELECT big_tag FROM polylines WHERE {condition}')
+        return [row[0] for row in self.cursor.fetchall()]
     def get_polyline_where(self, condition):
         self.cursor.execute(f'SELECT * FROM polylines WHERE {condition}')
         return self.cursor.fetchall()
@@ -256,6 +259,32 @@ class PolylineDatabase:
             WHERE {conditions}
         """, (increment_value,))
         self.connection.commit()
+    def _extract_lines(self):
+        self.cursor.execute('''
+            SELECT polyline_tag, x, y, id 
+            FROM coordinates 
+            ORDER BY polyline_tag, id
+        ''')
+        all_data = self.cursor.fetchall()
+        
+        lines = []
+        current_tag = None
+        current_points = []
+        
+        for tag, x, y, order in all_data:
+            
+            if tag != current_tag and current_points:
+                if len(current_points) >= 2:
+                    lines.append(current_points)
+                current_points = []
+            
+            current_tag = tag
+            current_points.append((x, y))
+
+        if current_points and len(current_points) >= 2:
+            lines.append(current_points)
+            
+        return lines
     def merge_polylines(self,):
        
         try:        

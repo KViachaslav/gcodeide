@@ -9,7 +9,7 @@ import ezdxf
 import numpy as np
 import math
 import svgwrite
-
+import random
 from PIL import Image
 import os
 from ezdxf import colors
@@ -27,7 +27,8 @@ from scipy.special import comb
 import dxfgrabber
 from scipy.interpolate import CubicSpline
 from scipy.interpolate import splprep, splev,splrep,BSpline
-
+from shapely.geometry import LineString, Point, GeometryCollection
+from shapely.ops import split
 def active_but(sender):
     state = data_base.get_polyline_where(f"big_tag='{sender}'")
     
@@ -1060,7 +1061,7 @@ char_shifts = {'1':16,
 def rasberitesb(sender,app_data):
     if app_data:
         
-        for s in ['change_order','add_text','movelines','select','rotate','center']:
+        for s in ['change_order','add_text','movelines','select','rotate','center','split']:
             if sender != s:
                 dpg.set_value(s,False)
 
@@ -1096,6 +1097,174 @@ def rotate_points(points, center, angle_degrees):
     
     return points_final
 
+def calculate_gear_parameters(r_delitelni, z_zubiev, alpha_degrees=20):
+    """
+    Рассчитывает ключевые геометрические параметры эвольвентной шестерни.
+    """
+    alpha_rad = math.radians(alpha_degrees)
+    d = 2 * r_delitelni
+    m = d / z_zubiev
+    r_b = r_delitelni * math.cos(alpha_rad)
+    h_a = m 
+    h_f = 1.25 * m
+    r_a = r_delitelni + h_a
+    r_f = r_delitelni - h_f
+    
+    # Функция инволюты (inv_t)
+    def inv_t(t):
+        return np.tan(t) - t
+
+    # Угол профиля на вершине зуба (t_a)
+    try:
+        t_a = math.acos(r_b / r_a)
+    except ValueError:
+        t_a = 0 # Фактически ошибка, но для кода пусть будет 0
+
+    results = {
+        "r": r_delitelni, "z": z_zubiev, "alpha_rad": alpha_rad, 
+        "m": m, "d": d, "r_b": r_b, "r_a": r_a, "r_f": r_f,
+        "h_a": h_a, "h_f": h_f, "t_a": t_a, "inv_t": inv_t
+    }
+    return results
+
+def plot_gear_profile(gear_data, num_points=100, num_teeth_to_show=2):
+    
+    r, z = gear_data['r'], gear_data['z']
+    r_b, r_a, r_f = gear_data['r_b'], gear_data['r_a'], gear_data['r_f']
+    t_a = gear_data['t_a']
+    inv_t = gear_data['inv_t']
+    
+    t_values = np.linspace(0, t_a, num_points)
+    
+    rho = r_b / np.cos(t_values)
+    phi = inv_t(t_values) + (math.pi / (2 * z))
+    
+    x_evo = rho * np.cos(phi)
+    y_evo = rho * np.sin(phi)
+    
+    c, s = np.cos(-(2 * math.pi) / z/2), np.sin(-(2 * math.pi) / z/2)
+    R = np.array([[c, -s], [s, c]])
+    
+    rotated_coords = R @ np.array([x_evo, y_evo])
+    x_evo = rotated_coords[0]
+    y_evo = rotated_coords[1]
+    x_tooth = np.concatenate([x_evo, np.flip(x_evo)])
+    y_tooth = np.concatenate([y_evo, np.flip(-y_evo)]) # Зеркальное отражение
+    
+    pitch_angle = (2 * math.pi) / z
+    
+    half_pitch_angle = pitch_angle / 2
+    
+    angle_shift_tooth = pitch_angle
+    
+    
+    lines = []
+    for i in range(z):
+        if i >= num_teeth_to_show:
+            break
+            
+        rotation_angle = i * angle_shift_tooth
+        
+        c, s = np.cos(rotation_angle), np.sin(rotation_angle)
+        R = np.array([[c, -s], [s, c]])
+        
+        rotated_coords = R @ np.array([x_tooth, y_tooth])
+        lines += list(np.transpose(rotated_coords))
+        
+    
+    return lines
+
+def gears_callback():
+    CENTER_X = float(dpg.get_value('x_center'))
+    CENTER_Y = float(dpg.get_value('y_center'))
+    R_del = 40.0  
+    Z_zub = 34   
+
+    gear_params = calculate_gear_parameters(R_del, Z_zub,alpha_degrees=15)
+    full_gear_profile = plot_gear_profile(gear_params, num_teeth_to_show=34) 
+    
+    r = random.randint(1, 1000)
+    dpg.add_button(label="gears"+f"{r}",parent='butonss',tag="gears"+f"{r}",callback=active_but)
+    data_base.add_polyline("gears_"+f"{r}","gears"+f"{r}",0, False, True, False)
+    data_base.add_coordinates("gears_"+f"{r}", full_gear_profile)
+    
+    redraw()
+def circle_callback():
+    CENTER_X = float(dpg.get_value('x_center'))
+    CENTER_Y = float(dpg.get_value('y_center'))
+    radius = 1
+    num_points = 21 
+    r = random.randint(1, 1000)
+    dpg.add_button(label="circle"+f"{r}",parent='butonss',tag="circle"+f"{r}",callback=active_but)
+    points = [
+        (
+            CENTER_X + radius * math.cos(2 * math.pi * i / num_points),
+            CENTER_Y + radius * math.sin(2 * math.pi * i / num_points)
+        )
+        for i in list(range(num_points)) + [0]
+    ]
+    
+    data_base.add_polyline("circle_"+f"{r}","circle"+f"{r}",0, False, True, False)
+    data_base.add_coordinates("circle_"+f"{r}", points)
+    
+    redraw()
+def split_linestring_at_nearest_point(line_coords, target_point_coords,x,y , tolerance=1e-9):
+    print(line_coords[0])
+    print(line_coords[-1])
+    line = LineString(line_coords)
+    target_point = Point(target_point_coords)
+    CENTER_X = float(dpg.get_value('x_center'))
+    CENTER_Y = float(dpg.get_value('y_center'))
+    distance_along_line = line.project(target_point)
+
+    split_point = line.interpolate(distance_along_line)
+    print(list(split_point.coords))
+    if split_point.equals_exact(Point(line.coords[0])) or split_point.equals_exact(Point(line.coords[-1])):
+        print("Ближайшая точка совпадает с началом или концом ломаной. Разделение не требуется.")
+        return [line]
+
+    # result = split(line, split_point)
+    result = split(line, LineString([[x, y], [CENTER_X, CENTER_Y]]))
+    if isinstance(result, GeometryCollection):
+        split_lines = [geom for geom in result.geoms if isinstance(geom, LineString)]
+        if len(split_lines) == 2:
+            return split_lines
+        else:
+            print(len(split_lines))
+            print("split() вернул неожиданный результат. Использование ручного обрезания.")
+            return cut_line(line, distance_along_line)
+    
+    return [line]
+
+
+def cut_line(line, distance):
+    """Вспомогательная функция для ручного разрезания ломаной по расстоянию."""
+    if distance <= 0.0 or distance >= line.length:
+        return [line]
+
+    coords = list(line.coords)
+    for i in range(len(coords) - 1):
+        p1 = Point(coords[i])
+        p2 = Point(coords[i+1])
+        segment = LineString([p1, p2])
+        segment_len = segment.length
+        
+        current_distance = sum(LineString(coords[j:j+2]).length for j in range(i)) + segment_len
+        
+        if current_distance >= distance:
+           
+            
+            dist_on_segment = distance - (current_distance - segment_len)
+            
+            split_point = segment.interpolate(dist_on_segment)
+            
+            coords1 = coords[:i+1] + [split_point.coords[0]]
+            
+            coords2 = [split_point.coords[0]] + coords[i+1:]
+            
+            return [LineString(coords1), LineString(coords2)]
+
+    return [line] 
 
 def plot_mouse_click_callback():
     
@@ -1267,7 +1436,28 @@ def plot_mouse_click_callback():
         dpg.set_value('x_center',x)
         dpg.set_value('y_center',y)
         dpg.set_value("series_center",[[x],[y]])
-        
+    elif dpg.get_value('split'):
+        tags = data_base.get_tag_where('active=True')
+        bigtag = data_base.get_bigtag_where('active=True')[0]
+        line_coordinates = data_base.get_coordinates(tags[0])
+
+        target_point_coordinates = (x, y) 
+        polyline_segments = split_linestring_at_nearest_point(line_coordinates, target_point_coordinates,x,y)
+        if polyline_segments and len(polyline_segments) == 2:
+
+            dpg.delete_item(tags[0])
+            dpg.delete_item(bigtag)
+            dpg.add_button(label=bigtag+'-1',parent='butonss',tag=bigtag+'-1',callback=active_but)
+            dpg.add_button(label=bigtag+'-2',parent='butonss',tag=bigtag+'-2',callback=active_but)
+            placeholders = ', '.join(f"'{t}'" for t in tags)
+
+            data_base.delete_active(f'polyline_tag IN ({placeholders})')
+            
+            data_base.add_polyline(bigtag+'-11',bigtag+'-1',0, False, True, False)
+            data_base.add_coordinates(bigtag+'-11', polyline_segments[0].coords)
+            data_base.add_polyline(bigtag+'-22',bigtag+'-2',0, False, True, False)
+            data_base.add_coordinates(bigtag+'-22', polyline_segments[1].coords)
+            redraw()
 def call_rot():
     
     tags = data_base.get_tag_where('active=True')
@@ -1951,6 +2141,9 @@ def pr(selected_files):
     current_file = selected_files[0]
     if dpg.get_value('eraseold'):
         for t in data_base.get_all_tag():
+            
+            dpg.delete_item(t)
+        for t in data_base.get_unique_politag():
             dpg.delete_item(t)
         data_base.clear_tables()
         dpg.delete_item(Y_AXIS_TAG, children_only=True, slot=1)
@@ -2008,6 +2201,194 @@ def pr(selected_files):
     elif ".svg" in current_file:
         extract_points_from_svg(current_file)
         redraw()
+def generate_gear_profile(Rd, Z, alpha_deg=20, num_points=20):
+   
+    alpha_rad = math.radians(alpha_deg) 
+    
+    m = 2 * Rd / Z
+    
+    Rb = Rd * math.cos(alpha_rad)      # Радиус основной окружности (Base)
+    Ra = Rd + m                        # Радиус окружности вершин (Addendum)
+    Rf = Rd - 1.25 * m                 # Радиус окружности впадин (Dedendum)
+
+    pitch_angle = 2 * math.pi / Z 
+    
+    tooth_thickness_angle = math.pi / Z 
+    
+    def evolute_angle_from_radius(R):
+        
+        if R < Rb:
+            return 0.0
+        
+        return math.sqrt((R / Rb)**2 - 1)
+    
+    def involute_coordinates(R_b, theta):
+     
+        x = R_b * (math.cos(theta) + theta * math.sin(theta))
+        y = R_b * (math.sin(theta) - theta * math.cos(theta))
+        return x, y
+
+    theta_start = 0.0 
+    theta_end = evolute_angle_from_radius(Ra)
+    
+    profile_points = []
+    
+    for i in range(num_points + 1):
+        
+        theta = theta_start + (theta_end - theta_start) * (i / num_points)
+        
+        x_base, y_base = involute_coordinates(Rb, theta)
+        
+        involute_start_angle = (tooth_thickness_angle / 2) - (math.tan(alpha_rad) - alpha_rad)
+        
+        angle = involute_start_angle - theta 
+        
+        x = x_base * math.cos(angle) - y_base * math.sin(angle)
+        y = x_base * math.sin(angle) + y_base * math.cos(angle)
+        
+        if math.sqrt(x**2 + y**2) >= Rf:
+            profile_points.append((x, y))
+
+
+    full_profile = []
+    
+  
+    start_angle = -pitch_angle / 2 + tooth_thickness_angle / 2
+    
+    x_start = Rf * math.cos(start_angle)
+    y_start = Rf * math.sin(start_angle)
+    
+    full_profile.append((x_start, y_start))
+    
+    full_profile.extend(profile_points)
+
+    x_peak_right, y_peak_right = full_profile[-1]
+    
+    peak_angle = 2 * involute_start_angle
+    
+    peak_step_angle = peak_angle / (num_points // 2) 
+    
+    current_angle = math.atan2(y_peak_right, x_peak_right)
+    
+    for i in range(1, num_points // 2 + 1):
+        current_angle -= peak_step_angle
+        x = Ra * math.cos(current_angle)
+        y = Ra * math.sin(current_angle)
+        full_profile.append((x, y))
+
+    left_profile = []
+    for x, y in profile_points:
+        left_profile.append((-x, y))
+        
+    full_profile.extend(left_profile[::-1])
+    
+    x_end_left, y_end_left = full_profile[-1]
+    
+    trough_center_angle = -pitch_angle / 2
+    
+    trough_step_angle = (math.atan2(y_start, x_start) - math.atan2(y_end_left, x_end_left)) / (num_points // 2)
+    
+    current_angle = math.atan2(y_end_left, x_end_left)
+    
+    for i in range(1, num_points // 2 + 1):
+        current_angle -= trough_step_angle
+        x = Rf * math.cos(current_angle)
+        y = Rf * math.sin(current_angle)
+        full_profile.append((x, y))
+
+    if full_profile[-1] != full_profile[0]:
+        full_profile.append(full_profile[0])
+        
+    return full_profile
+
+def joinsel_callback():
+    
+    lines = data_base._extract_lines()
+    
+    if not lines:
+        print("Нет ломаных линий для слияния.")
+        return []
+
+    while True:
+        best_match = None
+        min_distance = 0.5
+        
+        for i in range(len(lines)):
+            for j in range(i + 1, len(lines)):
+                line1 = lines[i]
+                line2 = lines[j]
+                
+                end1_start = line1[0]
+                end1_end = line1[-1]
+                
+                end2_start = line2[0]
+                end2_end = line2[-1]
+                
+                dist_1e_2s = distance(end1_end, end2_start)
+                if dist_1e_2s < min_distance:
+                    min_distance = dist_1e_2s
+
+                    best_match = (i, j, 'end-start', dist_1e_2s)
+                    
+                dist_1e_2e = distance(end1_end, end2_end)
+                if dist_1e_2e < min_distance:
+                    min_distance = dist_1e_2e
+                    best_match = (i, j, 'end-end', dist_1e_2e)
+                dist_1s_2s = distance(end1_start, end2_start)
+                if dist_1s_2s < min_distance:
+                    min_distance = dist_1s_2s
+                    best_match = (i, j, 'start-start', dist_1s_2s)
+
+                dist_1s_2e = distance(end1_start, end2_end)
+                if dist_1s_2e < min_distance:
+                    min_distance = dist_1s_2e
+                    
+                    best_match = (j, i, 'end-start', dist_1s_2e) 
+
+        if not best_match:
+            break
+
+        
+        i, j, orientation, distance_ = best_match
+        
+        line_a = lines[i]
+        line_b = lines[j]
+        new_line = []
+        if orientation == 'end-start':
+            new_line = line_a + line_b
+        elif orientation == 'end-end':
+            new_line = line_a + line_b[::-1]
+        elif orientation == 'start-start':
+            new_line = line_a[::-1] + line_b
+        
+        lines_to_remove = sorted([i, j], reverse=True)
+        for index in lines_to_remove:
+            lines.pop(index)
+            
+        lines.append(new_line)
+        
+    print(len(lines))
+    buts = data_base.get_unique_politag_where('active=True')
+    tags = data_base.get_tag('active=True')
+    for t in tags:
+        dpg.delete_item(t)
+    for t in buts:
+        dpg.delete_item(t)
+    
+    placeholders = ', '.join(f"'{t}'" for t in tags)
+
+    data_base.delete_active(f'polyline_tag IN ({placeholders})')
+    c = 1
+    
+    for line in lines:
+        if distance(line[0],line[-1]) < 0.5:
+            line.append(line[0])
+        data_base.add_polyline(f'joinn{c}',f'join{c}',0, False, True, False)
+        data_base.add_coordinates(f'joinn{c}', line)
+        dpg.add_button(label=f'join{c}',parent='butonss',tag=f'join{c}',callback=active_but)
+        c+=1
+    redraw()
+   
 def join_callback():
     
     results = data_base.merge_polylines()
@@ -2455,7 +2836,7 @@ with dpg.viewport_menu_bar():
     with dpg.menu(label="Functions"):
         
 
-        dpg.add_menu_item(label="Split", callback=split_l)
+        dpg.add_menu_item(label="Split selected", callback=split_l)
         dpg.add_menu_item(label="Normalize", callback=normalize_lines)
         dpg.add_menu_item(label="Rotate X", callback=rotate_x)
         dpg.add_menu_item(label="Rotate Y", callback=rotate_y)
@@ -2463,9 +2844,11 @@ with dpg.viewport_menu_bar():
         dpg.add_menu_item(label="Set Color", callback=set_color)
         dpg.add_menu_item(label="test", callback=test_callback)
         dpg.add_menu_item(label="Join", callback=join_callback)
-          
-
-
+        dpg.add_menu_item(label="Join selected (0.5mm)", callback=joinsel_callback)
+        
+    with dpg.menu(label="Geom"):
+        dpg.add_menu_item(label="Circle", callback=circle_callback)
+        dpg.add_menu_item(label="Gears", callback=gears_callback)
     with dpg.menu(label="Generated"):
         dpg.add_menu_item(label="horizont line", callback=horizont_callback)
         dpg.add_menu_item(label="vertical line", callback=vertical_callback)
@@ -2546,7 +2929,7 @@ with dpg.window(pos=(0,0),width=900, height=775,tag='papa'):
                             dpg.add_input_text(width=50,scientific=True,tag='y_center',default_value='0')  
 
                     dpg.add_checkbox(label="edit",default_value=False,tag='center',callback=rasberitesb)
-
+                dpg.add_checkbox(label="Split Polyline",default_value=False,tag='split',callback=rasberitesb)
 
 
 
