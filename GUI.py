@@ -281,8 +281,8 @@ def Polygon_to_lines(union_polygon,num_lines,width_lines,nice_path):
             
 def read_dxf_lines_from_esyeda(sender, app_data, user_data):
 
-    for_buffer = 0.1
-
+    for_buffer = 0.13
+    for_buffer2 = 0.1
     doc = ezdxf.readfile(user_data[0])
     full = dpg.get_value('varradio') == 'full'
    
@@ -315,6 +315,7 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
 
     border = []
     polygons = []
+    polygons2 = []
     for circle in msp.query('CIRCLE'):
         layer = circle.dxf.layer
         
@@ -322,7 +323,9 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
             center = circle.dxf.center    
             num_points = 10  
             radius = circle.dxf.radius + for_buffer
+            radius2 = circle.dxf.radius + for_buffer2
             polygons.append(Polygon([(center.x + radius * math.cos(2 * math.pi * i / num_points),center.y + radius * math.sin(2 * math.pi * i / num_points))for i in range(num_points)]))
+            polygons2.append(Polygon([(center.x + radius2 * math.cos(2 * math.pi * i / num_points),center.y + radius2 * math.sin(2 * math.pi * i / num_points))for i in range(num_points)]))
 
            
         
@@ -334,14 +337,21 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
         
             num_points = 10
             radius = w/2 + for_buffer
+            radius2 = w/2 + for_buffer2
             polygons.append(Polygon([(points[0][0] + radius * math.cos(2 * math.pi * i / num_points),points[0][1] + radius * math.sin(2 * math.pi * i / num_points))for i in range(num_points)]))    
+            polygons2.append(Polygon([(points[0][0] + radius2 * math.cos(2 * math.pi * i / num_points),points[0][1] + radius2 * math.sin(2 * math.pi * i / num_points))for i in range(num_points)]))    
             for j in range(len(points) - 1):
                 num_points = 10
                 radius = w/2 + for_buffer
                 boundaries = calculate_boundary_coordinates(points[j][0], points[j][1], points[j + 1][0], points[j + 1][1], w + for_buffer*2)
+                radius2 = w/2 + for_buffer2
+                boundaries2 = calculate_boundary_coordinates(points[j][0], points[j][1], points[j + 1][0], points[j + 1][1], w + for_buffer2*2)
                 polygons.append(Polygon([(points[j + 1][0] + radius * math.cos(2 * math.pi * i / num_points),points[j + 1][1] + radius * math.sin(2 * math.pi * i / num_points))for i in range(num_points)]))
                 
                 polygons.append(Polygon([(boundaries['left_start'][0],boundaries['left_start'][1]), (boundaries['left_end'][0],boundaries['left_end'][1]), (boundaries['right_end'][0],boundaries['right_end'][1]), (boundaries['right_start'][0],boundaries['right_start'][1])]))
+                polygons2.append(Polygon([(points[j + 1][0] + radius2 * math.cos(2 * math.pi * i / num_points),points[j + 1][1] + radius2 * math.sin(2 * math.pi * i / num_points))for i in range(num_points)]))
+                
+                polygons2.append(Polygon([(boundaries2['left_start'][0],boundaries2['left_start'][1]), (boundaries2['left_end'][0],boundaries2['left_end'][1]), (boundaries2['right_end'][0],boundaries2['right_end'][1]), (boundaries2['right_start'][0],boundaries2['right_start'][1])]))
 
         if layer == 'BoardOutLine' and full:
             w = polyline.dxf.const_width
@@ -368,7 +378,7 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
                 points = path.vertices
                 if len(points) > 2:
                     polygons.append(Polygon([(points[i][0],points[i][1]) for i in range(len(points))]).buffer(for_buffer,quad_segs=2))
-                
+                    polygons2.append(Polygon([(points[i][0],points[i][1]) for i in range(len(points))]).buffer(for_buffer2,quad_segs=2))    
     lins = []
     if full:
         ex = shapely.envelope(unary_union(MultiPolygon([p for p in border])))
@@ -393,7 +403,7 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
                 data_base.add_coordinates(nice_path+f"{c}",coords)
                 c+=1
                 redraw()
-            Polygon_to_lines(unary_union(MultiPolygon([p for p in polygons])),1,width_lines,nice_path+ '_border')
+            Polygon_to_lines(unary_union(MultiPolygon([p for p in polygons2])),1,width_lines,nice_path+ '_border')
             
             
             dpg.add_button(label=nice_path + '_border',parent='butonss',tag=nice_path + '_border',callback=active_but)
@@ -2678,7 +2688,7 @@ with dpg.window(label="Border EsyEDA", show=False, tag="border_from_esyeda", no_
     dpg.add_separator()
     with dpg.group(horizontal=True):
         dpg.add_text("line width ")      
-        dpg.add_input_text(width=50,scientific=True,tag='border_line_width',default_value='0.1')
+        dpg.add_input_text(width=50,scientific=True,tag='border_line_width',default_value='0.07')
         dpg.add_text("mm")
     with dpg.group(horizontal=True):
         dpg.add_text("count lines")      
