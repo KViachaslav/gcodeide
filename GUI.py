@@ -84,6 +84,22 @@ def extract_black_lines(image_path, pixel_distance):
 
     return liness
 
+def remove_close_points(points, threshold=0.05):
+    if not points:
+        return []
+
+    filtered_points = [points[0]]  # Добавляем первую точку в новый массив
+    last_point = np.array(points[0])
+
+    for point in points[1:]:
+        current_point = np.array(point)
+        distance = np.linalg.norm(current_point - last_point)  # Вычисляем расстояние до последней добавленной точки
+        
+        if distance >= threshold:  # Если расстояние больше порога, добавляем точку
+            filtered_points.append(point)
+            last_point = current_point  # Обновляем последнюю добавленную точку
+
+    return filtered_points
 
 def calculate_boundary_coordinates(x1, y1, x2, y2, width):
 
@@ -247,35 +263,42 @@ def Polygon_to_lines(union_polygon,num_lines,width_lines,nice_path):
 
         tunion_polygon = []
         if union_polygon.geom_type == 'Polygon':
-            tunion_polygon.append(union_polygon.buffer(width_lines,quad_segs=0))
+            
             xm, ym = union_polygon.exterior.xy
+            
 
             data_base.add_polyline(nice_path+f"{c}",nice_path,0, False, True, False)
-            data_base.add_coordinates(nice_path+f"{c}",[(x_,y_) for x_,y_ in zip(xm,ym)])
+            #data_base.add_coordinates(nice_path+f"{c}",[(x_,y_) for x_,y_ in zip(xm,ym)])
+            data_base.add_coordinates(nice_path+f"{c}",remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)]))
             c+=1
             
             for inter in union_polygon.interiors:
                 xm, ym = inter.xy
                 data_base.add_polyline(nice_path+f"{c}",nice_path,0, False, True, False)
-                data_base.add_coordinates(nice_path+f"{c}",[(x_,y_) for x_,y_ in zip(xm,ym)])
+                #data_base.add_coordinates(nice_path+f"{c}",[(x_,y_) for x_,y_ in zip(xm,ym)])
+                data_base.add_coordinates(nice_path+f"{c}",remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)]))
                 c+=1
             
+            tunion_polygon.append(union_polygon.buffer(width_lines,quad_segs=0))
         else:
            
 
             for p in union_polygon.geoms:
                 
-                tunion_polygon.append(p.buffer(width_lines,quad_segs=0))
+                
                 
                 xm, ym = p.exterior.xy
                 data_base.add_polyline(nice_path+f"{c}",nice_path,0, False, True, False)
-                data_base.add_coordinates(nice_path+f"{c}",[(x_,y_) for x_,y_ in zip(xm,ym)])
+                #data_base.add_coordinates(nice_path+f"{c}",[(x_,y_) for x_,y_ in zip(xm,ym)])
+                data_base.add_coordinates(nice_path+f"{c}",remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)]))
                 c+=1
                 for inter in p.interiors:
                     xm, ym = inter.xy
                     data_base.add_polyline(nice_path+f"{c}",nice_path,0, False, True, False)
-                    data_base.add_coordinates(nice_path+f"{c}",[(x_,y_) for x_,y_ in zip(xm,ym)])
+                    #data_base.add_coordinates(nice_path+f"{c}",[(x_,y_) for x_,y_ in zip(xm,ym)])
+                    data_base.add_coordinates(nice_path+f"{c}",remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)]))
                     c+=1
+                tunion_polygon.append(p.buffer(width_lines,quad_segs=0))
             
         union_polygon = unary_union(MultiPolygon([p for p in tunion_polygon]))
             
@@ -321,7 +344,7 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
         
         if layer in layers:
             center = circle.dxf.center    
-            num_points = 10  
+            num_points = 24 
             radius = circle.dxf.radius + for_buffer
             radius2 = circle.dxf.radius + for_buffer2
             polygons.append(Polygon([(center.x + radius * math.cos(2 * math.pi * i / num_points),center.y + radius * math.sin(2 * math.pi * i / num_points))for i in range(num_points)]))
@@ -409,10 +432,7 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
             dpg.add_button(label=nice_path + '_border',parent='butonss',tag=nice_path + '_border',callback=active_but)
             print(nice_path + '_border')
     else:
-        print('not full')
-        multipolygon = MultiPolygon([p for p in polygons])
-        union_polygon = unary_union(multipolygon)
-        Polygon_to_lines(union_polygon,num_lines,width_lines,nice_path)
+        Polygon_to_lines(unary_union(MultiPolygon([p for p in polygons2])),num_lines,width_lines,nice_path)
         
     redraw()
 
@@ -944,22 +964,25 @@ def callback_to_gcode2(sender, app_data, user_data):
         speed = dpg.get_value(f"{h}1_value")
 
         sett = set(tag)
-
+        
+        i = 0 
         while sett:
-            poly = data_base.xz(curr_pos[0],curr_pos[1],list(sett))
-            
-            sett.remove(poly[0][1])
-            coords = data_base.get_coordinates(poly[0][1])
-            if coords[0][0] != poly[0][2] or coords[0][1] != poly[0][3]:
-                coords = coords[::-1]
-            gcode_lines.append(f"G0 X{round(coords[0][0],4)} Y{round(coords[0][1],4)}")
-            gcode_lines.append(f"F{speed}")
-            gcode_lines.append(f"S{power}")
-            gcode_lines.append(f"G1 X{round(coords[1][0],4)} Y{round(coords[1][1],4)}")
+            #poly = data_base.xz(curr_pos[0],curr_pos[1],list(sett))
+            poly = tag[i]
+            i+=1
+            sett.remove(poly)
+            coords = data_base.get_coordinates(poly)
             if len(coords) > 2:
-                for coord in coords[2:]:
-                    gcode_lines.append(f"X{round(coord[0],4)} Y{round(coord[1],4)}")
-            gcode_lines.append("S0")
+                # if coords[0][0] != poly[0][2] or coords[0][1] != poly[0][3]:
+                #     coords = coords[::-1]
+                gcode_lines.append(f"G0 X{round(coords[0][0],4)} Y{round(coords[0][1],4)}")
+                gcode_lines.append(f"F{speed}")
+                gcode_lines.append(f"S{power}")
+                gcode_lines.append(f"G1 X{round(coords[1][0],4)} Y{round(coords[1][1],4)}")
+                if len(coords) > 2:
+                    for coord in coords[2:]:
+                        gcode_lines.append(f"X{round(coord[0],4)} Y{round(coord[1],4)}")
+                gcode_lines.append("S0")
 
 
         # h+=1
@@ -1522,8 +1545,6 @@ def recolor():
     
 def redraw(all=0):
 
-    global poliline_themes
-    
 
     tags = data_base.get_tag('redraw_flag=True')
     for tag in tags:
@@ -1548,7 +1569,7 @@ def redraw(all=0):
         with dpg.theme() as coloured_line_theme1:
             with dpg.theme_component():
                 dpg.add_theme_color(dpg.mvPlotCol_Line, color, category=dpg.mvThemeCat_Plots,tag=f'color_{tag}')
-        poliline_themes[f'{tag}'] = coloured_line_theme1
+        
         coor = data_base.get_coordinates(tag)
         dpg.delete_item(f'{tag}')
         dpg.add_line_series([x for x,y in coor], [y for x,y in coor], parent=Y_AXIS_TAG,tag=tag) 
@@ -1605,6 +1626,23 @@ def rotate_x():
     invers_lines()
 def rotate_y():
     invers_lines('y')
+
+def move_to_center_lines():
+    CENTER_X = float(dpg.get_value('x_center'))
+    CENTER_Y = float(dpg.get_value('y_center'))
+    coords = []
+    tags = data_base.get_tag_where('active=1')
+    for tag in tags:
+        coords += data_base.get_coordinates(tag)
+
+    xx = [r[0] for r in coords]
+    yy = [r[1] for r in coords]
+
+    placeholders = ', '.join(f"'{t}'" for t in tags)
+    
+    data_base.increment_field_value_with_condition(-min(xx)+CENTER_X,-min(yy) + CENTER_Y,f'polyline_tag IN ({placeholders})')
+    data_base.update_polylines(tags,redraw_flag = True)
+    redraw()
 def normalize_lines():
     coords = []
     tags = data_base.get_tag_where('active=1')
@@ -2848,8 +2886,9 @@ with dpg.viewport_menu_bar():
 
         dpg.add_menu_item(label="Split selected", callback=split_l)
         dpg.add_menu_item(label="Normalize", callback=normalize_lines)
-        dpg.add_menu_item(label="Rotate X", callback=rotate_x)
-        dpg.add_menu_item(label="Rotate Y", callback=rotate_y)
+        dpg.add_menu_item(label="Move To Center", callback=move_to_center_lines)
+        dpg.add_menu_item(label="Rotate Y", callback=rotate_x)
+        dpg.add_menu_item(label="Rotate X", callback=rotate_y)
         dpg.add_menu_item(label="Delete", callback=delete_l)
         dpg.add_menu_item(label="Set Color", callback=set_color)
         dpg.add_menu_item(label="test", callback=test_callback)

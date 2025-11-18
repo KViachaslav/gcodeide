@@ -260,10 +260,17 @@ class PolylineDatabase:
         """, (increment_value,))
         self.connection.commit()
     def _extract_lines(self):
+        # self.cursor.execute('''
+        #     SELECT polyline_tag, x, y, id 
+        #     FROM coordinates 
+        #     ORDER BY polyline_tag, id
+        # ''')
         self.cursor.execute('''
-            SELECT polyline_tag, x, y, id 
-            FROM coordinates 
-            ORDER BY polyline_tag, id
+        SELECT c.polyline_tag, c.x, c.y, c.id 
+        FROM coordinates AS c
+        JOIN polylines AS p ON c.polyline_tag = p.tag
+        WHERE p.active = True
+        ORDER BY c.polyline_tag, c.id
         ''')
         all_data = self.cursor.fetchall()
         
