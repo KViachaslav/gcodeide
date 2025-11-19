@@ -88,7 +88,7 @@ class PolylineDatabase:
         self.cursor.execute(f'SELECT tag FROM polylines WHERE {condition}')
         return [row[0] for row in self.cursor.fetchall()]
     def get_bigtag_where(self, condition):
-        self.cursor.execute(f'SELECT big_tag FROM polylines WHERE {condition}')
+        self.cursor.execute(f'SELECT DISTINCT big_tag FROM polylines WHERE {condition}')
         return [row[0] for row in self.cursor.fetchall()]
     def get_polyline_where(self, condition):
         self.cursor.execute(f'SELECT * FROM polylines WHERE {condition}')

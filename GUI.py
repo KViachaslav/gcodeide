@@ -29,6 +29,8 @@ from scipy.interpolate import CubicSpline
 from scipy.interpolate import splprep, splev,splrep,BSpline
 from shapely.geometry import LineString, Point, GeometryCollection
 from shapely.ops import split
+from shapely.geometry import box
+
 def active_but(sender):
     state = data_base.get_polyline_where(f"big_tag='{sender}'")
     
@@ -972,7 +974,7 @@ def callback_to_gcode2(sender, app_data, user_data):
             i+=1
             sett.remove(poly)
             coords = data_base.get_coordinates(poly)
-            if len(coords) > 2:
+            if len(coords) > 1:
                 # if coords[0][0] != poly[0][2] or coords[0][1] != poly[0][3]:
                 #     coords = coords[::-1]
                 gcode_lines.append(f"G0 X{round(coords[0][0],4)} Y{round(coords[0][1],4)}")
@@ -1206,6 +1208,48 @@ def plot_gear_profile(gear_data, num_points=100, num_teeth_to_show=2):
         
     
     return lines
+def organizer_callback():
+    dpg.configure_item("Organizer_window", show=False)
+    nice_path = 'Organizer'
+    iter = 1
+    while 1:
+        for i in data_base.get_unique_politag():
+            if i == nice_path:
+                nice_path = 'Organizer' + f' ({iter})'
+                iter +=1
+        else:
+            break
+    
+    c = int(dpg.get_value('Column'))
+    r = int(dpg.get_value('Row'))
+    w = int(dpg.get_value('cell_width'))
+    h = int(dpg.get_value('cell_height'))
+    d = int(dpg.get_value('cell_depth'))
+    t = int(dpg.get_value('thickness'))
+    main_rectangle = box(0, 0,c * (w + t) + t , d)####нижняя и верхняя стенки
+    main_rectangle2 = box(0, 0, d,r * (h + t) + t)
+    k = int(d/20)
+    wid = d/(k+0.5)
+    for i in range(c+1):
+        
+        main_rectangle = main_rectangle.difference(box(i * (w + t), d,i * (w + t) + t , d - wid/2))
+        for j in range(k):
+            main_rectangle = main_rectangle.difference(box(i * (w + t), j*wid,i * (w + t) + t , j*wid + wid/2))
+    Polygon_to_lines(main_rectangle,1,0,nice_path+ f'_{2}')
+    dpg.add_button(label=nice_path + f'_{2}' ,parent='butonss',tag=nice_path+ f'_{2}' ,callback=active_but)
+    for j in range(k):
+        main_rectangle2 = main_rectangle2.difference(box(j*wid+ wid/2,0 ,(j+1)*wid  ,t ))
+        main_rectangle2 = main_rectangle2.difference(box(j*wid+ wid/2,r * (h + t) + t ,(j+1)*wid  ,r * (h + t) ))
+    for i in range(1,r):
+        main_rectangle2 = main_rectangle2.difference(box(10,i* (h + t)   ,20,i* (h + t) +t ))
+        main_rectangle2 = main_rectangle2.difference(box(d-10,i* (h + t)   ,d-20,i* (h + t) +t ))
+
+
+    Polygon_to_lines(main_rectangle2,1,0,nice_path + f'_{c+1}')
+    dpg.add_button(label=nice_path + f'_{c+1}' ,parent='butonss',tag=nice_path+ f'_{c+1}' ,callback=active_but)
+
+
+    redraw()
 
 def gears_callback():
     CENTER_X = float(dpg.get_value('x_center'))
@@ -1626,7 +1670,23 @@ def rotate_x():
     invers_lines()
 def rotate_y():
     invers_lines('y')
+def dublicate_lines():
+    pol = data_base.get_bigtag_where('active=1')
+    
+    for but in pol:
+        nice = find_nice_path(but)
+        dpg.add_button(label=nice,parent='butonss',tag=nice,callback=active_but)
+        lines = data_base.get_polyline_where(f'active=1 AND big_tag="{but}"')
+        for i in range(len(lines)):
+            coords = data_base.get_coordinates(lines[i][1])
+            data_base.add_polyline(nice + f"_{i}",nice,0, False, True, False)
+            data_base.add_coordinates(nice + f"_{i}", coords)
+        
+    # for p in pol:
 
+    #     coords = data_base.get_coordinates(p[1])
+    redraw()
+    
 def move_to_center_lines():
     CENTER_X = float(dpg.get_value('x_center'))
     CENTER_Y = float(dpg.get_value('y_center'))
@@ -2720,6 +2780,41 @@ with dpg.window(label="Delete Files", show=False, tag="modal_id", no_title_bar=T
     dpg.add_text("Layers")
     dpg.add_separator()
     
+with dpg.window(label="Organizer", show=False, tag="Organizer_window", no_title_bar=True,pos=(400,100)):
+    dpg.add_text("Organizer")
+    dpg.add_separator()
+    with dpg.group(horizontal=True):
+        dpg.add_text("Column count")      
+        dpg.add_input_text(width=50,scientific=True,tag='Column',default_value='3')
+        
+    with dpg.group(horizontal=True):
+        dpg.add_text("Row count")      
+        dpg.add_input_text(width=50,scientific=True,tag='Row',default_value='3') 
+    with dpg.group(horizontal=True):
+        dpg.add_text("thickness")      
+        dpg.add_input_text(width=50,scientific=True,tag='thickness',default_value='3') 
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_text("cell width")      
+        dpg.add_input_text(width=50,scientific=True,tag='cell_width',default_value='60') 
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_text("cell height")      
+        dpg.add_input_text(width=50,scientific=True,tag='cell_height',default_value='38') 
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_text("cell depth")      
+        dpg.add_input_text(width=50,scientific=True,tag='cell_depth',default_value='100') 
+        dpg.add_text("mm")
+    
+
+
+
+    with dpg.group(horizontal=True):
+        dpg.add_spacer(width=50)
+        dpg.add_button(label='Apply',callback=organizer_callback)
+        dpg.add_spacer(width=50)
+
 
 with dpg.window(label="Border EsyEDA", show=False, tag="border_from_esyeda", no_title_bar=True,pos=(400,100)):
     dpg.add_text("EsyEDA border")
@@ -2887,6 +2982,7 @@ with dpg.viewport_menu_bar():
         dpg.add_menu_item(label="Split selected", callback=split_l)
         dpg.add_menu_item(label="Normalize", callback=normalize_lines)
         dpg.add_menu_item(label="Move To Center", callback=move_to_center_lines)
+        dpg.add_menu_item(label="Dublicate", callback=dublicate_lines)
         dpg.add_menu_item(label="Rotate Y", callback=rotate_x)
         dpg.add_menu_item(label="Rotate X", callback=rotate_y)
         dpg.add_menu_item(label="Delete", callback=delete_l)
@@ -2898,6 +2994,8 @@ with dpg.viewport_menu_bar():
     with dpg.menu(label="Geom"):
         dpg.add_menu_item(label="Circle", callback=circle_callback)
         dpg.add_menu_item(label="Gears", callback=gears_callback)
+        dpg.add_menu_item(label="Organizer", callback=lambda:dpg.configure_item("Organizer_window", show=True))
+        
     with dpg.menu(label="Generated"):
         dpg.add_menu_item(label="horizont line", callback=horizont_callback)
         dpg.add_menu_item(label="vertical line", callback=vertical_callback)
