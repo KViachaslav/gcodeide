@@ -1208,6 +1208,47 @@ def plot_gear_profile(gear_data, num_points=100, num_teeth_to_show=2):
         
     
     return lines
+def Epitrohoida_callback():
+    dpg.configure_item("Epitrohoida_window", show=False)
+    nice_path = 'Epitrohoida'
+    iter = 1
+    while 1:
+        for i in data_base.get_unique_politag():
+            if i == nice_path:
+                nice_path = 'Epitrohoida' + f' ({iter})'
+                iter +=1
+        else:
+            break
+    N = int(dpg.get_value('N_'))
+    n = int(dpg.get_value('n_'))
+    Dzkk = float(dpg.get_value('Dzkk'))
+    Dkk = float(dpg.get_value('Dkk'))
+    e = float(dpg.get_value('e'))
+
+    nnp = int(dpg.get_value('countp'))
+    print(N,n,Dzkk,Dkk, e)
+    Doe = n * Dkk/N
+    Doeo = Dkk - Doe 
+    Roe = Doe/2
+    Roeo = Doeo/2
+    theta = np.linspace(0, 2 * np.pi, nnp)
+
+    x = (Roe + Roeo) * np.cos(theta) - e * np.cos((Roe+Roeo) * theta/Roeo)
+    y = (Roe + Roeo) * np.sin(theta) - e * np.sin((Roe+Roeo) * theta/Roeo)
+    data_base.add_polyline(nice_path + "_",nice_path,0, False, True, False)
+    data_base.add_coordinates(nice_path + "_", [(xx,yy) for xx,yy in zip(x,y)])
+    dpg.add_button(label=nice_path  ,parent='butonss',tag=nice_path ,callback=active_but)
+
+    
+    xm, ym = Polygon([(xx,yy) for xx,yy in zip(x,y)]).buffer(-1).exterior.xy
+    data_base.add_polyline(nice_path + "__",nice_path,0, False, True, False)
+    data_base.add_coordinates(nice_path + "__", [(xx,yy) for xx,yy in zip(xm,ym)])
+    
+
+
+
+    redraw()
+    
 def organizer_callback():
     dpg.configure_item("Organizer_window", show=False)
     nice_path = 'Organizer'
@@ -2761,7 +2802,28 @@ def esye():
     global esyedaflag
     fd.show_file_dialog()
     esyedaflag = True
+def n_callback():
+    n = int(dpg.get_value('n_'))
+    dpg.set_value('N_',n+1)
 
+def N_callback():
+    N = int(dpg.get_value('N_'))
+    dpg.set_value('n_',N-1)
+def Dzkk_callback():
+    Dzkk = float(dpg.get_value('Dzkk'))
+    N = int(dpg.get_value('N_'))
+    dpg.set_value('Dkk',4*N*Dzkk/2/np.pi)
+    dpg.set_value('e',Dzkk/4)    
+def Dkk_callback():
+    Dkk = float(dpg.get_value('Dkk'))
+    N = int(dpg.get_value('N_'))
+    dpg.set_value('Dzkk',np.pi*Dkk/2/N)
+    dpg.set_value('e',np.pi*Dkk/8/N)   
+def e_callback():
+    e = float(dpg.get_value('e'))
+    dpg.set_value('Dzkk',4*e)
+    N = int(dpg.get_value('N_'))
+    dpg.set_value('Dkk',8*e * N/np.pi)
 dpg.create_context()
 
 X_AXIS_TAG = "x_axis_tag"
@@ -2780,6 +2842,40 @@ with dpg.window(label="Delete Files", show=False, tag="modal_id", no_title_bar=T
     dpg.add_text("Layers")
     dpg.add_separator()
     
+with dpg.window(label="Epitrohoida", show=False, tag="Epitrohoida_window", no_title_bar=True,pos=(400,100)):
+    dpg.add_text("Epitrohoida")
+    dpg.add_separator()
+    with dpg.group(horizontal=True):
+        dpg.add_text("n")      
+        dpg.add_input_text(width=50,scientific=True,tag='n_',default_value='50',callback=n_callback)
+    with dpg.group(horizontal=True):
+        dpg.add_text("N")      
+        dpg.add_input_text(width=50,scientific=True,tag='N_',default_value='51',callback=N_callback) 
+
+    with dpg.group(horizontal=True):
+        dpg.add_text("Dzkk")      
+        dpg.add_input_text(width=50,scientific=True,tag='Dzkk',default_value='2',callback=Dzkk_callback) 
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_text("Dkk")      
+        dpg.add_input_text(width=50,scientific=True,tag='Dkk',default_value=f'{4*50*2/2/np.pi}',callback=Dkk_callback) 
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_text("e")
+        dpg.add_input_text(width=50,scientific=True,tag='e',default_value='0.5',callback=e_callback) 
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_text("Count Points")
+        dpg.add_input_text(width=50,scientific=True,tag='countp',default_value='1000') 
+        
+   
+
+
+    with dpg.group(horizontal=True):
+        dpg.add_spacer(width=50)
+        dpg.add_button(label='Apply',callback=Epitrohoida_callback)
+        dpg.add_spacer(width=50)
+
 with dpg.window(label="Organizer", show=False, tag="Organizer_window", no_title_bar=True,pos=(400,100)):
     dpg.add_text("Organizer")
     dpg.add_separator()
@@ -2995,6 +3091,7 @@ with dpg.viewport_menu_bar():
         dpg.add_menu_item(label="Circle", callback=circle_callback)
         dpg.add_menu_item(label="Gears", callback=gears_callback)
         dpg.add_menu_item(label="Organizer", callback=lambda:dpg.configure_item("Organizer_window", show=True))
+        dpg.add_menu_item(label="Epitrohoida", callback=lambda:dpg.configure_item("Epitrohoida_window", show=True))
         
     with dpg.menu(label="Generated"):
         dpg.add_menu_item(label="horizont line", callback=horizont_callback)
