@@ -303,11 +303,236 @@ def Polygon_to_lines(union_polygon,num_lines,width_lines,nice_path):
                 tunion_polygon.append(p.buffer(width_lines,quad_segs=0))
             
         union_polygon = unary_union(MultiPolygon([p for p in tunion_polygon]))
-            
-def read_dxf_lines_from_esyeda(sender, app_data, user_data):
 
-    for_buffer = 0.13
-    for_buffer2 = 0.1
+
+
+
+
+
+def adjust_segments(segment1, segment2, change):
+    vector1 = (segment1.coords[1][0] - segment1.coords[0][0],
+               segment1.coords[1][1] - segment1.coords[0][1])
+    
+    length1 = (vector1[0]**2 + vector1[1]**2)**0.5
+    if length1 == 0:
+        raise ValueError("Segment 1 is a point, cannot shift.")
+    
+    unit_vector1 = (vector1[0] / length1, vector1[1] / length1)
+    
+    normal_vector1 = (-unit_vector1[1], unit_vector1[0]) 
+    
+    vector2 = (segment2.coords[1][0] - segment2.coords[0][0],
+               segment2.coords[1][1] - segment2.coords[0][1])
+    
+    length2 = (vector2[0]**2 + vector2[1]**2)**0.5
+    if length2 == 0:
+        raise ValueError("Segment 2 is a point, cannot shift.")
+    
+    unit_vector2 = (vector2[0] / length2, vector2[1] / length2)
+    
+    normal_vector2 = (-unit_vector2[1], unit_vector2[0]) 
+    
+    half_change = change / 2  
+    
+    multi_point = MultiPoint([(segment1.coords[0][0] + normal_vector1[0] * half_change,
+         segment1.coords[0][1] + normal_vector1[1] * half_change),
+        (segment1.coords[1][0] + normal_vector1[0] * half_change,
+         segment1.coords[1][1] + normal_vector1[1] * half_change),
+         (segment2.coords[1][0] - normal_vector2[0] * half_change,
+         segment2.coords[1][1] - normal_vector2[1] * half_change),
+        (segment2.coords[0][0] - normal_vector2[0] * half_change,
+         segment2.coords[0][1] - normal_vector2[1] * half_change)])
+    convex_hull = multi_point.convex_hull
+    return convex_hull
+    
+def scale_polygon_horizontal(polygon, scale_factor):
+    centroid = polygon.centroid
+    x, y = polygon.exterior.xy
+    dx = max(x) - min(x)
+    scale_factor = (scale_factor + dx)/dx
+    new_coords = [(centroid.x + (xi - centroid.x) * scale_factor, yi) for xi, yi in zip(x, y)]
+    return Polygon(new_coords)
+
+def get_radius(a,b,theta):
+    return a*b/np.sqrt((b*np.cos(theta))**2 + (a*np.sin(theta))**2)
+
+
+def read_dxf_lines_from_esyeda(sender, app_data, user_data):
+    for_correct = 0.1
+    for_buffer = 0.08
+    for_buffer2 = 0.05
+    doc = ezdxf.readfile(user_data[0])
+    full = dpg.get_value('varradio') == 'full'
+   
+    layers = []
+    for i in range(1,len(user_data)):
+        if dpg.get_value(user_data[i]):
+            layers.append(user_data[i])
+        dpg.delete_item(user_data[i])
+    dpg.delete_item('CANCEL')
+    dpg.delete_item('OK')
+    dpg.delete_item('hor_grouph')
+    dpg.delete_item('varradio')
+    
+    dpg.configure_item("modal_id", show=False)
+    nice_path = os.path.basename(user_data[0])
+    iter = 1
+    while 1:
+        for i in data_base.get_unique_politag():
+            if i == nice_path:
+                nice_path = os.path.basename(user_data[0]) + f' (copy {iter})'
+                iter +=1
+        else:
+            break
+    dpg.add_button(label=nice_path ,parent='butonss',tag=nice_path ,callback=active_but)
+    doc = ezdxf.readfile(user_data[0])
+    msp = doc.modelspace()
+    
+    num_lines = int(dpg.get_value('border_line_count'))
+    width_lines = float(dpg.get_value('border_line_width'))
+
+    border = []
+    polygons = []
+    polygons2 = []
+    for circle in msp.query('CIRCLE'):
+        layer = circle.dxf.layer
+        
+        if layer in layers:
+            center = circle.dxf.center    
+            num_points = 24 
+            radius = circle.dxf.radius + for_buffer
+            radius2 = circle.dxf.radius + for_buffer2
+            polygons.append(scale_polygon_horizontal(Polygon([(center.x + radius * math.cos(2 * math.pi * i / num_points),center.y + radius * math.sin(2 * math.pi * i / num_points))for i in range(num_points)]),for_correct))
+            polygons2.append(scale_polygon_horizontal(Polygon([(center.x + radius2 * math.cos(2 * math.pi * i / num_points),center.y + radius2 * math.sin(2 * math.pi * i / num_points))for i in range(num_points)]),for_correct))
+
+           
+        
+    for polyline in msp.query('LWPOLYLINE'):
+        layer = polyline.dxf.layer
+        if layer in layers:
+            w = polyline.dxf.const_width
+            points = polyline.get_points()  
+        
+            num_points = 20
+            radius = w/2 + for_buffer
+            radius2 = w/2 + for_buffer2
+            polygons.append(scale_polygon_horizontal(Polygon([(points[0][0] + radius * math.cos(2 * math.pi * i / num_points),points[0][1] + radius * math.sin(2 * math.pi * i / num_points))for i in range(num_points)]),for_correct))    
+            polygons2.append(scale_polygon_horizontal(Polygon([(points[0][0] + radius2 * math.cos(2 * math.pi * i / num_points),points[0][1] + radius2 * math.sin(2 * math.pi * i / num_points))for i in range(num_points)]),for_correct))    
+            for j in range(len(points) - 1):
+                num_points = 10
+                radius = w/2 + for_buffer
+                boundaries = calculate_boundary_coordinates(points[j][0], points[j][1], points[j + 1][0], points[j + 1][1], w + for_buffer*2)
+                p = adjust_segments(LineString([(boundaries['right_end'][0],boundaries['right_end'][1]), (boundaries['right_start'][0],boundaries['right_start'][1])]),LineString([ (boundaries['left_end'][0],boundaries['left_end'][1]),(boundaries['left_start'][0],boundaries['left_start'][1])]) ,get_radius(0.16,0.04,np.arctan((points[j][0] - points[j+1][0])/(points[j][1] - points[j+1][1])))-0.04)
+                print(get_radius(0.07,0.02,np.arctan((points[j][0] - points[j+1][0])/(points[j][1] - points[j+1][1]))))
+                radius2 = w/2 + for_buffer2
+                boundaries2 = calculate_boundary_coordinates(points[j][0], points[j][1], points[j + 1][0], points[j + 1][1], w + for_buffer2*2)
+                p2 = adjust_segments(LineString([(boundaries2['right_end'][0],boundaries2['right_end'][1]), (boundaries2['right_start'][0],boundaries2['right_start'][1])]),LineString([ (boundaries2['left_end'][0],boundaries2['left_end'][1]),(boundaries2['left_start'][0],boundaries2['left_start'][1])]) ,get_radius(0.16,0.04,np.arctan((points[j][0] - points[j+1][0])/(points[j][1] - points[j+1][1])))-0.04)
+                
+                polygons.append(scale_polygon_horizontal(Polygon([(points[j + 1][0] + radius * math.cos(2 * math.pi * i / num_points),points[j + 1][1] + radius * math.sin(2 * math.pi * i / num_points))for i in range(num_points)]),for_correct))
+                polygons.append(p)
+                #polygons.append(Polygon([(boundaries['left_start'][0],boundaries['left_start'][1]), (boundaries['left_end'][0],boundaries['left_end'][1]), (boundaries['right_end'][0],boundaries['right_end'][1]), (boundaries['right_start'][0],boundaries['right_start'][1])]))
+                polygons2.append(scale_polygon_horizontal(Polygon([(points[j + 1][0] + radius2 * math.cos(2 * math.pi * i / num_points),points[j + 1][1] + radius2 * math.sin(2 * math.pi * i / num_points))for i in range(num_points)]),for_correct))
+                polygons2.append(p2)
+                #polygons2.append(Polygon([(boundaries2['left_start'][0],boundaries2['left_start'][1]), (boundaries2['left_end'][0],boundaries2['left_end'][1]), (boundaries2['right_end'][0],boundaries2['right_end'][1]), (boundaries2['right_start'][0],boundaries2['right_start'][1])]))
+
+        if layer == 'BoardOutLine' and full:
+            w = polyline.dxf.const_width
+            points = polyline.get_points()
+            num_points = 10
+            radius = w/2 + for_buffer
+            border.append(Polygon([(points[0][0] + radius * math.cos(2 * math.pi * i / num_points),points[0][1] + radius * math.sin(2 * math.pi * i / num_points))for i in range(num_points)]))  
+            for j in range(len(points) - 1):
+                num_points = 20
+                radius = w/2 + for_buffer
+                boundaries = calculate_boundary_coordinates(points[j][0], points[j][1], points[j + 1][0], points[j + 1][1], w + for_buffer*2)
+                border.append(Polygon([(points[j + 1][0] + radius * math.cos(2 * math.pi * i / num_points),points[j + 1][1] + radius * math.sin(2 * math.pi * i / num_points))for i in range(num_points)]))
+                
+                border.append(Polygon([(boundaries['left_start'][0],boundaries['left_start'][1]), (boundaries['left_end'][0],boundaries['left_end'][1]), (boundaries['right_end'][0],boundaries['right_end'][1]), (boundaries['right_start'][0],boundaries['right_start'][1])]))
+
+
+
+
+
+    for hatch in msp.query('HATCH'):
+        layer = hatch.dxf.layer
+        if layer in layers:
+            for path in hatch.paths:
+                points = path.vertices
+                if len(points) > 2:
+                    polygons.append(scale_polygon_horizontal(Polygon([(points[i][0],points[i][1]) for i in range(len(points))]).buffer(for_buffer,quad_segs=2),for_correct))
+                    polygons2.append(scale_polygon_horizontal(Polygon([(points[i][0],points[i][1]) for i in range(len(points))]).buffer(for_buffer2,quad_segs=2),for_correct))    
+    lins = []
+    if full:
+        ex = shapely.envelope(unary_union(MultiPolygon([p for p in border])))
+        
+        if ex.geom_type == "Polygon":
+            xm, ym = ex.exterior.xy
+            xmin = min(xm)
+            xmax = max(xm)
+            ymin = min(ym)
+            ymax = max(ym)
+            lins = MultiLineString([((xmin, y), (xmax, y))for y in np.arange(ymin,ymax,width_lines)])
+
+            linn = lins.difference(unary_union(MultiPolygon([p for p in polygons])))
+            
+            c = 0
+            for l in linn.geoms:
+                coords = []
+                coords.append((round(l.coords[0][0],4),  round(l.coords[0][1],4)))
+                coords.append((round(l.coords[1][0],4), round(l.coords[1][1],4)))           
+            
+                data_base.add_polyline(nice_path+f"{c}" ,nice_path,0, False, True, False)
+                data_base.add_coordinates(nice_path+f"{c}",coords)
+                c+=1
+                redraw()
+            Polygon_to_lines(unary_union(MultiPolygon([p for p in polygons2])),1,width_lines,nice_path+ '_border')
+            
+            
+            dpg.add_button(label=nice_path + '_border',parent='butonss',tag=nice_path + '_border',callback=active_but)
+            print(nice_path + '_border')
+    else:
+        Polygon_to_lines(unary_union(MultiPolygon([p for p in polygons2])),num_lines,width_lines,nice_path)
+        
+    redraw()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def read_dxf_lines_from_esyeda2(sender, app_data, user_data):
+
+    for_buffer = 0.08
+    for_buffer2 = 0.05
     doc = ezdxf.readfile(user_data[0])
     full = dpg.get_value('varradio') == 'full'
    
@@ -360,7 +585,7 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
             w = polyline.dxf.const_width
             points = polyline.get_points()  
         
-            num_points = 10
+            num_points = 20
             radius = w/2 + for_buffer
             radius2 = w/2 + for_buffer2
             polygons.append(Polygon([(points[0][0] + radius * math.cos(2 * math.pi * i / num_points),points[0][1] + radius * math.sin(2 * math.pi * i / num_points))for i in range(num_points)]))    
@@ -1208,6 +1433,50 @@ def plot_gear_profile(gear_data, num_points=100, num_teeth_to_show=2):
         
     
     return lines
+def get_sector_points(diameter, radius, num_circles, angle_range=100, points_per_sector=100):
+    # Радиус окружности, на которой располагаются окружности
+    center_radius = diameter / 2
+    angles = np.linspace(0, 2 * np.pi, num_circles*2, endpoint=False)
+    
+    diss = distance([center_radius * np.cos(angles[0]),center_radius * np.sin(angles[0])],[center_radius * np.cos(angles[1]),center_radius * np.sin(angles[1])])
+    diss -= radius
+    sectors_points = {}
+    ansx = []
+    ansy = []
+    angle_range2 = 2 * np.pi - angle_range
+    for i, angle in enumerate(angles):
+        if i%2 == 0:
+            center_x = center_radius * np.cos(angle)
+            center_y = center_radius * np.sin(angle)
+
+            angle_rad_start = np.pi + angle + angle_range/2 
+            angle_rad_end = np.pi + angle - angle_range / 2
+        
+            sector_angles = np.linspace(angle_rad_start, angle_rad_end, points_per_sector)
+            
+            sector_x = center_x + radius * np.cos(sector_angles)
+            sector_y = center_y + radius * np.sin(sector_angles)
+            ansx.extend(sector_x)
+            ansy.extend(sector_y)
+            sectors_points[i] = (sector_x, sector_y)
+        else:
+            center_x = center_radius * np.cos(angle)
+            center_y = center_radius * np.sin(angle)
+
+            angle_rad_end =  angle + angle_range2/2 
+            angle_rad_start =  angle - angle_range2 / 2
+        
+            sector_angles = np.linspace(angle_rad_start, angle_rad_end, points_per_sector)
+            
+            sector_x = center_x + diss * np.cos(sector_angles)
+            sector_y = center_y + diss * np.sin(sector_angles)
+            ansx.extend(sector_x)
+            ansy.extend(sector_y)
+            sectors_points[i] = (sector_x, sector_y)
+
+    #return sectors_points
+    return [ansx,ansy]
+
 def Epitrohoida_callback():
     dpg.configure_item("Epitrohoida_window", show=False)
     nice_path = 'Epitrohoida'
@@ -1235,17 +1504,21 @@ def Epitrohoida_callback():
 
     x = (Roe + Roeo) * np.cos(theta) - e * np.cos((Roe+Roeo) * theta/Roeo)
     y = (Roe + Roeo) * np.sin(theta) - e * np.sin((Roe+Roeo) * theta/Roeo)
-    data_base.add_polyline(nice_path + "_",nice_path,0, False, True, False)
-    data_base.add_coordinates(nice_path + "_", [(xx,yy) for xx,yy in zip(x,y)])
+    # data_base.add_polyline(nice_path + "_",nice_path,0, False, True, False)
+    # data_base.add_coordinates(nice_path + "_", [(xx,yy) for xx,yy in zip(x,y)])
     dpg.add_button(label=nice_path  ,parent='butonss',tag=nice_path ,callback=active_but)
 
-    
-    xm, ym = Polygon([(xx,yy) for xx,yy in zip(x,y)]).buffer(-1).exterior.xy
+    fp = [(xx,yy) for xx,yy in zip(x,y)]
+    ff = fp[0]
+    fp.extend([ff])
+    xm, ym = Polygon(fp).buffer(-Dzkk/2).exterior.xy
     data_base.add_polyline(nice_path + "__",nice_path,0, False, True, False)
     data_base.add_coordinates(nice_path + "__", [(xx,yy) for xx,yy in zip(xm,ym)])
     
-
-
+    sectors_points = get_sector_points(Dkk, Dzkk/2, N,angle_range = np.pi - (np.pi/N))
+    data_base.add_polyline(nice_path + f"_sec",nice_path,0, False, True, False)
+    data_base.add_coordinates(nice_path + f"_sec", [(xx,yy) for xx,yy in zip(sectors_points[0], sectors_points[1])])
+   
 
     redraw()
     
@@ -2319,7 +2592,7 @@ def pr(selected_files):
                     dpg.add_checkbox(label=layer.dxf.name,parent="modal_id",tag=layer.dxf.name)
             dpg.add_group(horizontal=True,tag='hor_grouph',parent="modal_id")
             
-            dpg.add_button(label="OK", width=75, parent='hor_grouph',callback=read_dxf_lines_from_esyeda,user_data=ll,tag='OK')
+            dpg.add_button(label="OK", width=75, parent='hor_grouph',callback=read_dxf_lines_from_esyeda2,user_data=ll,tag='OK')
             dpg.add_button(label="Cancel", width=75, parent='hor_grouph', callback=lambda: dpg.configure_item("modal_id", show=False),tag='CANCEL')
             dpg.configure_item("modal_id", show=True)
             
