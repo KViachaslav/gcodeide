@@ -352,10 +352,53 @@ def scale_polygon_horizontal(polygon, scale_factor):
     scale_factor = (scale_factor + dx)/dx
     new_coords = [(centroid.x + (xi - centroid.x) * scale_factor, yi) for xi, yi in zip(x, y)]
     return Polygon(new_coords)
+def get_radius(a,b,x,y):
+    if y == 0:
+        return b
+    if x == 0:
+        return a
+    else:
+        ans = a*b/np.sqrt((b*np.cos(np.arctan(x/y)))**2 + (a*np.sin(np.arctan(x/y)))**2) 
+        return ans + (a-ans) * 0.5
 
-def get_radius(a,b,theta):
-    return a*b/np.sqrt((b*np.cos(theta))**2 + (a*np.sin(theta))**2)
+def combine_lines(lines):
+    # Словари для хранения начала и конца линий
+    line_dict = {}
+    for i, line in enumerate(lines):
+        start, end = tuple(line[0]), tuple(line[1])
+        line_dict[(start, end)] = i
+    
+    combined_line = []
+    
+    # Начинаем с первой линии
+    current_line = lines[0]
+    combined_line.extend(current_line)
+    used_lines = {line_dict[tuple(current_line)]}
 
+    while len(used_lines) < len(lines):
+        last_point = current_line[1]  # Конечная точка текущей линии
+
+        # Поиск следующей линии, которая начинается с конца текущей
+        found = False
+        for line in lines:
+            if line_dict.get((tuple(line[0]), tuple(line[1]))) not in used_lines:
+                if line[0] == last_point:
+                    current_line = line
+                    combined_line.append(current_line[1])  # Добавляем только конечную точку
+                    used_lines.add(line_dict[tuple(line)])
+                    found = True
+                    break
+                elif line[1] == last_point:
+                    current_line = line[::-1]  # Инвертируем линию
+                    combined_line.append(current_line[1])  # Добавляем только конечную точку
+                    used_lines.add(line_dict[tuple(current_line)])
+                    found = True
+                    break
+        
+        if not found:
+            raise ValueError("Требуемый контур не может быть собран")
+
+    return combined_line
 
 def read_dxf_lines_from_esyeda(sender, app_data, user_data):
     for_correct = 0.1
@@ -392,6 +435,7 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
     width_lines = float(dpg.get_value('border_line_width'))
 
     border = []
+    borderlin = []
     polygons = []
     polygons2 = []
     for circle in msp.query('CIRCLE'):
@@ -422,11 +466,11 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
                 num_points = 10
                 radius = w/2 + for_buffer
                 boundaries = calculate_boundary_coordinates(points[j][0], points[j][1], points[j + 1][0], points[j + 1][1], w + for_buffer*2)
-                p = adjust_segments(LineString([(boundaries['right_end'][0],boundaries['right_end'][1]), (boundaries['right_start'][0],boundaries['right_start'][1])]),LineString([ (boundaries['left_end'][0],boundaries['left_end'][1]),(boundaries['left_start'][0],boundaries['left_start'][1])]) ,get_radius(0.16,0.04,np.arctan((points[j][0] - points[j+1][0])/(points[j][1] - points[j+1][1])))-0.04)
-                print(get_radius(0.07,0.02,np.arctan((points[j][0] - points[j+1][0])/(points[j][1] - points[j+1][1]))))
+                p = adjust_segments(LineString([(boundaries['right_end'][0],boundaries['right_end'][1]), (boundaries['right_start'][0],boundaries['right_start'][1])]),LineString([ (boundaries['left_end'][0],boundaries['left_end'][1]),(boundaries['left_start'][0],boundaries['left_start'][1])]) ,get_radius(0.16,0.04,(points[j][0] - points[j+1][0]),(points[j][1] - points[j+1][1]))-0.04)
+                
                 radius2 = w/2 + for_buffer2
                 boundaries2 = calculate_boundary_coordinates(points[j][0], points[j][1], points[j + 1][0], points[j + 1][1], w + for_buffer2*2)
-                p2 = adjust_segments(LineString([(boundaries2['right_end'][0],boundaries2['right_end'][1]), (boundaries2['right_start'][0],boundaries2['right_start'][1])]),LineString([ (boundaries2['left_end'][0],boundaries2['left_end'][1]),(boundaries2['left_start'][0],boundaries2['left_start'][1])]) ,get_radius(0.16,0.04,np.arctan((points[j][0] - points[j+1][0])/(points[j][1] - points[j+1][1])))-0.04)
+                p2 = adjust_segments(LineString([(boundaries2['right_end'][0],boundaries2['right_end'][1]), (boundaries2['right_start'][0],boundaries2['right_start'][1])]),LineString([ (boundaries2['left_end'][0],boundaries2['left_end'][1]),(boundaries2['left_start'][0],boundaries2['left_start'][1])]) ,get_radius(0.16,0.04,(points[j][0] - points[j+1][0]),(points[j][1] - points[j+1][1]))-0.04)
                 
                 polygons.append(scale_polygon_horizontal(Polygon([(points[j + 1][0] + radius * math.cos(2 * math.pi * i / num_points),points[j + 1][1] + radius * math.sin(2 * math.pi * i / num_points))for i in range(num_points)]),for_correct))
                 polygons.append(p)
@@ -438,6 +482,8 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
         if layer == 'BoardOutLine' and full:
             w = polyline.dxf.const_width
             points = polyline.get_points()
+            borderlin.append(LineString([(points[i][0],points[i][1])for i in range(len(points))]))
+
             num_points = 10
             radius = w/2 + for_buffer
             border.append(Polygon([(points[0][0] + radius * math.cos(2 * math.pi * i / num_points),points[0][1] + radius * math.sin(2 * math.pi * i / num_points))for i in range(num_points)]))  
@@ -472,9 +518,17 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
             ymin = min(ym)
             ymax = max(ym)
             lins = MultiLineString([((xmin, y), (xmax, y))for y in np.arange(ymin,ymax,width_lines)])
-
-            linn = lins.difference(unary_union(MultiPolygon([p for p in polygons])))
+            multiline = MultiLineString(borderlin)
+            combined_line = shapely.line_merge(multiline)
             
+            polygon = Polygon(combined_line.coords).buffer(for_buffer,quad_segs=2)
+
+    
+            intersection = lins.intersection(polygon)
+            linn = intersection.difference(unary_union(MultiPolygon([p for p in polygons])))
+            
+            
+    
             c = 0
             for l in linn.geoms:
                 coords = []
@@ -489,7 +543,7 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
             
             
             dpg.add_button(label=nice_path + '_border',parent='butonss',tag=nice_path + '_border',callback=active_but)
-            print(nice_path + '_border')
+            
     else:
         Polygon_to_lines(unary_union(MultiPolygon([p for p in polygons2])),num_lines,width_lines,nice_path)
         
@@ -657,7 +711,7 @@ def read_dxf_lines_from_esyeda2(sender, app_data, user_data):
             
             
             dpg.add_button(label=nice_path + '_border',parent='butonss',tag=nice_path + '_border',callback=active_but)
-            print(nice_path + '_border')
+            
     else:
         Polygon_to_lines(unary_union(MultiPolygon([p for p in polygons2])),num_lines,width_lines,nice_path)
         
@@ -672,7 +726,7 @@ def read_dxf_with_grabber(file_path):
     
     dpg.add_button(label=nice_path,parent='butonss',tag=nice_path,callback=active_but)
     dxf = dxfgrabber.readfile(file_path)
-    print(dxf.header.get('$INSUNITS'))
+    
     ll = []
     lll = {}
     pattern = r'^power(\d+)speed(\d+)$'
@@ -689,36 +743,40 @@ def read_dxf_with_grabber(file_path):
             h+=1
     counter = 0
     for entity in dxf.entities:
-        
         if entity.dxftype == 'LINE':
-            #print(f"Start: {entity.start}, End: {entity.end}")
             data_base.add_polyline(nice_path+f"_line_"+f"{counter}",nice_path,0, False, True, False)
             data_base.add_coordinates(nice_path+f"_line_"+f"{counter}", [[entity.start[0],entity.start[1]], [entity.end[0],entity.end[1]]])
-        
         elif entity.dxftype == 'CIRCLE':
-            print(f"Center: {entity.center}, Radius: {entity.radius}")
-            print(f"Type: {entity.dxftype}, Layer: {entity.layer}")
-    
-        elif entity.dxftype == 'SPLINE':
-        
-            degree = entity.degree
             
-           
-            if hasattr(entity, 'knots') and entity.knots:
-                
+            center = entity.center 
+            radius = entity.radius
+            num_points = 50  
+            layer = entity.layer
+            points = [
+                (
+                    center[0] + radius * math.cos(2 * math.pi * i / num_points),
+                    center[1] + radius * math.sin(2 * math.pi * i / num_points)
+                )
+                for i in list(range(num_points)) + [0]
+            ]
+            if layer in ll:
+                data_base.add_polyline(nice_path+f"_circle_"+f"{counter}",nice_path,lll[layer], False, True, False)
+            else:
+                data_base.add_polyline(nice_path+f"_circle_"+f"{counter}",nice_path,0, False, True, False)
+            data_base.add_coordinates(nice_path+f"_circle_"+f"{counter}", points)
+            counter+=1
+        elif entity.dxftype == 'SPLINE':
+            degree = entity.degree
+            if hasattr(entity, 'knots') and entity.knots:  
                 knot_vector = np.array(entity.knots)
                 control_points = np.array(entity.control_points)
                 
                 x = control_points[:, 0]
-                y = control_points[:, 1]
-                
-                
+                y = control_points[:, 1]   
                 weights = getattr(entity, 'weights', None) 
                 if weights is not None and not all(w == 1.0 for w in weights):
-                    print(f"Предупреждение: Сплайн является NURBS. Используется нерациональное приближение.")
-                
-                try:
-                    
+                    print(f"Предупреждение: Сплайн является NURBS. Используется нерациональное приближение.") 
+                try:   
                     u_min = knot_vector[degree]
                     u_max = knot_vector[len(knot_vector) - degree - 1]
                     u_range = np.linspace(u_min, u_max, 20)
@@ -761,9 +819,23 @@ def read_dxf_with_grabber(file_path):
 
 
         elif entity.dxftype == 'ARC':
-            print(f"Center: {entity.center}, Radius: {entity.radius}, Start Angle: {entity.start_angle}, End Angle: {entity.end_angle}")
-            print(f"Type: {entity.dxftype}, Layer: {entity.layer}")
-        
+            
+            center = entity.center 
+            radius = entity.radius  
+            start_angle = entity.start_angle
+            end_angle = entity.end_angle
+            layer = entity.layer
+            if radius<10:
+                points = arc_to_lines(center, radius, start_angle, end_angle,10)
+            else:
+                points = arc_to_lines(center, radius, start_angle, end_angle,50)
+            if layer in ll:
+                data_base.add_polyline(nice_path+f"_arc_"+f"{counter}",nice_path,lll[layer], False, True, False)
+            else:
+                data_base.add_polyline(nice_path+f"_arc_"+f"{counter}",nice_path,0, False, True, False)
+            data_base.add_coordinates(nice_path+f"_arc_"+f"{counter}", points)
+            counter+=1
+
         elif entity.dxftype == 'LWPOLYLINE':
            
             layer = entity.layer
@@ -801,9 +873,9 @@ def read_dxf_with_grabber(file_path):
             print(f"Vertices: {entity.points}")
             print(f"Type: {entity.dxftype}, Layer: {entity.layer}")
         else:
-            print(f"{entity.dxftype}")
+            print(f"{entity.dxftype} sss")
         counter+=1
-
+        # print(f"{entity.dxftype}")
 
 
 def read_dxf_lines(file_path):
@@ -1495,7 +1567,7 @@ def Epitrohoida_callback():
     e = float(dpg.get_value('e'))
 
     nnp = int(dpg.get_value('countp'))
-    print(N,n,Dzkk,Dkk, e)
+    
     Doe = n * Dkk/N
     Doeo = Dkk - Doe 
     Roe = Doe/2
@@ -1600,8 +1672,7 @@ def circle_callback():
     
     redraw()
 def split_linestring_at_nearest_point(line_coords, target_point_coords,x,y , tolerance=1e-9):
-    print(line_coords[0])
-    print(line_coords[-1])
+    
     line = LineString(line_coords)
     target_point = Point(target_point_coords)
     CENTER_X = float(dpg.get_value('x_center'))
@@ -1609,7 +1680,7 @@ def split_linestring_at_nearest_point(line_coords, target_point_coords,x,y , tol
     distance_along_line = line.project(target_point)
 
     split_point = line.interpolate(distance_along_line)
-    print(list(split_point.coords))
+    
     if split_point.equals_exact(Point(line.coords[0])) or split_point.equals_exact(Point(line.coords[-1])):
         print("Ближайшая точка совпадает с началом или концом ломаной. Разделение не требуется.")
         return [line]
@@ -1621,7 +1692,7 @@ def split_linestring_at_nearest_point(line_coords, target_point_coords,x,y , tol
         if len(split_lines) == 2:
             return split_lines
         else:
-            print(len(split_lines))
+            
             print("split() вернул неожиданный результат. Использование ручного обрезания.")
             return cut_line(line, distance_along_line)
     
@@ -1780,7 +1851,7 @@ def plot_mouse_click_callback():
         tags = data_base.fetch_tags_with_same_big_tag(tagg)
         
         for tag in tags:
-            print(tag)
+            
             #data_base.update_polyline(tag,active=1,color_change_flag=True)
             # print(data_base.get_unique_politag_where(f"tag='{tag[0]}'"))
             active_but(data_base.get_unique_politag_where(f"tag='{tag}'")[0])    
@@ -1796,7 +1867,7 @@ def plot_mouse_click_callback():
 
         CENTER_X = float(dpg.get_value('x_center'))
         CENTER_Y = float(dpg.get_value('y_center'))
-        print(CENTER_X,CENTER_Y)
+        
         ANGLE_RAD = np.tan(-x/y)
         
 
@@ -2131,7 +2202,7 @@ def extract_points_from_ggb(ggb_file_path):
     try:
         with zipfile.ZipFile(ggb_file_path, 'r') as zip_ref:
             xml_content = zip_ref.read('geogebra.xml').decode('utf-8')
-            print(xml_content)
+            
     except Exception as e:
         print(f"Ошибка при чтении ZIP: {e}")
         return points, segments
@@ -2393,7 +2464,7 @@ def extract_points_from_ggb(ggb_file_path):
                     segments.append((points[start_vertex], points[end_vertex]))
                     data_base.add_coordinates(nice_path+f"_p_"+f"{counter}", [points[start_vertex], points[end_vertex]])
         else:
-            print(cmd_name)    
+            print(cmd_name + "asd")    
         counter+=1            
     
     return points, segments
@@ -2579,7 +2650,7 @@ def pr(selected_files):
             normicks = ['TopLayer','BoardOutLine','Multi-Layer']
             doc = ezdxf.readfile(current_file)
             layers = doc.layers
-            print(layers)
+            
             ll = []
             ll.append(current_file)
             dpg.add_radio_button(parent="modal_id",items=['full','border'],tag='varradio',horizontal=True,default_value='full')
@@ -2592,7 +2663,7 @@ def pr(selected_files):
                     dpg.add_checkbox(label=layer.dxf.name,parent="modal_id",tag=layer.dxf.name)
             dpg.add_group(horizontal=True,tag='hor_grouph',parent="modal_id")
             
-            dpg.add_button(label="OK", width=75, parent='hor_grouph',callback=read_dxf_lines_from_esyeda2,user_data=ll,tag='OK')
+            dpg.add_button(label="OK", width=75, parent='hor_grouph',callback=read_dxf_lines_from_esyeda,user_data=ll,tag='OK')
             dpg.add_button(label="Cancel", width=75, parent='hor_grouph', callback=lambda: dpg.configure_item("modal_id", show=False),tag='CANCEL')
             dpg.configure_item("modal_id", show=True)
             
@@ -2789,7 +2860,6 @@ def joinsel_callback():
             
         lines.append(new_line)
         
-    print(len(lines))
     buts = data_base.get_unique_politag_where('active=True')
     tags = data_base.get_tag('active=True')
     for t in tags:
@@ -2821,7 +2891,7 @@ def join_callback():
         dpg.delete_item(f'{t[0]}')
     but = data_base.get_unique_politag()
     for b in but:
-        print(f'{b[0]}')
+        
         dpg.delete_item(f'{b[0]}')
     data_base.clear_tables()
     dpg.add_button(label='join',parent='butonss',tag='join',callback=active_but)
@@ -2848,7 +2918,7 @@ def load_gcode_callback():
 
 
     gcode_commands = dpg.get_value('multiline_input').split('\n')
-    print(gcode_commands)
+    
     try:
        
         ser = serial.Serial(PORT, BAUDRATE, timeout=1)
@@ -3009,7 +3079,7 @@ def konus_callback():
 def horizont_callback():
     dpg.add_button(label="horizont",parent='butonss',tag="horizont",callback=active_but)
     w = float(dpg.get_value('border_line_width'))
-    print(round(10/w))
+    
     points1 = [(0,i*w)for i in range(round(10/w))]
     points2 = [(10,i*w)for i in range(round(10/w))]
     for i in range(0,len(points1),2):
@@ -3024,7 +3094,7 @@ def horizont_callback():
 def vertical_callback(): 
     dpg.add_button(label="vertical",parent='butonss',tag="vertical",callback=active_but)
     w = float(dpg.get_value('border_line_width'))
-    print(round(10/w))
+    
     points1 = [(i*w,0)for i in range(round(10/w))]
     points2 = [(i*w,10)for i in range(round(10/w))]
     for i in range(0,len(points1),2):
