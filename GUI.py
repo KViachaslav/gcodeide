@@ -281,7 +281,12 @@ def Polygon_to_lines(union_polygon,num_lines,width_lines,nice_path):
                 data_base.add_coordinates(nice_path+f"{c}",remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)]))
                 c+=1
             
-            tunion_polygon.append(union_polygon.buffer(width_lines,quad_segs=0))
+            pol = union_polygon.buffer(width_lines,quad_segs=0)
+            if isinstance(pol, MultiPolygon):
+                for single_polygon in pol.geoms:
+                    tunion_polygon.append(single_polygon)
+            else:
+                tunion_polygon.append(pol)
         else:
            
 
@@ -300,8 +305,13 @@ def Polygon_to_lines(union_polygon,num_lines,width_lines,nice_path):
                     #data_base.add_coordinates(nice_path+f"{c}",[(x_,y_) for x_,y_ in zip(xm,ym)])
                     data_base.add_coordinates(nice_path+f"{c}",remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)]))
                     c+=1
-                tunion_polygon.append(p.buffer(width_lines,quad_segs=0))
-            
+                
+                pol = p.buffer(width_lines,quad_segs=0)
+                if isinstance(pol, MultiPolygon):
+                    for single_polygon in pol.geoms:
+                        tunion_polygon.append(single_polygon)
+                else:
+                    tunion_polygon.append(pol)
         union_polygon = unary_union(MultiPolygon([p for p in tunion_polygon]))
 
 
@@ -353,6 +363,8 @@ def scale_polygon_horizontal(polygon, scale_factor):
     new_coords = [(centroid.x + (xi - centroid.x) * scale_factor, yi) for xi, yi in zip(x, y)]
     return Polygon(new_coords)
 def get_radius(a,b,x,y):
+    a = 0.1
+    b = 0.04
     if y == 0:
         return b
     if x == 0:
@@ -403,7 +415,7 @@ def combine_lines(lines):
 def read_dxf_lines_from_esyeda(sender, app_data, user_data):
     for_correct = 0.1
     for_buffer = 0.08
-    for_buffer2 = 0.05
+    for_buffer2 = 0.047
     doc = ezdxf.readfile(user_data[0])
     full = dpg.get_value('varradio') == 'full'
    
@@ -454,7 +466,10 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
     for polyline in msp.query('LWPOLYLINE'):
         layer = polyline.dxf.layer
         if layer in layers:
-            w = polyline.dxf.const_width
+            if dpg.get_value('widthborder0') and layer == 'BoardOutLine':
+                w = 0
+            else:
+                w = polyline.dxf.const_width
             points = polyline.get_points()  
         
             num_points = 20
@@ -476,7 +491,8 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
                 polygons.append(p)
                 #polygons.append(Polygon([(boundaries['left_start'][0],boundaries['left_start'][1]), (boundaries['left_end'][0],boundaries['left_end'][1]), (boundaries['right_end'][0],boundaries['right_end'][1]), (boundaries['right_start'][0],boundaries['right_start'][1])]))
                 polygons2.append(scale_polygon_horizontal(Polygon([(points[j + 1][0] + radius2 * math.cos(2 * math.pi * i / num_points),points[j + 1][1] + radius2 * math.sin(2 * math.pi * i / num_points))for i in range(num_points)]),for_correct))
-                polygons2.append(p2)
+                if p2.geom_type == "Polygon":
+                    polygons2.append(p2)
                 #polygons2.append(Polygon([(boundaries2['left_start'][0],boundaries2['left_start'][1]), (boundaries2['left_end'][0],boundaries2['left_end'][1]), (boundaries2['right_end'][0],boundaries2['right_end'][1]), (boundaries2['right_start'][0],boundaries2['right_start'][1])]))
 
         if layer == 'BoardOutLine' and full:
@@ -518,12 +534,30 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
             ymin = min(ym)
             ymax = max(ym)
             lins = MultiLineString([((xmin, y), (xmax, y))for y in np.arange(ymin,ymax,width_lines)])
-            multiline = MultiLineString(borderlin)
-            combined_line = shapely.line_merge(multiline)
             
-            polygon = Polygon(combined_line.coords).buffer(for_buffer,quad_segs=2)
+            combined_line = shapely.line_merge(MultiLineString(borderlin))
+            
+            if combined_line.geom_type == "LineString":
+                polygon = Polygon(combined_line.coords).buffer(1,quad_segs=2)
+            else:
+                # polygon = Polygon(combined_line.geoms[1].coords).buffer(1,quad_segs=2)
 
-    
+                pps = [Polygon(combined_line.geoms[i].coords) for i in range(len(combined_line.geoms))]
+                fl = False
+                for i in range(len(pps)):
+                    for j in range(len(pps)):
+                        if shapely.contains_properly(pps[i],pps[j]):
+                            ans = pps[i]
+                            for k in range(len(pps)):
+                                if k != i:
+                                    ans = ans.difference(pps[k])      
+                            polygon = ans.buffer(1,quad_segs=2)  
+                            
+                            fl = True
+                            break 
+                    if fl:
+                        break
+                
             intersection = lins.intersection(polygon)
             linn = intersection.difference(unary_union(MultiPolygon([p for p in polygons])))
             
@@ -2192,7 +2226,22 @@ def bezier_curve_points(points, num_points=100):
         curve_points += np.outer(B_i, points[i])
         
     return curve_points
-
+def determine_rotation_direction(O, A, B):
+   
+    x_A_prime = A[0] - O[0]
+    y_A_prime = A[1] - O[1]
+    
+    x_B_prime = B[0] - O[0]
+    y_B_prime = B[1] - O[1]
+    
+    cross_product = (x_A_prime * y_B_prime) - (x_B_prime * y_A_prime)
+    return cross_product
+    # if cross_product > 0:
+    #     return False 
+    # elif cross_product < 0:
+    #     return True  
+    # else:
+    #     return False     
 def extract_points_from_ggb(ggb_file_path):
     nice_path = find_nice_path(ggb_file_path)
     dpg.add_button(label=nice_path,parent='butonss',tag=nice_path,callback=active_but)
@@ -2212,7 +2261,7 @@ def extract_points_from_ggb(ggb_file_path):
     except ET.ParseError as e:
         print(f"Ошибка парсинга XML: {e}")
         return points, segments
-    
+    counter = 0
     for elem in root.iter('element'):
         if elem.get('type') == 'point':
             label = elem.get('label', 'unnamed')
@@ -2221,7 +2270,27 @@ def extract_points_from_ggb(ggb_file_path):
                 x = float(coords_elem.get('x', 0.0))
                 y = float(coords_elem.get('y', 0.0))
                 points[label] = (x, y)
-    counter = 0
+        for elem in root.iter('strokeCoords'):
+            
+            number_strings = [s.strip() for s in elem.get('val').split(',')]
+        
+            try:
+                numbers = [float(s) for s in number_strings if s!="NaN"]
+            except ValueError:
+                print("Ошибка: Строка содержит нечисловые символы.")
+                return []
+            
+            num_elements = len(numbers)
+            num_pairs = num_elements // 2
+            
+            result_list = []
+            for i in range(0, num_elements, 2):
+    
+                result_list.append((numbers[i], numbers[i + 1]))
+                data_base.add_polyline(nice_path+f"_kar_"+f"{counter}",nice_path,0, False, True, False)
+                        
+                data_base.add_coordinates(nice_path+f"_kar_"+f"{counter}", result_list)
+                counter+=1
     for command in root.iter('command'):
         cmd_name = command.get('name')
         
@@ -2315,11 +2384,29 @@ def extract_points_from_ggb(ggb_file_path):
                 r = (r + rB + rC) / 3  
 
             num_points = 40  
-                
-            start_angle = math.atan2(points[a0][1] - c[1], points[a0][0] - c[0])
-            end_angle = math.atan2(points[a2][1] - c[1], points[a2][0] - c[0])
+            if  determine_rotation_direction(c,points[a0],points[a1]) > 0:
 
-            angles = [start_angle + ( i * (end_angle - start_angle)/num_points) for i in range(num_points)]
+                start_angle = math.atan2(points[a0][1] - c[1], points[a0][0] - c[0])
+                end_angle = 2 * np.pi + math.atan2(points[a2][1] - c[1], points[a2][0] - c[0]) 
+                if start_angle < 0:
+                    start_angle = 2*np.pi + start_angle
+                if end_angle > 2*np.pi:
+                    end_angle -= 2*np.pi
+               
+                print('tut')
+                angles = [start_angle + ( i * (end_angle - start_angle)/num_points) for i in range(num_points+1)]
+            
+            else:
+                start_angle = math.atan2(points[a2][1] - c[1], points[a2][0] - c[0])
+                end_angle =  math.atan2(points[a0][1] - c[1], points[a0][0] - c[0])
+                print('ne tut')
+                angles = [start_angle + ( i * (end_angle - start_angle)/num_points) for i in range(num_points+1)]
+            
+            # print(start_angle,end_angle)    
+            # start_angle = math.atan2(points[a0][1] - c[1], points[a0][0] - c[0])
+            # end_angle = math.atan2(points[a2][1] - c[1], points[a2][0] - c[0])
+
+            # angles = [start_angle + ( i * (end_angle - start_angle)/num_points) for i in range(num_points)]
             
             pointss = [
                 (
@@ -3134,9 +3221,19 @@ def diagonal_callback():
 ##########################################
 #############################################
 def test_callback():
-    tag0 = data_base.get_tag_where('color=0')
-    print(tag0)
-    print(data_base.xz(0,0,tag0))
+    coords = []
+    tags = data_base.get_tag_where('active=1')
+    for tag in tags:
+        coords += data_base.get_coordinates(tag)
+
+    xx = [r[0] for r in coords]
+    yy = [r[1] for r in coords]
+
+    placeholders = ', '.join(f"'{t}'" for t in tags)
+    
+    data_base.x10_field_value_with_condition(f'polyline_tag IN ({placeholders})')
+    data_base.update_polylines(tags,redraw_flag = True)
+    redraw()
 ####################################################
 ####################################################
 ####################################################
@@ -3255,8 +3352,8 @@ with dpg.window(label="Organizer", show=False, tag="Organizer_window", no_title_
         dpg.add_spacer(width=50)
 
 
-with dpg.window(label="Border EsyEDA", show=False, tag="border_from_esyeda", no_title_bar=True,pos=(400,100)):
-    dpg.add_text("EsyEDA border")
+with dpg.window(label="EsyEDA", show=False, tag="border_from_esyeda", no_title_bar=True,pos=(400,100)):
+    dpg.add_text("EsyEDA line")
     dpg.add_separator()
     with dpg.group(horizontal=True):
         dpg.add_text("line width ")      
@@ -3265,11 +3362,15 @@ with dpg.window(label="Border EsyEDA", show=False, tag="border_from_esyeda", no_
     with dpg.group(horizontal=True):
         dpg.add_text("count lines")      
         dpg.add_input_text(width=50,scientific=True,tag='border_line_count',default_value='10') 
+    
+    dpg.add_separator()
+    dpg.add_text("EsyEDA border")
+    dpg.add_separator()
+    dpg.add_checkbox(label='width border=0',tag='widthborder0',default_value=True)
     with dpg.group(horizontal=True):
         dpg.add_spacer(width=50)
         dpg.add_button(label='Apply',callback=lambda:dpg.configure_item("border_from_esyeda", show=False))
         dpg.add_spacer(width=50)
-
 with dpg.window(label="Text Size", show=False, tag="text_size_modal", no_title_bar=True,pos=(400,100)):
     dpg.add_text("Text Size")
     dpg.add_separator()

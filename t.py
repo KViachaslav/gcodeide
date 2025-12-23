@@ -1,12 +1,12 @@
-import numpy as np
-def get_radius(a,b,x,y):
-    if y == 0:
-        return b
-    if x == 0:
-        return a
-    else:
-        ans = a*b/np.sqrt((b*np.cos(np.arctan(x/y)))**2 + (a*np.sin(np.arctan(x/y)))**2) 
-        return ans + (a-ans) * 0.5
+from shapely.geometry import LineString,MultiLineString
+import shapely
 
+# Создаем несколько линий
+line1 = LineString([(0, 0), (1, 1)])
+line2 = LineString([(1, 1), (2, 2)])
+line3 = LineString([(2, 2), (3, 3)])
 
-print(get_radius(10,5,0,3))
+# Объединяем линии
+merged_line = shapely.line_merge(MultiLineString([line1, line2, line3]))
+
+print(merged_line)
