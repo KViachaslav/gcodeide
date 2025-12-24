@@ -228,6 +228,15 @@ class PolylineDatabase:
             WHERE {condition}
         """, (delta_x, delta_y))
         self.connection.commit()
+    def scale_value_with_condition(self,  delta_x, delta_y, condition):
+        
+        self.cursor.execute(f"""
+            UPDATE coordinates
+            SET x = x * ?,
+            y = y * ?
+            WHERE {condition}
+        """, (delta_x, delta_y))
+        self.connection.commit()
 
     def clear_tables(self):
         self.cursor.execute(f"DELETE FROM polylines")

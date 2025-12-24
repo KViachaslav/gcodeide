@@ -2005,7 +2005,17 @@ def recolor():
             dpg.set_value(f'color_{tag}',(255, 69, 0, 255 ))
         
         data_base.update_polyline(tag,color_change_flag=False)
+def scale_lines():
+    tags = data_base.get_tag_where('active=True')
     
+    placeholders = ', '.join(f"'{t}'" for t in tags)
+    
+    
+
+    data_base.scale_value_with_condition(2,2,f'polyline_tag IN ({placeholders})')
+    data_base.update_polylines(tags,redraw_flag = True)
+            
+    redraw() 
 def redraw(all=0):
 
 
@@ -3530,6 +3540,7 @@ with dpg.viewport_menu_bar():
         dpg.add_menu_item(label="test", callback=test_callback)
         dpg.add_menu_item(label="Join", callback=join_callback)
         dpg.add_menu_item(label="Join selected (0.5mm)", callback=joinsel_callback)
+        dpg.add_menu_item(label="Scale", callback=scale_lines)
         
     with dpg.menu(label="Geom"):
         dpg.add_menu_item(label="Circle", callback=circle_callback)
