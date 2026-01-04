@@ -1,0 +1,9 @@
+dearpygui
+ezdxf
+svgwrite
+Pillow
+shapely
+serial
+scipy
+dxfgrabber
+psutil
