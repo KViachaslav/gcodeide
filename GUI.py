@@ -450,6 +450,7 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
     borderlin = []
     polygons = []
     polygons2 = []
+    dyrki = []
     for circle in msp.query('CIRCLE'):
         layer = circle.dxf.layer
         
@@ -460,8 +461,8 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
             radius2 = circle.dxf.radius + for_buffer2
             polygons.append(scale_polygon_horizontal(Polygon([(center.x + radius * math.cos(2 * math.pi * i / num_points),center.y + radius * math.sin(2 * math.pi * i / num_points))for i in range(num_points)]),for_correct))
             polygons2.append(scale_polygon_horizontal(Polygon([(center.x + radius2 * math.cos(2 * math.pi * i / num_points),center.y + radius2 * math.sin(2 * math.pi * i / num_points))for i in range(num_points)]),for_correct))
+            dyrki.append([(center.x + 0.05 * math.cos(2 * math.pi * i / 6),center.y +  0.05 * math.sin(2 * math.pi * i / 6))for i in range(7)])
 
-           
         
     for polyline in msp.query('LWPOLYLINE'):
         layer = polyline.dxf.layer
@@ -561,9 +562,14 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
             intersection = lins.intersection(polygon)
             linn = intersection.difference(unary_union(MultiPolygon([p for p in polygons])))
             
-            
-    
             c = 0
+            for l in dyrki:
+                
+                data_base.add_polyline(nice_path+f"__{c}" ,nice_path,0, False, True, False)
+                data_base.add_coordinates(nice_path+f"__{c}",l)
+                c+=1
+                redraw()
+    
             for l in linn.geoms:
                 coords = []
                 coords.append((round(l.coords[0][0],4),  round(l.coords[0][1],4)))
@@ -573,6 +579,7 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
                 data_base.add_coordinates(nice_path+f"{c}",coords)
                 c+=1
                 redraw()
+            
             Polygon_to_lines(unary_union(MultiPolygon([p for p in polygons2])),1,width_lines,nice_path+ '_border')
             
             
@@ -3268,10 +3275,58 @@ def diagonal_callback():
 ###########################################
 ##########################################
 #############################################
+def calculate_polyline_length(points):
+    """
+    Функция для вычисления длины ломаной, заданной списком точек.
+    
+    :param points: Список кортежей, где каждый кортеж представляет собой точку (x, y)
+    :return: Длина ломаной
+    """
+    length = 0.0
+    
+    for i in range(len(points) - 1):
+        # Координаты первой точки
+        x1, y1 = points[i]
+        # Координаты второй точки
+        x2, y2 = points[i + 1]
+        
+        # Вычисление длины отрезка
+        segment_length = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+        length += segment_length
+        
+    return length
 def test_callback():
-    global borderflag
-    borderflag = True
+    dpg.add_button(label="test",parent='butonss',tag="test",callback=active_but)
+   
+    rect1 = [(0,92.8),(-80,92.8),(-80,92.8+35),(0,92.8+35)]
 
+
+    data_base.add_coordinates(f"test", rect1)
+    data_base.add_polyline(f"test","test",0, False, True, False)
+    radius = 92.80
+    angle_degrees = ((73.304*180)/(np.pi * radius))
+    
+    print(angle_degrees)
+    angles = np.linspace(np.pi/2 - np.deg2rad(angle_degrees),np.pi/2, 40)
+    angles2 = np.linspace(np.pi/2 - np.deg2rad(angle_degrees-1),np.pi/2, 40)
+    points = [(radius * np.cos(angle), radius * np.sin(angle)) for angle in reversed(angles)]
+    data_base.add_coordinates(f"rtest", points)
+    data_base.add_polyline(f"rtest","test",0, False, True, False)
+
+    points2 = [(0,92.8+35)] + [((radius + 35) * np.cos(angle) + 2.9, (radius+ 35) * np.sin(angle)) for angle in reversed(angles2)]
+    data_base.add_coordinates(f"r2test", points2)
+    data_base.add_polyline(f"r2test","test",0, False, True, False)
+
+    print(calculate_polyline_length(points2))
+    print(calculate_polyline_length(points))
+    rect2 = [points[-1],(points[-1][0] + 40 * math.cos(np.deg2rad(angle_degrees)),points[-1][1] - 40 * math.sin(np.deg2rad(angle_degrees)))]
+    rect2.append((rect2[-1][0]+ 37.41 * math.cos(np.deg2rad(-angle_degrees) ),rect2[-1][1]- 37.41 * math.sin(np.deg2rad(-angle_degrees))))
+    rect2.append((rect2[-1][0]+ 40 * math.cos(np.deg2rad(-angle_degrees - 90) ),rect2[-1][1]- 40 * math.sin(np.deg2rad(-angle_degrees - 90 ))))
+    data_base.add_coordinates(f"rrtest", rect2)
+    data_base.add_polyline(f"rrtest","test",0, False, True, False)
+
+
+    redraw()
     
 ####################################################
 ####################################################
@@ -3618,8 +3673,8 @@ with dpg.window(pos=(0,0),width=900, height=775,tag='papa'):
                 yaxis = dpg.add_plot_axis(dpg.mvYAxis, label="Y", tag=Y_AXIS_TAG)
                 dpg.add_scatter_series([0], [0], parent=Y_AXIS_TAG, tag="series_center")
                 dpg.bind_item_theme("series_center", "plot_theme")
-                # dpg.set_axis_limits_constraints(Y_AXIS_TAG,-10,310)
-                # dpg.set_axis_limits_constraints(X_AXIS_TAG,-10,310)
+                dpg.set_axis_limits_constraints(Y_AXIS_TAG,-80,210)
+                dpg.set_axis_limits_constraints(X_AXIS_TAG,-80,210)
             
             with dpg.group(horizontal=True):
                 with dpg.group():
@@ -3714,8 +3769,12 @@ with dpg.window(pos=(900,544),width=200, height=200,tag='pult',label=''):
         dpg.add_button(label='hor',width=40,height=40,callback=calback_but7)
         dpg.add_button(label='v',width=40,height=40,callback=calback_but8)
         dpg.add_button(label='arc',width=40,height=40,callback=calback_but9)
+
 dpg.create_viewport(width=1115, height=825, title="GCODE IDE")
 dpg.setup_dearpygui()
 dpg.show_viewport()
+
+# test_callback()
 dpg.start_dearpygui()
+
 dpg.destroy_context()
