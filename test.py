@@ -1,31 +1,38 @@
-import dearpygui.dearpygui as dpg
+from PIL import Image
+import numpy as np
 
-dpg.create_context()
+# Открываем изображение
+image_path = 'dig (10).png'  # Укажите путь к вашему изображению
 
-def callback(sender, app_data):
-    try:
-   
-        print('OK was clicked.')
-        print("Sender: ", sender)
-        print("App Data: ", app_data)
-    
-    except Exception as e:
-        print("Error:", e)
+image = Image.open(image_path)
 
-def cancel_callback(sender, app_data):
-    print('Cancel was clicked.')
-    print("Sender: ", sender)
-    print("App Data: ", app_data)
+# Проверяем размер изображения
+if image.size != (32, 50):
+    raise ValueError("Изображение должно быть размером 32x50")
 
-dpg.add_file_dialog(
-    directory_selector=True, show=False, callback=callback, tag="file_dialog_id",
-    cancel_callback=cancel_callback, width=700 ,height=400)
+# Преобразуем изображение в черно-белое
+image_bw = image.convert('1')  # '1' - черно-белый формат
 
-with dpg.window(label="Tutorial", width=800, height=300):
-    dpg.add_button(label="Directory Selector", callback=lambda: dpg.show_item("file_dialog_id"))
+# Преобразуем изображение в массив пикселей
+image_data = np.array(image_bw)
 
-dpg.create_viewport(title='Custom Title', width=800, height=600)
-dpg.setup_dearpygui()
-dpg.show_viewport()
-dpg.start_dearpygui()
-dpg.destroy_context()
+# Создаем массив для хранения uint32
+uint32_array = np.zeros((50,), dtype=np.uint32)
+
+# Заполняем uint32_array
+for row in range(50):
+    value = 0
+    for column in range(32):
+        # Устанавливаем соответствующий бит (0 - черный, 1 - белый)
+       
+        if image_data[row, column] == 1:  # Белый пиксель
+            value |= (1 << column)
+    uint32_array[row] = value
+
+# Печатаем результат
+
+st = ""
+for i, val in enumerate(uint32_array):
+    st += f"0x{val:08x}, "
+
+print(st)

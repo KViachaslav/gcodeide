@@ -1,12 +1,10 @@
-from shapely.geometry import LineString,MultiLineString
-import shapely
+# Исходная строка
+original_string = "Это пример строки с подстрокой."
 
-# Создаем несколько линий
-line1 = LineString([(0, 0), (1, 1)])
-line2 = LineString([(1, 1), (2, 2)])
-line3 = LineString([(2, 2), (3, 3)])
+# Подстрока, которую нужно удалить
+substring_to_remove = "подстрокой"
 
-# Объединяем линии
-merged_line = shapely.line_merge(MultiLineString([line1, line2, line3]))
+# Удаление подстроки
+modified_string = original_string.replace(substring_to_remove, "")
 
-print(merged_line)
+print(modified_string) 

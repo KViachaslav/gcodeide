@@ -100,6 +100,7 @@ class PolylineDatabase:
         self.cursor.execute('SELECT * FROM polylines WHERE tag = ?', (tag,))
         return self.cursor.fetchall()
     def get_tag(self,condition):
+       
         self.cursor.execute(f'SELECT tag FROM polylines WHERE {condition}')
         return [row[0] for row in self.cursor.fetchall()]
     

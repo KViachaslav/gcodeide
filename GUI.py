@@ -32,8 +32,15 @@ from shapely.ops import split
 from shapely.geometry import box
 
 def active_but(sender):
+    
+
     state = data_base.get_polyline_where(f"big_tag='{sender}'")
     
+    if place_in_a_circle:
+        if not state[0][4]:
+            dpg.set_value('activetext',dpg.get_value('activetext') + f"{sender}\n")
+        else:
+            dpg.set_value('activetext',dpg.get_value('activetext').replace(f"{sender}\n", ""))
     tags = [s[1] for s in state]
     data_base.update_polylines(tags,active=False if state[0][4]==1  else True)
     
@@ -86,7 +93,7 @@ def extract_black_lines(image_path, pixel_distance):
 
     return liness
 
-def remove_close_points(points, threshold=0.05):
+def remove_close_points(points, threshold=0.02):
     if not points:
         return []
 
@@ -413,9 +420,9 @@ def combine_lines(lines):
     return combined_line
 
 def read_dxf_lines_from_esyeda(sender, app_data, user_data):
-    for_correct = 0.1
+    for_correct = 0.06 #0.1 было
     for_buffer = 0.08
-    for_buffer2 = 0.047
+    for_buffer2 = 0.047 #47  было
     doc = ezdxf.readfile(user_data[0])
     full = dpg.get_value('varradio') == 'full'
    
@@ -1694,11 +1701,28 @@ def gears_callback():
     data_base.add_coordinates("gears_"+f"{r}", full_gear_profile)
     
     redraw()
+def rectangle1_callback():
+    
+    CENTER_X = float(dpg.get_value('center xrec'))
+    CENTER_Y = float(dpg.get_value('center yrec'))
+    width = float(dpg.get_value('widthrec'))
+    height = float(dpg.get_value('heightrec'))
+    dpg.configure_item("RECTANGLEFROMCENTER", show=False)
+    r = random.randint(1, 1000)
+    
+    data_base.add_polyline("rec_"+f"{r}","rec"+f"{r}",0, False, True, False)
+    data_base.add_coordinates("rec_"+f"{r}", [(CENTER_X-width/2,CENTER_Y-height/2),(CENTER_X-width/2,CENTER_Y+height/2),(CENTER_X+width/2,CENTER_Y+height/2),(CENTER_X+width/2,CENTER_Y-height/2),(CENTER_X-width/2,CENTER_Y-height/2)])
+    
+    redraw()
+    dpg.add_button(label="rec"+f"{r}",parent='butonss',tag="rec"+f"{r}",callback=active_but)
+
+
 def circle_callback():
-    CENTER_X = float(dpg.get_value('x_center'))
-    CENTER_Y = float(dpg.get_value('y_center'))
-    radius = 1
-    num_points = 21 
+    CENTER_X = float(dpg.get_value('center x'))
+    CENTER_Y = float(dpg.get_value('center y'))
+    radius = float(dpg.get_value('radius'))
+    dpg.configure_item("CIRCLE", show=False)
+    num_points = float(dpg.get_value('nps'))
     r = random.randint(1, 1000)
     dpg.add_button(label="circle"+f"{r}",parent='butonss',tag="circle"+f"{r}",callback=active_but)
     points = [
@@ -1706,7 +1730,7 @@ def circle_callback():
             CENTER_X + radius * math.cos(2 * math.pi * i / num_points),
             CENTER_Y + radius * math.sin(2 * math.pi * i / num_points)
         )
-        for i in list(range(num_points)) + [0]
+        for i in list(range(int(num_points))) + [0]
     ]
     
     data_base.add_polyline("circle_"+f"{r}","circle"+f"{r}",0, False, True, False)
@@ -1861,7 +1885,7 @@ def plot_mouse_click_callback():
             num+=1
         redraw()
     elif dpg.get_value('movelines'):
-       
+        
         coords = []
         tags = data_base.get_tag_where('active=True')
         for tag in tags:
@@ -1879,6 +1903,7 @@ def plot_mouse_click_callback():
                 
         redraw()
     elif dpg.get_value('select'):
+        
         rec = data_base.get_all_coordinates()
         lines = []
         for i in range(len(rec)-1):
@@ -1890,15 +1915,8 @@ def plot_mouse_click_callback():
         else:
             tagg = rec[i+1][1]
         
-        tags = data_base.fetch_tags_with_same_big_tag(tagg)
-        
-        for tag in tags:
-            
-            #data_base.update_polyline(tag,active=1,color_change_flag=True)
-            # print(data_base.get_unique_politag_where(f"tag='{tag[0]}'"))
-            active_but(data_base.get_unique_politag_where(f"tag='{tag}'")[0])    
-
-
+        active_but(data_base.get_unique_politag_where(f"tag='{tagg}'")[0])    
+    
         recolor()
     elif dpg.get_value('rotate'):
         
@@ -1969,7 +1987,14 @@ def call_rot():
 
     CENTER_X = float(dpg.get_value('x_center'))
     CENTER_Y = float(dpg.get_value('y_center'))
-    ANGLE_RAD = math.radians(-float(dpg.get_value('rotate_angle')))
+    rotating(tags,CENTER_X,CENTER_Y,float(dpg.get_value('rotate_angle')))
+    redraw()  
+def rotating(tags,centerx,centery,angle):
+    print(tags)
+
+    CENTER_X = centerx
+    CENTER_Y = centery
+    ANGLE_RAD = math.radians(-angle)
     
 
     COS_A = math.cos(ANGLE_RAD)
@@ -1994,7 +2019,7 @@ def call_rot():
             update_queries.append((x_new, y_new, id))
     data_base.update(update_queries)
     data_base.update_polylines(tags,redraw_flag = True)
-    redraw()     
+           
 def recolor():
     for tag in data_base.get_tag('color_change_flag=True'):
         coloractive = data_base.get_color(f'tag="{tag}"')[0]
@@ -2044,7 +2069,6 @@ def redraw(all=0):
             color = (0, 255, 127, 255)
         elif coloractive[0] == 4:
             color = (255, 69, 0, 255 )
-
 
         dpg.delete_item(f'color_{tag}')
         with dpg.theme() as coloured_line_theme1:
@@ -2144,21 +2168,22 @@ def bufferp():
 
 def rotate_y():
     invers_lines('y')
+def dublicating(bigtag):
+    but = bigtag
+    nice = find_nice_path(but)
+    dpg.add_button(label=nice,parent='butonss',tag=nice,callback=active_but)
+    lines = data_base.get_polyline_where(f'active=1 AND big_tag="{but}"')
+    for i in range(len(lines)):
+        coords = data_base.get_coordinates(lines[i][1])
+        data_base.add_polyline(nice + f"_{i}",nice,0, False, True, False)
+        data_base.add_coordinates(nice + f"_{i}", coords)
+    return nice
+            
+        
 def dublicate_lines():
     pol = data_base.get_bigtag_where('active=1')
-    
     for but in pol:
-        nice = find_nice_path(but)
-        dpg.add_button(label=nice,parent='butonss',tag=nice,callback=active_but)
-        lines = data_base.get_polyline_where(f'active=1 AND big_tag="{but}"')
-        for i in range(len(lines)):
-            coords = data_base.get_coordinates(lines[i][1])
-            data_base.add_polyline(nice + f"_{i}",nice,0, False, True, False)
-            data_base.add_coordinates(nice + f"_{i}", coords)
-        
-    # for p in pol:
-
-    #     coords = data_base.get_coordinates(p[1])
+        dublicating(but)
     redraw()
     
 def move_to_center_lines():
@@ -3159,6 +3184,16 @@ def izgib_callback():
             data_base.add_coordinates(f"{col}_{i+numlins}", [(col*w+w/2+a,mas2[i*2]),(col*w+w/2+a,mas2[i*2+1])])
     
     redraw()
+def potent_callback():
+    dpg.add_button(label="potent",parent='butonss',tag="potent",callback=active_but)
+    data_base.add_polyline(f"potent1","potent",0, False, True, False)
+    data_base.add_coordinates(f"potent1", get_circle_points(center=(-92,20),radius=3.5,begin_angle=0,end_angle=360))
+    redraw()
+def oled_callback(): 
+    dpg.add_button(label="oled",parent='butonss',tag="oled",callback=active_but)
+    data_base.add_polyline(f"oled1","oled",0, False, True, False)
+    data_base.add_coordinates(f"oled1", [(-100.5,32.5),(-100.5,7.5),(-83.5,7.5),(-83.5,32.5),(-100.5,32.5)])
+    redraw()
 def konus_callback():
     dpg.configure_item("KONUS", show=False)
     l = float(dpg.get_value('l'))
@@ -3197,8 +3232,35 @@ def konus_callback():
     for m in mas2:
         TT.append([((radius + m) * np.cos(angle), (radius + m) * np.sin(angle)) for angle in angles])
     dpg.add_button(label="arc",parent='butonss',tag="arc",callback=active_but)
-    data_base.add_coordinates(f"1", points + [(points[len(points)-1][0],points[len(points)-1][1]+a),((points2[0][0],points2[0][1]+a))] + points2 + [calculate_point(points2[len(points)-1],-90 + angle_degrees,a),calculate_point(points[0],-90 + angle_degrees,a),points[0]])
-    data_base.add_polyline(f"1","arc",0, False, True, False)
+    # data_base.add_coordinates(f"1", points + [(points[len(points)-1][0],points[len(points)-1][1]+a),((points2[0][0],points2[0][1]+a))] + points2 + [calculate_point(points2[len(points)-1],-90 + angle_degrees,a),calculate_point(points[0],-90 + angle_degrees,a),points[0]])
+    print(angle_degrees)
+    pp = points
+    pp.append(calculate_point(pp[-1],90 ,12))
+    pp.append(calculate_point(pp[-1],180,4))
+    pp.append(calculate_point(pp[-1],90 ,18))
+    pp.append(calculate_point(pp[-1],0,4))
+    pp.append(calculate_point(pp[-1],90 ,10))
+    pp.append(calculate_point(pp[-1],180,d))
+    pp.append(calculate_point(pp[-1],-90 ,10))
+    pp.append(calculate_point(pp[-1],0,4))
+    pp.append(calculate_point(pp[-1],-90 ,18))
+    pp.append(calculate_point(pp[-1],180,4))
+
+    pp = pp + points2
+    pp.append(calculate_point(pp[-1],-90 + angle_degrees,5))
+    pp.append(calculate_point(pp[-1],angle_degrees,4))
+    pp.append(calculate_point(pp[-1],-90 + angle_degrees,15))
+    pp.append(calculate_point(pp[-1],angle_degrees-180,4))
+    pp.append(calculate_point(pp[-1],-90 + angle_degrees,20))
+    pp.append(calculate_point(pp[-1], angle_degrees,d))
+    pp.append(calculate_point(pp[-1],+90 + angle_degrees,20))
+    pp.append(calculate_point(pp[-1],angle_degrees-180,4))
+    pp.append(calculate_point(pp[-1],+90 + angle_degrees,15))
+    pp.append(calculate_point(pp[-1],angle_degrees,4))
+    pp.append(calculate_point(pp[-1],+90 + angle_degrees,5))
+    data_base.add_coordinates(f"11111", pp)
+   
+    data_base.add_polyline(f"11111","arc",0, False, True, False)
     
     for i in range(len(T[0])):
         if i %2 == 0:
@@ -3272,16 +3334,73 @@ def diagonal_callback():
         data_base.add_polyline(f"{i+1}_diagonal","diagonal",0, False, True, False)
         
     redraw()
+def add_circle_to_plot(center=(0,0),radius=1,begin_angle=0,end_angle=360,name='name',parent='parent'):
+    angles = np.linspace(np.deg2rad(begin_angle), np.deg2rad(end_angle), 40)
+    points = [(radius * np.cos(angle) + center[0], radius * np.sin(angle)+ center[1]) for angle in angles]
+    data_base.add_coordinates(name, points)
+    data_base.add_polyline(name,parent,0, False, True, False)
+def get_circle_points(center=(0,0),radius=1,begin_angle=0,end_angle=360):
+    angles = np.linspace(np.deg2rad(begin_angle), np.deg2rad(end_angle), 40)
+    points = [(radius * np.cos(angle) + center[0], radius * np.sin(angle)+ center[1]) for angle in angles]
+    return points
+def place_in_a_circle_callback():
+    centerx = float(dpg.get_value('centerxplace'))
+    centery = float(dpg.get_value('centeryplace'))
+    count = float(dpg.get_value('countforspace'))
+    spaser = dpg.get_value('varrast')
+    print(spaser)
+    degrr = float(dpg.get_value('rastdegrees'))
+    dpg.configure_item("place_in_a_circle", show=False)
+    obj = dpg.get_value('activetext').split("\n")
+    ang = degrr if spaser =='spacing' else degrr/count
+    
+    for o in obj:
+        if o!= "":
+            for i in range(int(count)-1):
+                no = dublicating(o)
+
+                rotating(data_base.get_tag(f"big_tag='{no}'"),centerx=centerx,centery=centery,angle=ang * (i+1))
+            
+
+    redraw()
+    
+
+
+
+
+
+
+
+
+
+
+
+
+def nosik_callback():
+    dpg.add_button(label="nosik",parent='butonss',tag="nosik",callback=active_but)
+    dpg.add_button(label="nosik",parent='butonss',tag="nosik2",callback=active_but)
+    points = [(45,15),(-1.2,15),(-1.2,0),(40,0)] + get_circle_points(center=(40,-5),radius=5,begin_angle=90,end_angle=0) + [(45,-6.2),(60,-6.2)]+ get_circle_points(center=(45,0),radius=15,begin_angle=0,end_angle=90) 
+    
+    data_base.add_coordinates(f"nosikk", points)
+    data_base.add_polyline(f"nosikk","nosik",0, False, True, False)
+
+    points2 = [(45,10),(0,10),(0,5),(45,5)] + get_circle_points(center=(45,0),radius=5,begin_angle=90,end_angle=0) + [(50,-5),(55,-5)]+ get_circle_points(center=(45,0),radius=10,begin_angle=0,end_angle=90) 
+    
+    data_base.add_coordinates(f"nosikkk", points2)
+    data_base.add_polyline(f"nosikkk","nosik",0, False, True, False)
+
+
+    points3 = [(45,11.5),(0,11.5),(0,3.5),(45,3.5)] + get_circle_points(center=(45,0),radius=3.5,begin_angle=90,end_angle=0) + [(48.5,-5),(56.5,-5)]+ get_circle_points(center=(45,0),radius=11.5,begin_angle=0,end_angle=90) 
+    
+    data_base.add_coordinates(f"nosikkkk", points3)
+    data_base.add_polyline(f"nosikkkk","nosik2",0, False, True, False)
+
+    redraw()
 ###########################################
 ##########################################
 #############################################
 def calculate_polyline_length(points):
-    """
-    Функция для вычисления длины ломаной, заданной списком точек.
     
-    :param points: Список кортежей, где каждый кортеж представляет собой точку (x, y)
-    :return: Длина ломаной
-    """
     length = 0.0
     
     for i in range(len(points) - 1):
@@ -3296,34 +3415,95 @@ def calculate_polyline_length(points):
         
     return length
 def test_callback():
-    dpg.add_button(label="test",parent='butonss',tag="test",callback=active_but)
-   
-    rect1 = [(0,92.8),(-80,92.8),(-80,92.8+35),(0,92.8+35)]
+    dpg.add_button(label="test",parent='butonss',tag="test1",callback=active_but)
+    radius = 193.11
+    NUMLINS = 25
+    NUMLINS2 = 3
+    rect1 = [(0,radius),(-15,radius),(-15,radius+4),(-45,radius+4),(-45,radius),(-80,radius),(-80,radius+39),(-45,radius+39),(-45,radius+35),(-15,radius+35),(-15,radius+39),(0,radius+39)]
 
 
     data_base.add_coordinates(f"test", rect1)
-    data_base.add_polyline(f"test","test",0, False, True, False)
-    radius = 92.80
-    angle_degrees = ((73.304*180)/(np.pi * radius))
+    data_base.add_polyline(f"test","test1",0, False, True, False)
     
-    print(angle_degrees)
+    angle_degrees = 21.75
+    
     angles = np.linspace(np.pi/2 - np.deg2rad(angle_degrees),np.pi/2, 40)
-    angles2 = np.linspace(np.pi/2 - np.deg2rad(angle_degrees-1),np.pi/2, 40)
-    points = [(radius * np.cos(angle), radius * np.sin(angle)) for angle in reversed(angles)]
+
+    angles2 = np.linspace(np.pi/2 - np.deg2rad(angle_degrees),np.pi/2, NUMLINS//2)
+    angles3 = np.linspace(np.pi/2 - np.deg2rad(angle_degrees) + np.deg2rad(21.75/22) ,np.pi/2 - np.deg2rad(21.75/22), NUMLINS//2-1)
+
+    points = [(radius * np.cos(angle), radius * np.sin(angle)) for angle in reversed(angles2)]
     data_base.add_coordinates(f"rtest", points)
-    data_base.add_polyline(f"rtest","test",0, False, True, False)
+    data_base.add_polyline(f"rtest","test1",1, False, True, False)
 
-    points2 = [(0,92.8+35)] + [((radius + 35) * np.cos(angle) + 2.9, (radius+ 35) * np.sin(angle)) for angle in reversed(angles2)]
-    data_base.add_coordinates(f"r2test", points2)
-    data_base.add_polyline(f"r2test","test",0, False, True, False)
+    
+   
 
-    print(calculate_polyline_length(points2))
-    print(calculate_polyline_length(points))
-    rect2 = [points[-1],(points[-1][0] + 40 * math.cos(np.deg2rad(angle_degrees)),points[-1][1] - 40 * math.sin(np.deg2rad(angle_degrees)))]
-    rect2.append((rect2[-1][0]+ 37.41 * math.cos(np.deg2rad(-angle_degrees) ),rect2[-1][1]- 37.41 * math.sin(np.deg2rad(-angle_degrees))))
-    rect2.append((rect2[-1][0]+ 40 * math.cos(np.deg2rad(-angle_degrees - 90) ),rect2[-1][1]- 40 * math.sin(np.deg2rad(-angle_degrees - 90 ))))
+    
+    rect2 = [points[-1],(points[-1][0] + 12 * math.cos(np.deg2rad(angle_degrees)),points[-1][1] - 12 * math.sin(np.deg2rad(angle_degrees)))]
+    rect2.append((rect2[-1][0]+ 4 * math.cos(np.deg2rad(angle_degrees- 90) ),rect2[-1][1]- 4 * math.sin(np.deg2rad(angle_degrees- 90))))
+    rect2.append((rect2[-1][0]+ 18 * math.cos(np.deg2rad(angle_degrees) ),rect2[-1][1]- 18 * math.sin(np.deg2rad(angle_degrees))))
+    rect2.append((rect2[-1][0]+ 4 * math.cos(np.deg2rad(angle_degrees+ 90) ),rect2[-1][1]- 4 * math.sin(np.deg2rad(angle_degrees+ 90))))
+    rect2.append((rect2[-1][0]+ 10 * math.cos(np.deg2rad(angle_degrees) ),rect2[-1][1]- 10 * math.sin(np.deg2rad(angle_degrees))))
+    rect2.append((rect2[-1][0]+ 41.173 * math.cos(np.deg2rad(angle_degrees- 90) ),rect2[-1][1]- 41.173 * math.sin(np.deg2rad(angle_degrees- 90))))
+    rect2.append((rect2[-1][0]+ 10 * math.cos(np.deg2rad(angle_degrees - 180) ),rect2[-1][1]- 10 * math.sin(np.deg2rad(angle_degrees - 180 ))))
+    rect2.append((rect2[-1][0]+ 4 * math.cos(np.deg2rad(angle_degrees+ 90) ),rect2[-1][1]- 4 * math.sin(np.deg2rad(angle_degrees+ 90))))
+    rect2.append((rect2[-1][0]+ 18 * math.cos(np.deg2rad(angle_degrees- 180) ),rect2[-1][1]- 18 * math.sin(np.deg2rad(angle_degrees- 180))))
+    rect2.append((rect2[-1][0]+ 4 * math.cos(np.deg2rad(angle_degrees- 90) ),rect2[-1][1]- 4 * math.sin(np.deg2rad(angle_degrees- 90))))
+    rect2.append((rect2[-1][0]+ 0.684 * math.cos(np.deg2rad(angle_degrees- 180) ),rect2[-1][1]-  0.684 * math.sin(np.deg2rad(angle_degrees- 180))))
+
+
     data_base.add_coordinates(f"rrtest", rect2)
-    data_base.add_polyline(f"rrtest","test",0, False, True, False)
+    data_base.add_polyline(f"rrtest","test1",0, False, True, False)
+    center2 = [0,rect2[-1][1]- rect2[-1][0] * math.tan(np.deg2rad(-angle_degrees - 90 ))]
+
+    points2 = [((radius + 39-center2[1]) * np.cos(angle) , (radius+ 39-center2[1]) * np.sin(angle) +center2[1] ) for angle in reversed(angles2)]
+    data_base.add_coordinates(f"r2test", points2)
+    data_base.add_polyline(f"r2test","test1",1, False, True, False)
+
+    points3 = [((radius + 10.3333333 - 0.264957 * center2[1]) * np.cos(angle) , (radius + 10.3333333- 0.264957 * center2[1]) * np.sin(angle) + 0.264957 *center2[1] ) for angle in reversed(angles2)]
+
+    points4 = [((radius + 28.6666667- 0.735042 * center2[1]) * np.cos(angle) , (radius + 28.6666667- 0.735042 * center2[1]) * np.sin(angle) +  0.735042 *center2[1] ) for angle in reversed(angles2)]
+ 
+    points5 = [((radius + 28.6666667 -4 - 0.632478 * center2[1]) * np.cos(angle) , (radius + 28.6666667 -4- 0.632478 * center2[1]) * np.sin(angle) +  0.632478 *center2[1] ) for angle in reversed(angles2)]
+ 
+    points6 = [((radius + 10.3333333 + 4 - 0.3675213 * center2[1]) * np.cos(angle) , (radius + 10.3333333+ 4 - 0.3675213 * center2[1]) * np.sin(angle) + 0.3675213 *center2[1] ) for angle in reversed(angles2)]
+  
+    points7 = [((radius + 4 - 0.102564 * center2[1]) * np.cos(angle) , (radius + 4 - 0.102564 * center2[1]) * np.sin(angle) + 0.102564 *center2[1] ) for angle in reversed(angles3)]
+   
+    points8 = [((radius + 39-4- 0.897435 * center2[1]) * np.cos(angle) , (radius+ 39-4 - 0.897435 * center2[1]) * np.sin(angle) + 0.897435 *center2[1] ) for angle in reversed(angles3)]
+   
+    points9 = [((radius + 17.5 - 0.448717 * center2[1]) * np.cos(angle) , (radius + 17.5 - 0.448717 * center2[1]) * np.sin(angle) + 0.448717 *center2[1] ) for angle in reversed(angles3)]
+    
+    points10 = [((radius + 21.5 - 0.551282 * center2[1]) * np.cos(angle) , (radius + 21.5 - 0.551282 * center2[1]) * np.sin(angle) + 0.551282 *center2[1] ) for angle in reversed(angles3)]
+
+    W1 = (-center2[1] - 4 * (NUMLINS2-1))/NUMLINS2
+    print(W1)
+    for a,b in zip(points6,points5):
+        data_base.add_coordinates(f"r2test{a}", [a,b])
+        data_base.add_polyline(f"r2test{a}","test1",2, False, True, False)
+    for a,b in zip(points,points3):
+        data_base.add_coordinates(f"r2test{a}", [a,b])
+        data_base.add_polyline(f"r2test{a}","test1",2, False, True, False)
+    for a,b in zip(points2,points4):
+        data_base.add_coordinates(f"r2test{a}", [a,b])
+        data_base.add_polyline(f"r2test{a}","test1",2, False, True, False)
+    for a,b in zip(points7,points9):
+        data_base.add_coordinates(f"r2test{a}", [a,b])
+        data_base.add_polyline(f"r2test{a}","test1",2, False, True, False)
+    for a,b in zip(points8,points10):
+        data_base.add_coordinates(f"r2test{a}", [a,b])
+        data_base.add_polyline(f"r2test{a}","test1",2, False, True, False)
+                  
+    
+
+
+
+
+
+
+
+
 
 
     redraw()
@@ -3365,12 +3545,14 @@ def e_callback():
     N = int(dpg.get_value('N_'))
     dpg.set_value('Dkk',8*e * N/np.pi)
 dpg.create_context()
-
+def set_place():
+     global place_in_a_circle
+     place_in_a_circle = True
 X_AXIS_TAG = "x_axis_tag"
 Y_AXIS_TAG = "y_axis_tag"
 
 current_file = None
-
+place_in_a_circle = False
 poliline_themes = {}
 esyedaflag = False
 borderflag = False
@@ -3483,29 +3665,83 @@ with dpg.window(label="Text Size", show=False, tag="text_size_modal", no_title_b
         dpg.add_button(label='Apply',callback=lambda:dpg.configure_item("text_size_modal", show=False))
         dpg.add_spacer(width=50)
 
+with dpg.window(label="RECTANGLEFROMCENTER", show=False, tag="RECTANGLEFROMCENTER", no_title_bar=True,pos=(400,100)):
+    dpg.add_text("RECTANGLE")
+    dpg.add_separator()
+    with dpg.group(horizontal=True):
+        dpg.add_text("center x")      
+        dpg.add_input_text(width=50,scientific=True,tag='center xrec',default_value='0')
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_text("center y")      
+        dpg.add_input_text(width=50,scientific=True,tag='center yrec',default_value='0')
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_text("width")      
+        dpg.add_input_text(width=50,scientific=True,tag='widthrec',default_value='30')
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_text("height")      
+        dpg.add_input_text(width=50,scientific=True,tag='heightrec',default_value='10')
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_spacer(width=50)
+        dpg.add_button(label='Apply',callback=rectangle1_callback)
+        dpg.add_spacer(width=50)
 
+with dpg.window(label="CIRCLE", show=False, tag="CIRCLE", no_title_bar=True,pos=(400,100)):
+    dpg.add_text("CIRCLE")
+    dpg.add_separator()
+    with dpg.group(horizontal=True):
+        dpg.add_text("radius")      
+        dpg.add_input_text(width=50,scientific=True,tag='radius',default_value='10')
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_text("center x")      
+        dpg.add_input_text(width=50,scientific=True,tag='center x',default_value='0')
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_text("center y")      
+        dpg.add_input_text(width=50,scientific=True,tag='center y',default_value='0')
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_text("start angle")      
+        dpg.add_input_text(width=50,scientific=True,tag='start angle',default_value='0')
+        
+    with dpg.group(horizontal=True):
+        dpg.add_text("end angle")      
+        dpg.add_input_text(width=50,scientific=True,tag='end angle',default_value='360')
+    with dpg.group(horizontal=True):
+        dpg.add_text("num points")      
+        dpg.add_input_text(width=50,scientific=True,tag='nps',default_value='40')
+    
+    with dpg.group(horizontal=True):
+        dpg.add_spacer(width=50)
+        dpg.add_button(label='Apply',callback=circle_callback)
+        dpg.add_spacer(width=50)
+    
 with dpg.window(label="IZGIB", show=False, tag="IZGIB", no_title_bar=True,pos=(400,100)):
     dpg.add_text("IZGIB")
     dpg.add_separator()
     with dpg.group(horizontal=True):
         dpg.add_text("a")      
-        dpg.add_input_text(width=50,scientific=True,tag='a',default_value='10')
+        dpg.add_input_text(width=50,scientific=True,tag='a',default_value='0')
         dpg.add_text("mm")
     with dpg.group(horizontal=True):
         dpg.add_text("b")      
-        dpg.add_input_text(width=50,scientific=True,tag='b',default_value='157')
+        dpg.add_input_text(width=50,scientific=True,tag='b',default_value='238.754')
         dpg.add_text("mm")
     with dpg.group(horizontal=True):
         dpg.add_text("c")      
-        dpg.add_input_text(width=50,scientific=True,tag='c',default_value='10')
+        dpg.add_input_text(width=50,scientific=True,tag='c',default_value='0')
         dpg.add_text("mm")
     with dpg.group(horizontal=True):
         dpg.add_text("d")      
-        dpg.add_input_text(width=50,scientific=True,tag='d',default_value='100')
+        dpg.add_input_text(width=50,scientific=True,tag='d',default_value='50')
         dpg.add_text("mm")
     with dpg.group(horizontal=True):
         dpg.add_text("number lines")      
-        dpg.add_input_text(width=50,scientific=True,tag='numlins',default_value='3')
+        dpg.add_input_text(width=50,scientific=True,tag='numlins',default_value='6')
     with dpg.group(horizontal=True):
         dpg.add_text("width")      
         dpg.add_input_text(width=50,scientific=True,tag='w',default_value='4')
@@ -3520,22 +3756,22 @@ with dpg.window(label="KONUS", show=False, tag="KONUS", no_title_bar=True,pos=(4
     dpg.add_separator()
     with dpg.group(horizontal=True):
         dpg.add_text("l")      
-        dpg.add_input_text(width=50,scientific=True,tag='l',default_value='103.6')
+        dpg.add_input_text(width=50,scientific=True,tag='l',default_value='36.652')
         dpg.add_text("mm")
     with dpg.group(horizontal=True):
         dpg.add_text("L")      
-        dpg.add_input_text(width=50,scientific=True,tag='L',default_value='157')
+        dpg.add_input_text(width=50,scientific=True,tag='L',default_value='57.596')
         dpg.add_text("mm")
     with dpg.group(horizontal=True):
         dpg.add_text("d")      
-        dpg.add_input_text(width=50,scientific=True,tag='d_',default_value='48')
+        dpg.add_input_text(width=50,scientific=True,tag='d_',default_value='41.173')
         dpg.add_text("mm")
     with dpg.group(horizontal=True):
         dpg.add_text("number points")      
-        dpg.add_input_text(width=50,scientific=True,tag='numpoints',default_value='45')
+        dpg.add_input_text(width=50,scientific=True,tag='numpoints',default_value='30')
     with dpg.group(horizontal=True):
         dpg.add_text("a")      
-        dpg.add_input_text(width=50,scientific=True,tag='a_',default_value='10')
+        dpg.add_input_text(width=50,scientific=True,tag='a_',default_value='40')
         dpg.add_text("mm")
     with dpg.group(horizontal=True):
         dpg.add_text("w")      
@@ -3549,6 +3785,43 @@ with dpg.window(label="KONUS", show=False, tag="KONUS", no_title_bar=True,pos=(4
         dpg.add_spacer(width=50)
         dpg.add_button(label='Apply',callback=konus_callback)
         dpg.add_spacer(width=50)
+
+
+with dpg.window(label="place_in_a_circle", show=False, tag="place_in_a_circle", no_title_bar=True,pos=(400,100)):
+    dpg.add_text("place in a circle")
+    dpg.add_separator()
+    with dpg.group(horizontal=True):
+        dpg.add_radio_button(parent="place_in_a_circle",items=['spacing','area'],tag='varrast',horizontal=True)
+    with dpg.group(horizontal=True):
+        dpg.add_text("center x")      
+        dpg.add_input_text(width=50,scientific=True,tag='centerxplace',default_value='0')
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_text("center y")      
+        dpg.add_input_text(width=50,scientific=True,tag='centeryplace',default_value='0')
+        dpg.add_text("mm")
+    with dpg.group(horizontal=True):
+        dpg.add_text("count")      
+        dpg.add_input_text(width=50,scientific=True,tag='countforspace',default_value='3')
+        
+    
+    with dpg.group(horizontal=True):     
+        dpg.add_input_text(width=50,scientific=True,tag='rastdegrees',default_value='30')
+        dpg.add_text("degrees")
+    dpg.add_text(tag='activetext')
+    with dpg.group(horizontal=True):
+        dpg.add_spacer(width=50)
+        dpg.add_button(label='Apply',callback=place_in_a_circle_callback)
+        dpg.add_spacer(width=50)
+
+
+
+
+
+
+
+
+
 with dpg.theme(tag="plot_theme"):
         
         with dpg.theme_component(dpg.mvScatterSeries):
@@ -3636,7 +3909,8 @@ with dpg.viewport_menu_bar():
         dpg.add_menu_item(label="buffer(-0.5)", callback=bufferm)
         dpg.add_menu_item(label="buffer(+0.5)", callback=bufferp)
     with dpg.menu(label="Geom"):
-        dpg.add_menu_item(label="Circle", callback=circle_callback)
+        dpg.add_menu_item(label="Circle", callback=lambda:dpg.configure_item("CIRCLE", show=True))
+        dpg.add_menu_item(label="Rectangle", callback=lambda:dpg.configure_item("RECTANGLEFROMCENTER", show=True))
         dpg.add_menu_item(label="Gears", callback=gears_callback)
         dpg.add_menu_item(label="Organizer", callback=lambda:dpg.configure_item("Organizer_window", show=True))
         dpg.add_menu_item(label="Epitrohoida", callback=lambda:dpg.configure_item("Epitrohoida_window", show=True))
@@ -3647,7 +3921,11 @@ with dpg.viewport_menu_bar():
         dpg.add_menu_item(label="diagonal line", callback=diagonal_callback)
         dpg.add_menu_item(label="konus", callback=lambda:dpg.configure_item("KONUS", show=True)) 
         dpg.add_menu_item(label="izgib", callback=lambda:dpg.configure_item("IZGIB", show=True)) 
-
+        dpg.add_menu_item(label="nosik", callback=nosik_callback) 
+        dpg.add_menu_item(label="for potenciometr", callback=potent_callback)
+        dpg.add_menu_item(label="for oled", callback=oled_callback)
+        dpg.add_menu_item(label="Place in a circle", callback=lambda:(dpg.configure_item("place_in_a_circle", show=True),set_place()))
+        
     with dpg.menu(label="Widget Items"):
         dpg.add_checkbox(label="Pick Me", callback=print_me)
         dpg.add_button(label="Press Me", callback=print_me)
@@ -3673,8 +3951,8 @@ with dpg.window(pos=(0,0),width=900, height=775,tag='papa'):
                 yaxis = dpg.add_plot_axis(dpg.mvYAxis, label="Y", tag=Y_AXIS_TAG)
                 dpg.add_scatter_series([0], [0], parent=Y_AXIS_TAG, tag="series_center")
                 dpg.bind_item_theme("series_center", "plot_theme")
-                dpg.set_axis_limits_constraints(Y_AXIS_TAG,-80,210)
-                dpg.set_axis_limits_constraints(X_AXIS_TAG,-80,210)
+                # dpg.set_axis_limits_constraints(Y_AXIS_TAG,-80,210)
+                # dpg.set_axis_limits_constraints(X_AXIS_TAG,-80,210)
             
             with dpg.group(horizontal=True):
                 with dpg.group():
@@ -3744,13 +4022,13 @@ with dpg.window(pos=(0,0),width=900, height=775,tag='papa'):
 with dpg.item_handler_registry() as registry:
     dpg.add_item_clicked_handler(button=dpg.mvMouseButton_Right, callback=plot_mouse_click_callback)
 dpg.bind_item_handler_registry(plot, registry)
-
+dpg.set_primary_window("papa", True)
 
 dpg.add_window(pos=(900,0),width=200, height=525,tag='butonss',label='lines')
 
 
 with dpg.window(pos=(900,544),width=200, height=200,tag='pult',label=''):
-   
+    
         
     with dpg.group(horizontal=True,tag='forcombo'):
         dpg.add_button(label="check", callback=check_com_callback)
