@@ -2968,85 +2968,90 @@ def joinsel_callback():
     if not lines:
         print("Нет ломаных линий для слияния.")
         return []
-
-    while True:
-        best_match = None
-        min_distance = 0.5
+    # dolb = 0
+    # while True:
+    #     print(dolb)
+    #     dolb +=1
+    #     best_match = None
+    #     min_distance = 0.1
         
-        for i in range(len(lines)):
-            for j in range(i + 1, len(lines)):
-                line1 = lines[i]
-                line2 = lines[j]
+    #     for i in range(len(lines)):
+    #         for j in range(i + 1, len(lines)):
+    #             line1 = lines[i]
+    #             line2 = lines[j]
                 
-                end1_start = line1[0]
-                end1_end = line1[-1]
+    #             end1_start = line1[0]
+    #             end1_end = line1[-1]
                 
-                end2_start = line2[0]
-                end2_end = line2[-1]
+    #             end2_start = line2[0]
+    #             end2_end = line2[-1]
                 
-                dist_1e_2s = distance(end1_end, end2_start)
-                if dist_1e_2s < min_distance:
-                    min_distance = dist_1e_2s
+    #             dist_1e_2s = distance(end1_end, end2_start)
+                
+    #             if dist_1e_2s < min_distance:
+    #                 min_distance = dist_1e_2s
 
-                    best_match = (i, j, 'end-start', dist_1e_2s)
+    #                 best_match = (i, j, 'end-start', dist_1e_2s)
                     
-                dist_1e_2e = distance(end1_end, end2_end)
-                if dist_1e_2e < min_distance:
-                    min_distance = dist_1e_2e
-                    best_match = (i, j, 'end-end', dist_1e_2e)
-                dist_1s_2s = distance(end1_start, end2_start)
-                if dist_1s_2s < min_distance:
-                    min_distance = dist_1s_2s
-                    best_match = (i, j, 'start-start', dist_1s_2s)
-
-                dist_1s_2e = distance(end1_start, end2_end)
-                if dist_1s_2e < min_distance:
-                    min_distance = dist_1s_2e
                     
-                    best_match = (j, i, 'end-start', dist_1s_2e) 
+    #             dist_1e_2e = distance(end1_end, end2_end)
+    #             if dist_1e_2e < min_distance:
+    #                 min_distance = dist_1e_2e
+    #                 best_match = (i, j, 'end-end', dist_1e_2e)
+                    
+    #             dist_1s_2s = distance(end1_start, end2_start)
+    #             if dist_1s_2s < min_distance:
+    #                 min_distance = dist_1s_2s
+    #                 best_match = (i, j, 'start-start', dist_1s_2s)
+                    
+    #             dist_1s_2e = distance(end1_start, end2_end)
+    #             if dist_1s_2e < min_distance:
+    #                 min_distance = dist_1s_2e
+                    
+    #                 best_match = (j, i, 'end-start', dist_1s_2e) 
+                    
+    #     if not best_match:
+    #         break
 
-        if not best_match:
-            break
-
         
-        i, j, orientation, distance_ = best_match
+    #     i, j, orientation, distance_ = best_match
         
-        line_a = lines[i]
-        line_b = lines[j]
-        new_line = []
-        if orientation == 'end-start':
-            new_line = line_a + line_b
-        elif orientation == 'end-end':
-            new_line = line_a + line_b[::-1]
-        elif orientation == 'start-start':
-            new_line = line_a[::-1] + line_b
+    #     line_a = lines[i]
+    #     line_b = lines[j]
+    #     new_line = []
+    #     if orientation == 'end-start':
+    #         new_line = line_a + line_b
+    #     elif orientation == 'end-end':
+    #         new_line = line_a + line_b[::-1]
+    #     elif orientation == 'start-start':
+    #         new_line = line_a[::-1] + line_b
         
-        lines_to_remove = sorted([i, j], reverse=True)
-        for index in lines_to_remove:
-            lines.pop(index)
+    #     lines_to_remove = sorted([i, j], reverse=True)
+    #     for index in lines_to_remove:
+    #         lines.pop(index)
             
-        lines.append(new_line)
+    #     lines.append(new_line)
         
-    buts = data_base.get_unique_politag_where('active=True')
-    tags = data_base.get_tag('active=True')
-    for t in tags:
-        dpg.delete_item(t)
-    for t in buts:
-        dpg.delete_item(t)
+    # buts = data_base.get_unique_politag_where('active=True')
+    # tags = data_base.get_tag('active=True')
+    # for t in tags:
+    #     dpg.delete_item(t)
+    # for t in buts:
+    #     dpg.delete_item(t)
     
-    placeholders = ', '.join(f"'{t}'" for t in tags)
+    # placeholders = ', '.join(f"'{t}'" for t in tags)
 
-    data_base.delete_active(f'polyline_tag IN ({placeholders})')
-    c = 1
+    # data_base.delete_active(f'polyline_tag IN ({placeholders})')
+    # c = 1
     
-    for line in lines:
-        if distance(line[0],line[-1]) < 0.5:
-            line.append(line[0])
-        data_base.add_polyline(f'joinn{c}',f'join{c}',0, False, True, False)
-        data_base.add_coordinates(f'joinn{c}', line)
-        dpg.add_button(label=f'join{c}',parent='butonss',tag=f'join{c}',callback=active_but)
-        c+=1
-    redraw()
+    # for line in lines:
+    #     if distance(line[0],line[-1]) < 0.5:
+    #         line.append(line[0])
+    #     data_base.add_polyline(f'joinn{c}',f'join{c}',0, False, True, False)
+    #     data_base.add_coordinates(f'joinn{c}', line)
+    #     dpg.add_button(label=f'join{c}',parent='butonss',tag=f'join{c}',callback=active_but)
+    #     c+=1
+    # redraw()
    
 def join_callback():
     
@@ -3364,6 +3369,47 @@ def place_in_a_circle_callback():
 
     redraw()
     
+def tangent_at_point(point1, point2):
+        return (point2[0] - point1[0], point2[1] - point1[1])
+
+
+# def get_pol_for_laser(polygon):
+#     # polygon = Polygon([(x,y)for x,y in zip(xx,yy)])
+
+#     points = np.array(polygon.exterior.coords)
+
+#     tangents = []
+#     perpendiculars = []
+#     length = 0.5
+
+#     for i in range(len(points) - 1):
+#         p1 = points[i]
+#         p2 = points[i + 1]
+#         tangent = tangent_at_point(p1, p2)
+#         tangents.append((p1, tangent))
+        
+#         # Вычисляем перпендикулярный вектор
+#         perp_vector = (-tangent[1], tangent[0])
+#         angle_radians = np.arctan2(perp_vector[1], perp_vector[0])
+
+#         angle_degrees = np.degrees(angle_radians)
+#         get_radius(0.2,0.2,perp_vector[0],perp_vector[1])
+#         # Нормализация перпендикуляра
+#         norm = np.sqrt(perp_vector[0]**2 + perp_vector[1]**2)
+#         perp_vector = (perp_vector[0] / norm * length, perp_vector[1] / norm * length)
+        
+#         # Конечная точка перпендикуляра
+#         end_point = (p1[0] + perp_vector[0], p1[1] + perp_vector[1])
+#         perpendiculars.append((p1, end_point))
+
+
+
+
+
+
+
+
+def kam_callback():
 
 
 
@@ -3375,6 +3421,84 @@ def place_in_a_circle_callback():
 
 
 
+
+    for_buffer = 0.08
+    for_buffer2 = 0.047 
+
+
+
+
+
+
+
+    naruja = data_base.get_tag('color="2"')
+    vnutr = data_base.get_tag('color="1"')
+    vpol = []
+    for vn in vnutr:
+        vpol.append(Polygon(data_base.get_coordinates(vn)).buffer(-for_buffer))
+    multipol = MultiPolygon(vpol)
+    polygons = []
+    for npp in naruja:
+        pol = Polygon(data_base.get_coordinates(npp)).buffer(for_buffer)
+        p = 0
+        nnn = []
+        for p in vpol:
+            if shapely.contains(pol,p):
+                nnn.append(p)
+        for p in nnn:
+            pol = shapely.difference(pol,p)
+        # polygon2 = shapely.difference(pol,unary_union(shapely.intersection(pol,multipol)))
+        polygon2 = pol
+        if polygon2.geom_type == 'Polygon':
+            polygons.append(polygon2)
+            x1, y1 = polygon2.exterior.xy
+            data_base.add_polyline(npp+f"__{p}",'nice_path2',1, False, True, False)
+           
+            data_base.add_coordinates(npp+f"__{p}",[(x_,y_) for x_,y_ in zip(x1,y1)])
+            d = 0
+            for p in polygon2.interiors:
+                x1, y1 = p.xy
+                data_base.add_polyline(npp+f"__{p}{d}",'nice_path2',1, False, True, False)
+           
+                data_base.add_coordinates(npp+f"__{p}{d}",[(x_,y_) for x_,y_ in zip(x1,y1)])
+        else:
+            for pol in polygon2.geoms:
+                polygons.append(pol)
+                x1, y1 = pol.exterior.xy
+                data_base.add_polyline(npp+f"__{p}",'nice_path2',1, False, True, False)
+                
+                data_base.add_coordinates(npp+f"__{p}",[(x_,y_) for x_,y_ in zip(x1,y1)])
+                p+=1
+                d = 0
+                for p in pol.interiors:
+                    x1, y1 = p.xy
+                    data_base.add_polyline(npp+f"__{p}_{d}",'nice_path2',1, False, True, False)
+            
+                    data_base.add_coordinates(npp+f"__{p}_{d}",[(x_,y_) for x_,y_ in zip(x1,y1)])
+
+    dpg.add_button(label="nice_path",parent='butonss',tag="nice_path",callback=active_but)
+    dpg.add_button(label="nice_path",parent='butonss',tag="nice_path2",callback=active_but)
+    width_lines = float(dpg.get_value('border_line_width'))
+    lins = MultiLineString([((50, -y), (160, -y))for y in np.arange(50,150,width_lines)])
+
+    linn = lins
+    for p in polygons:
+        linn = shapely.difference(linn,p)
+    print(polygons[1].exterior.xy)
+    # linn = shapely.difference(lins,polygons[0])
+    c = 0
+    
+    for l in linn.geoms:
+        coords = []
+        
+        coords.append((round(l.coords[0][0],4),  round(l.coords[0][1],4)))
+        coords.append((round(l.coords[1][0],4), round(l.coords[1][1],4)))           
+    
+        data_base.add_polyline('nice_path'+f"{c}" ,'nice_path',0, False, True, False)
+        data_base.add_coordinates('nice_path'+f"{c}",coords)
+        c+=1
+        
+    redraw()
 
 def nosik_callback():
     dpg.add_button(label="nosik",parent='butonss',tag="nosik",callback=active_but)
@@ -3925,7 +4049,7 @@ with dpg.viewport_menu_bar():
         dpg.add_menu_item(label="for potenciometr", callback=potent_callback)
         dpg.add_menu_item(label="for oled", callback=oled_callback)
         dpg.add_menu_item(label="Place in a circle", callback=lambda:(dpg.configure_item("place_in_a_circle", show=True),set_place()))
-        
+        dpg.add_menu_item(label="zapolnit dlya lazera", callback=kam_callback)
     with dpg.menu(label="Widget Items"):
         dpg.add_checkbox(label="Pick Me", callback=print_me)
         dpg.add_button(label="Press Me", callback=print_me)
