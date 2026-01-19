@@ -3403,13 +3403,40 @@ def tangent_at_point(point1, point2):
 #         perpendiculars.append((p1, end_point))
 
 
+def test2():
+
+    dpg.add_button(label="kn",parent='butonss',tag="kn",callback=active_but)
+    
+    points =  get_circle_points(center=(32,32),radius=31,begin_angle=0,end_angle=360)
+    
+    data_base.add_coordinates(f"knk", points)
+    data_base.add_polyline(f"knk","kn",0, False, True, False)
+    points2 =  get_circle_points(center=(32,32),radius=3,begin_angle=0,end_angle=360)
+    
+    data_base.add_coordinates(f"knk2", points2)
+    data_base.add_polyline(f"knk2","kn",0, False, True, False)
 
 
+    points12 =  get_circle_points(center=(32+11,32),radius=0.4,begin_angle=0,end_angle=360)
+    points13 =  get_circle_points(center=(32,32-11),radius=0.4,begin_angle=0,end_angle=360)
+    points14 =  get_circle_points(center=(32-11,32),radius=0.4,begin_angle=0,end_angle=360)
+    points15 =  get_circle_points(center=(32,32+11),radius=0.4,begin_angle=0,end_angle=360)
+    data_base.add_coordinates(f"knk12", points12)
+    data_base.add_polyline(f"knk12","kn",0, False, True, False)
+    data_base.add_coordinates(f"knk13", points13)
+    data_base.add_polyline(f"knk13","kn",0, False, True, False)
+    data_base.add_coordinates(f"knk14", points14)
+    data_base.add_polyline(f"knk14","kn",0, False, True, False)
+    data_base.add_coordinates(f"knk15", points15)
+    data_base.add_polyline(f"knk15","kn",0, False, True, False)
 
+
+    redraw()
 
 
 
 def kam_callback():
+    
 
 
 
@@ -3477,9 +3504,9 @@ def kam_callback():
                     data_base.add_coordinates(npp+f"__{p}_{d}",[(x_,y_) for x_,y_ in zip(x1,y1)])
 
     dpg.add_button(label="nice_path",parent='butonss',tag="nice_path",callback=active_but)
-    dpg.add_button(label="nice_path",parent='butonss',tag="nice_path2",callback=active_but)
+    dpg.add_button(label="nice_path2",parent='butonss',tag="nice_path2",callback=active_but)
     width_lines = float(dpg.get_value('border_line_width'))
-    lins = MultiLineString([((50, -y), (160, -y))for y in np.arange(50,150,width_lines)])
+    lins = MultiLineString([((0, y), (110, y))for y in np.arange(0,100,width_lines)])
 
     linn = lins
     for p in polygons:
@@ -4050,6 +4077,11 @@ with dpg.viewport_menu_bar():
         dpg.add_menu_item(label="for oled", callback=oled_callback)
         dpg.add_menu_item(label="Place in a circle", callback=lambda:(dpg.configure_item("place_in_a_circle", show=True),set_place()))
         dpg.add_menu_item(label="zapolnit dlya lazera", callback=kam_callback)
+        dpg.add_menu_item(label="krysha nalivatora", callback=test2)
+
+
+
+
     with dpg.menu(label="Widget Items"):
         dpg.add_checkbox(label="Pick Me", callback=print_me)
         dpg.add_button(label="Press Me", callback=print_me)
