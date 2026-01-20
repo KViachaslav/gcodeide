@@ -370,7 +370,7 @@ def scale_polygon_horizontal(polygon, scale_factor):
     new_coords = [(centroid.x + (xi - centroid.x) * scale_factor, yi) for xi, yi in zip(x, y)]
     return Polygon(new_coords)
 def get_radius(a,b,x,y):
-    a = 0.1
+    a = 0.11
     b = 0.04
     if y == 0:
         return b
@@ -420,9 +420,9 @@ def combine_lines(lines):
     return combined_line
 
 def read_dxf_lines_from_esyeda(sender, app_data, user_data):
-    for_correct = 0.06 #0.1 было
+    for_correct = 0.09 #0.1 было
     for_buffer = 0.08
-    for_buffer2 = 0.047 #47  было
+    for_buffer2 = 0.057 #47  было
     doc = ezdxf.readfile(user_data[0])
     full = dpg.get_value('varradio') == 'full'
    
@@ -568,7 +568,8 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
                 
             intersection = lins.intersection(polygon)
             linn = intersection.difference(unary_union(MultiPolygon([p for p in polygons])))
-            
+            Polygon_to_lines(unary_union(MultiPolygon([p for p in polygons2])),1,width_lines,nice_path+ '_border')
+            redraw()
             c = 0
             for l in dyrki:
                 
@@ -576,7 +577,7 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
                 data_base.add_coordinates(nice_path+f"__{c}",l)
                 c+=1
                 redraw()
-    
+
             for l in linn.geoms:
                 coords = []
                 coords.append((round(l.coords[0][0],4),  round(l.coords[0][1],4)))
@@ -587,7 +588,6 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
                 c+=1
                 redraw()
             
-            Polygon_to_lines(unary_union(MultiPolygon([p for p in polygons2])),1,width_lines,nice_path+ '_border')
             
             
             dpg.add_button(label=nice_path + '_border',parent='butonss',tag=nice_path + '_border',callback=active_but)
@@ -1257,41 +1257,7 @@ def dxf_to_svg(dxf_file, svg_file):
     dwg.save()
 def save_as_gcode():
     dpg.show_item("file_dialog_id2")
-def callback_to_gcode(sender, app_data, user_data):
-    current_file = app_data['file_path_name']
-    gcode_lines = []
-    gcode_lines.append("G90")
-    gcode_lines.append("M4 S0")
 
-    tag0 = data_base.get_tag_where('color=0')
-    tag1 = data_base.get_tag_where('color=1')
-    tag2 = data_base.get_tag_where('color=2')
-    tag3 = data_base.get_tag_where('color=3')
-    tag4 = data_base.get_tag_where('color=4')
-
-    tags = [tag0,tag1,tag2,tag3,tag4]
-    h = 1
-    for tag in tags:
-        power = dpg.get_value(f"{h}_value")
-        speed = dpg.get_value(f"{h}1_value")
-        h+=1
-        for t in tag:
-            coords = data_base.get_coordinates(t)
-
-            gcode_lines.append(f"G0 X{round(coords[0][0],4)} Y{round(coords[0][1],4)}")
-            gcode_lines.append(f"F{speed}")
-            gcode_lines.append(f"S{power}")
-            gcode_lines.append(f"G1 X{round(coords[1][0],4)} Y{round(coords[1][1],4)}")
-            if len(coords) > 2:
-                for coord in coords[2:]:
-                    gcode_lines.append(f"X{round(coord[0],4)} Y{round(coord[1],4)}")
-            gcode_lines.append("S0")
-
-    gcode_lines.append(f"M5 S0")
-    with open(current_file, 'w') as f:
-        f.write("\n".join(gcode_lines))
-
-    dpg.set_value('multiline_input',"\n".join(gcode_lines))
 def callback_to_gcode2(sender, app_data, user_data):
     current_file = app_data['file_path_name']
     gcode_lines = []
@@ -1308,9 +1274,10 @@ def callback_to_gcode2(sender, app_data, user_data):
     h = 1
     curr_pos = [0,0]
     for tag in tags:
+        tag_lines = []
         power = dpg.get_value(f"{h}_value")
         speed = dpg.get_value(f"{h}1_value")
-
+        repeat = int(dpg.get_value(f"{h}11_value"))
         sett = set(tag)
         
         i = 0 
@@ -1321,30 +1288,21 @@ def callback_to_gcode2(sender, app_data, user_data):
             sett.remove(poly)
             coords = data_base.get_coordinates(poly)
             if len(coords) > 1:
-                # if coords[0][0] != poly[0][2] or coords[0][1] != poly[0][3]:
-                #     coords = coords[::-1]
-                gcode_lines.append(f"G0 X{round(coords[0][0],4)} Y{round(coords[0][1],4)}")
-                gcode_lines.append(f"F{speed}")
-                gcode_lines.append(f"S{power}")
-                gcode_lines.append(f"G1 X{round(coords[1][0],4)} Y{round(coords[1][1],4)}")
+                
+                tag_lines.append(f"G0 X{round(coords[0][0],4)} Y{round(coords[0][1],4)}")
+                tag_lines.append(f"F{speed}")
+                tag_lines.append(f"S{power}")
+                tag_lines.append(f"G1 X{round(coords[1][0],4)} Y{round(coords[1][1],4)}")
                 if len(coords) > 2:
                     for coord in coords[2:]:
-                        gcode_lines.append(f"X{round(coord[0],4)} Y{round(coord[1],4)}")
-                gcode_lines.append("S0")
+                        tag_lines.append(f"X{round(coord[0],4)} Y{round(coord[1],4)}")
+                tag_lines.append("S0")
 
-
-        # h+=1
-        # for t in tag:
-        #     coords = data_base.get_coordinates(t)
-
-        #     gcode_lines.append(f"G0 X{round(coords[0][0],4)} Y{round(coords[0][1],4)}")
-        #     gcode_lines.append(f"F{speed}")
-        #     gcode_lines.append(f"S{power}")
-        #     gcode_lines.append(f"G1 X{round(coords[1][0],4)} Y{round(coords[1][1],4)}")
-        #     if len(coords) > 2:
-        #         for coord in coords[2:]:
-        #             gcode_lines.append(f"X{round(coord[0],4)} Y{round(coord[1],4)}")
-        #     gcode_lines.append("S0")
+        for i in range(repeat):
+            
+            for j in tag_lines:
+                
+                gcode_lines.append(j)
 
     gcode_lines.append(f"M5 S0")
     with open(current_file, 'w') as f:
@@ -3411,16 +3369,17 @@ def test2():
     
     data_base.add_coordinates(f"knk", points)
     data_base.add_polyline(f"knk","kn",0, False, True, False)
-    points2 =  get_circle_points(center=(32,32),radius=3,begin_angle=0,end_angle=360)
+    points2 =  get_circle_points(center=(32,32),radius=4.5,begin_angle=0,end_angle=360)
     
     data_base.add_coordinates(f"knk2", points2)
     data_base.add_polyline(f"knk2","kn",0, False, True, False)
 
 
-    points12 =  get_circle_points(center=(32+11,32),radius=0.4,begin_angle=0,end_angle=360)
-    points13 =  get_circle_points(center=(32,32-11),radius=0.4,begin_angle=0,end_angle=360)
-    points14 =  get_circle_points(center=(32-11,32),radius=0.4,begin_angle=0,end_angle=360)
-    points15 =  get_circle_points(center=(32,32+11),radius=0.4,begin_angle=0,end_angle=360)
+    points12 =  get_circle_points(center=(32+16.5,32),radius=0.4,begin_angle=0,end_angle=360)
+    points13 =  get_circle_points(center=(32,32-16.5),radius=0.4,begin_angle=0,end_angle=360)
+    points14 =  get_circle_points(center=(32-16.5,32),radius=0.4,begin_angle=0,end_angle=360)
+    points15 =  get_circle_points(center=(32,32+16.5),radius=0.4,begin_angle=0,end_angle=360)
+    points16 =  get_circle_points(center=(32+13,32+13),radius=5,begin_angle=0,end_angle=360)
     data_base.add_coordinates(f"knk12", points12)
     data_base.add_polyline(f"knk12","kn",0, False, True, False)
     data_base.add_coordinates(f"knk13", points13)
@@ -3429,10 +3388,31 @@ def test2():
     data_base.add_polyline(f"knk14","kn",0, False, True, False)
     data_base.add_coordinates(f"knk15", points15)
     data_base.add_polyline(f"knk15","kn",0, False, True, False)
-
+    data_base.add_coordinates(f"knk16", points16)
+    data_base.add_polyline(f"knk16","kn",0, False, True, False)
 
     redraw()
 
+def test3():
+
+    dpg.add_button(label="podrumku",parent='butonss',tag="podrumku",callback=active_but)
+    
+    points =  get_circle_points(center=(21,21),radius=20,begin_angle=0,end_angle=360)
+    points2 =  get_circle_points(center=(21,21-3.5),radius=2.5,begin_angle=0,end_angle=360)
+    data_base.add_coordinates(f"knk", points)
+    data_base.add_polyline(f"knk","podrumku",0, False, True, False)
+    data_base.add_coordinates(f"knk2", points2)
+    data_base.add_polyline(f"knk2","podrumku",0, False, True, False)
+
+    CENTER_X = 21
+    CENTER_Y = 25
+    width = 10
+    height = 4
+
+    data_base.add_polyline(f"knk3","podrumku",0, False, True, False)
+    data_base.add_coordinates("knk3", [(CENTER_X-width/2,CENTER_Y-height/2),(CENTER_X-width/2,CENTER_Y+height/2),(CENTER_X+width/2,CENTER_Y+height/2),(CENTER_X+width/2,CENTER_Y-height/2),(CENTER_X-width/2,CENTER_Y-height/2)])
+    
+    redraw()
 
 
 def kam_callback():
@@ -4078,7 +4058,7 @@ with dpg.viewport_menu_bar():
         dpg.add_menu_item(label="Place in a circle", callback=lambda:(dpg.configure_item("place_in_a_circle", show=True),set_place()))
         dpg.add_menu_item(label="zapolnit dlya lazera", callback=kam_callback)
         dpg.add_menu_item(label="krysha nalivatora", callback=test2)
-
+        dpg.add_menu_item(label="pod stakan", callback=test3)
 
 
 
@@ -4115,31 +4095,37 @@ with dpg.window(pos=(0,0),width=900, height=775,tag='papa'):
                     dpg.add_text("order")
                     dpg.add_text("power")
                     dpg.add_text("speed")
+                    dpg.add_text("repeat")
                 with dpg.group():
                     dpg.add_checkbox(label="1",tag='color_1',callback=check_callback,default_value=True)
                     dpg.bind_item_theme(dpg.last_item(), coloured_Core_theme1)
-                    dpg.add_input_text(width=50,scientific=True,tag='1_value',default_value='100')
-                    dpg.add_input_text(width=50,scientific=True,tag='11_value',default_value='1000')
+                    dpg.add_input_text(width=50,scientific=True,tag='1_value',default_value='1000')
+                    dpg.add_input_text(width=50,scientific=True,tag='11_value',default_value='120')
+                    dpg.add_input_text(width=50,scientific=True,tag='111_value',default_value='1')
                 with dpg.group():
                     dpg.add_checkbox(label="2",tag='color_2',callback=check_callback)
                     dpg.bind_item_theme(dpg.last_item(), coloured_Core_theme2)
-                    dpg.add_input_text(width=50,scientific=True,tag='2_value',default_value='100')
-                    dpg.add_input_text(width=50,scientific=True,tag='21_value',default_value='1000')
+                    dpg.add_input_text(width=50,scientific=True,tag='2_value',default_value='710')
+                    dpg.add_input_text(width=50,scientific=True,tag='21_value',default_value='300')
+                    dpg.add_input_text(width=50,scientific=True,tag='211_value',default_value='1')
                 with dpg.group():
                     dpg.add_checkbox(label="3",tag='color_3',callback=check_callback)
                     dpg.bind_item_theme(dpg.last_item(), coloured_Core_theme3)
-                    dpg.add_input_text(width=50,scientific=True,tag='3_value',default_value='100')
-                    dpg.add_input_text(width=50,scientific=True,tag='31_value',default_value='1000')
+                    dpg.add_input_text(width=50,scientific=True,tag='3_value',default_value='1000')
+                    dpg.add_input_text(width=50,scientific=True,tag='31_value',default_value='100')
+                    dpg.add_input_text(width=50,scientific=True,tag='311_value',default_value='1')
                 with dpg.group():
                     dpg.add_checkbox(label="4",tag='color_4',callback=check_callback)
                     dpg.bind_item_theme(dpg.last_item(), coloured_Core_theme4)
-                    dpg.add_input_text(width=50,scientific=True,tag='4_value',default_value='100')
-                    dpg.add_input_text(width=50,scientific=True,tag='41_value',default_value='1000')
+                    dpg.add_input_text(width=50,scientific=True,tag='4_value',default_value='1000')
+                    dpg.add_input_text(width=50,scientific=True,tag='41_value',default_value='121')
+                    dpg.add_input_text(width=50,scientific=True,tag='411_value',default_value='1')
                 with dpg.group():
                     dpg.add_checkbox(label="5",tag='color_5',callback=check_callback)
                     dpg.bind_item_theme(dpg.last_item(), coloured_Core_theme5)
-                    dpg.add_input_text(width=50,scientific=True,tag='5_value',default_value='100')
+                    dpg.add_input_text(width=50,scientific=True,tag='5_value',default_value='1000')
                     dpg.add_input_text(width=50,scientific=True,tag='51_value',default_value='1000')
+                    dpg.add_input_text(width=50,scientific=True,tag='511_value',default_value='1')
                 with dpg.group():
                     with dpg.group(horizontal=True):
                         dpg.add_spacer(width=20)
