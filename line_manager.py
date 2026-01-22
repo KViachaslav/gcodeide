@@ -138,6 +138,10 @@ class PolylineDatabase:
     def get_all_coordinates(self):
         self.cursor.execute('SELECT * FROM coordinates ')
         return self.cursor.fetchall()
+    def get_cord_by_tag(self):
+        self.cursor.execute("SELECT polyline_tag , x, y FROM coordinates")
+        return self.cursor.fetchall()
+    
     def get_all_coordinates_where(self, condition):
         self.cursor.execute(f'SELECT * FROM coordinates WHERE {condition}')
         return self.cursor.fetchall()

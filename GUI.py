@@ -2079,11 +2079,70 @@ def split_l():
             dpg.delete_item(r[2])   
             deleted_but.append(r[2])
     recolor()
+def merge_lines(lines):
+    merged_result = [lines[0]]
+    ss = set(range(len(lines)))
+    print(ss)
+    ss.remove(0)
+    while ss:
+        f = False
+        for i in ss:
+            line= lines[i]
+            if not line:
+                continue
 
+            
+            last_line = merged_result[-1]
+
+            if last_line[-1] == line[0]: 
+                merged_result[-1] = last_line + line  
+                ss.remove(i)
+                f= True
+                break
+            elif last_line[0] == line[-1]: 
+                merged_result[-1] = line + last_line 
+                ss.remove(i) 
+                f= True
+                break
+            elif last_line[0] == line[0]:  
+                merged_result[-1] = line[::-1] + last_line
+                ss.remove(i)
+                f= True
+                break
+            elif last_line[-1] == line[-1]:  
+                
+                merged_result[-1] = last_line + line[::-1]
+                ss.remove(i)
+                f= True
+                break
+        if not f:
+            merged_result.append(line)
+            ss.remove(i)
+
+
+    return merged_result
 def optimize_():
-    
-    return
-    #optimize.create_continuous_lines('temp.dxf',lines )
+    data = data_base.get_cord_by_tag()
+    grouped_coordinates = {}
+
+    for tag, x, y in data:
+        if tag not in grouped_coordinates:
+            grouped_coordinates[tag] = []
+        grouped_coordinates[tag].append((x, y))
+    for t in data_base.get_all_tag():   
+        dpg.delete_item(t)
+    for t in data_base.get_unique_politag():
+        dpg.delete_item(t)
+    data_base.clear_tables()
+
+    result = merge_lines(list(grouped_coordinates.values()))
+    c = 0
+    for r in result:
+        data_base.add_polyline(f'r{c}','opt', 0, False, True, False)
+        data_base.add_coordinates(f'r{c}', r)
+        c+=1
+    redraw()
+    dpg.add_button(label='opt',parent='butonss',tag='opt',callback=active_but)
 
 def rotate_x():
     invers_lines()
@@ -2740,7 +2799,46 @@ def extract_points_from_svg(path):
             print(f"Element - ID: {element.attrib.get('id', 'N/A')}, x: {x}, y: {y}")
         counter +=1
 
+def extract_points_from_gcode(path):
+    gcode = ''
+    with open(path, 'r') as file:
+        gcode = file.read()
+    nice_path = find_nice_path(path)
+    dpg.add_button(label=nice_path,parent='butonss',tag=nice_path,callback=active_but)
+    lines = gcode.strip().split('\n')
+    paths = []
+    current_path = []
 
+    for line in lines:
+        if line.startswith('G0') or line.startswith('G1') or line.startswith('X') :
+           
+            parts = line.split()
+            coords = {}
+            for part in parts:
+                if part.startswith('X'):
+                    coords['X'] = float(part[1:])
+                    
+                elif part.startswith('Y'):
+                    coords['Y'] = float(part[1:])
+                    
+            if 'X' in coords and 'Y' in coords:
+                current_path.append((coords['X'], coords['Y']))
+        elif line.startswith('S0'):
+          
+            if current_path:
+                
+                paths.append(current_path)
+                current_path = []
+
+    if current_path:
+        paths.append(current_path)
+    counter = 0
+    for p in paths:
+        # print(p)
+        data_base.add_polyline(nice_path+f"{counter}",nice_path,0, False, True, False)
+                    
+        data_base.add_coordinates(nice_path+f"{counter}", p)
+        counter +=1
 
 def find_nice_path(path):
     nice_path = path
@@ -2818,6 +2916,9 @@ def pr(selected_files):
         redraw()
     elif ".svg" in current_file:
         extract_points_from_svg(current_file)
+        redraw()
+    elif ".gcode" in current_file:
+        extract_points_from_gcode(current_file)
         redraw()
 def generate_gear_profile(Rd, Z, alpha_deg=20, num_points=20):
    
@@ -3392,6 +3493,214 @@ def test2():
     data_base.add_polyline(f"knk16","kn",0, False, True, False)
 
     redraw()
+def calculate_new_point(x1, y1, distance, angle_degrees):
+    
+    angle_radians = math.radians(angle_degrees)
+    
+    x2 = x1 + distance * math.cos(angle_radians)
+    y2 = y1 + distance * math.sin(angle_radians)
+    
+    return x2, y2
+def calculate_new_point2(xy, distance, angle_degrees):
+    x1,y1 = xy
+    angle_radians = math.radians(angle_degrees)
+    
+    x2 = x1 + distance * math.cos(angle_radians)
+    y2 = y1 + distance * math.sin(angle_radians)
+    
+    return x2, y2
+def find_intersection(p1, p2, p3, p4):
+    """
+    Находит точку пересечения двух линий, заданных двумя точками каждая.
+    
+    :param p1: Координаты первой точки первой линии (x1, y1)
+    :param p2: Координаты второй точки первой линии (x2, y2)
+    :param p3: Координаты первой точки второй линии (x3, y3)
+    :param p4: Координаты второй точки второй линии (x4, y4)
+    :return: Координаты точки пересечения (x, y) или None, если линии параллельны
+    """
+    
+    x1, y1 = p1
+    x2, y2 = p2
+    x3, y3 = p3
+    x4, y4 = p4
+
+    # Вычисление переменных для уравнения
+    denominator = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
+    
+    # Если denominator равен 0, линии параллельны
+    if denominator == 0:
+        return None
+    
+    # Находится точка пересечения
+    intersection_x = ((x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)) / denominator
+    intersection_y = ((x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)) / denominator
+    
+    return intersection_x, intersection_y
+def test4():
+    dpg.add_button(label="bottom",parent='butonss',tag="bottom",callback=active_but)
+    dpg.add_button(label="top",parent='butonss',tag="top",callback=active_but)
+    big_c =  get_circle_points(center=(0,0),radius=35,begin_angle=0,end_angle=360)
+    r1 =  get_circle_points(center=(-80,0),radius=20,begin_angle=0,end_angle=360)
+    r4 =  get_circle_points(center=(80,0),radius=20,begin_angle=0,end_angle=360)
+    data_base.add_coordinates(f"bc", big_c)
+    data_base.add_polyline(f"bc","bottom",0, False, True, False)
+    data_base.add_coordinates(f"r1", r1)
+    data_base.add_polyline(f"r1","bottom",0, False, True, False)
+    data_base.add_coordinates(f"r4", r4)
+    data_base.add_polyline(f"r4","bottom",0, False, True, False)
+
+    c2x,c2y = calculate_new_point(0,0,80,-120)
+    r2 =  get_circle_points(center=(c2x,c2y),radius=20,begin_angle=0,end_angle=360)
+    data_base.add_coordinates(f"r2", r2)
+    data_base.add_polyline(f"r2","bottom",0, False, True, False)
+
+    c3x,c3y = calculate_new_point(0,0,80,-60)
+    r3 =  get_circle_points(center=(c3x,c3y),radius=20,begin_angle=0,end_angle=360)
+    data_base.add_coordinates(f"r3", r3)
+    data_base.add_polyline(f"r3","bottom",0, False, True, False)
+
+    x,y = calculate_new_point(80,0,35,-30)
+    x1,y1 = calculate_new_point(x,y,12,240)
+    x4,y4 = calculate_new_point(x,y,30,240)
+    x2,y2 = calculate_new_point(x1,y1,4,-30)
+    x3,y3 = calculate_new_point(x4,y4,4,-30)
+
+    x,y = calculate_new_point(c3x,c3y,35,-30)
+    x11,y11 = calculate_new_point(x,y,30,60)
+    x41,y41 = calculate_new_point(x,y,12,60)
+    x21,y21 = calculate_new_point(x11,y11,4,-30)
+    x31,y31 = calculate_new_point(x41,y41,4,-30)
+    x,y = calculate_new_point(c3x,c3y,35,-90)
+    x12,y12 = (x-5,y)
+    x42,y42 = (x-20,y)
+    x22,y22 = (x12,y12-4)
+    x32,y32 = (x42,y42-4)
+    contur = [(-80,35),(-80+15,35),(-80+15,35+4),(-80+45,35+4),(-80+45,35),(80-45,35),(80-45,35+4),(80-15,35+4),(80-15,35)] + get_circle_points(center=(80,0),radius=35,begin_angle=90,end_angle=-30) + [(x1,y1),(x2,y2),(x3,y3),(x4,y4),(x11,y11),(x21,y21),(x31,y31),(x41,y41)] + get_circle_points(center=(c3x,c3y),radius=35,begin_angle=-30,end_angle=-90) + [(x12,y12),(x22,y22),(x32,y32),(x42,y42)] + [(-x12,y12),(-x22,y22),(-x32,y32),(-x42,y42)][::-1] + get_circle_points(center=(c2x,c2y),radius=35,begin_angle=270,end_angle=210)+ [(-x1,y1),(-x2,y2),(-x3,y3),(-x4,y4),(-x11,y11),(-x21,y21),(-x31,y31),(-x41,y41)][::-1] + get_circle_points(center=(-80,0),radius=35,begin_angle=210,end_angle=90) 
+    data_base.add_coordinates(f"contur", contur)
+    data_base.add_polyline(f"contur","bottom",0, False, True, False)
+    
+
+
+    
+    radius = 48.35
+
+    x,y = find_intersection((-80,35),(80,35),(calculate_new_point(-80,0,55,210)),(calculate_new_point(c2x,c2y,55,210)))
+    bot_cx, bot_cy = calculate_new_point(x,y,radius*2,-30)
+   
+    x1b,y1b = calculate_new_point(x1,y1,20,-30)
+    x4b,y4b = calculate_new_point(x4,y4,20,-30)
+    x2b,y2b = calculate_new_point(x2,y2,20,-30)
+    x3b,y3b = calculate_new_point(x3,y3,20,-30)
+    x11b,y11b = calculate_new_point(x11,y11,20,-30)
+    x41b,y41b = calculate_new_point(x41,y41,20,-30)
+    x21b,y21b = calculate_new_point(x21,y21,20,-30)
+    x31b,y31b = calculate_new_point(x31,y31,20,-30)
+    contur2 = [(-80,35),(-80+15,35),(-80+15,35+4),(-80+45,35+4),(-80+45,35),(80-45,35),(80-45,35+4),(80-15,35+4),(80-15,35)] +  get_circle_points(center=(-bot_cx, bot_cy),radius=radius,begin_angle=90,end_angle=-30) + [(x1b,y1b),(x2b,y2b),(x3b,y3b),(x4b,y4b),(x11b,y11b),(x21b,y21b),(x31b,y31b),(x41b,y41b)] + get_circle_points(center=(c3x,c3y),radius=55,begin_angle=-30,end_angle=-90) + [(x12,y12-20),(x22,y22-20),(x32,y32-20),(x42,y42-20)] + [(-x12,y12-20),(-x22,y22-20),(-x32,y32-20),(-x42,y42-20)][::-1] + get_circle_points(center=(c2x,c2y),radius=55,begin_angle=270,end_angle=210) + [(-x1b,y1b),(-x2b,y2b),(-x3b,y3b),(-x4b,y4b),(-x11b,y11b),(-x21b,y21b),(-x31b,y31b),(-x41b,y41b)][::-1] + get_circle_points(center=(bot_cx, bot_cy),radius=radius,begin_angle=210,end_angle=90)
+    data_base.add_coordinates(f"contur2", contur2)
+    data_base.add_polyline(f"contur2","top",1, False, True, False)
+    print(calculate_polyline_length([get_circle_points(center=(-bot_cx, bot_cy),radius=radius,begin_angle=90,end_angle=-30)[-1],(x1b,y1b)]))
+
+
+    redraw()
+
+def test5():
+    dpg.add_button(label="bottom",parent='butonss',tag="bottom",callback=active_but)
+    dpg.add_button(label="top",parent='butonss',tag="top",callback=active_but)
+    dpg.add_button(label="panel",parent='butonss',tag="panel",callback=active_but)
+    dpg.add_button(label="panel2",parent='butonss',tag="panel2",callback=active_but)
+    dpg.add_button(label="panel3",parent='butonss',tag="panel3",callback=active_but)
+    dpg.add_button(label="panel4",parent='butonss',tag="panel4",callback=active_but)
+    big_c =  get_circle_points(center=(0,0),radius=35,begin_angle=0,end_angle=360)
+    r1 =  get_circle_points(center=(-80,0),radius=20,begin_angle=0,end_angle=360)
+    r4 =  get_circle_points(center=(80,0),radius=20,begin_angle=0,end_angle=360)
+    data_base.add_coordinates(f"bc", big_c)
+    data_base.add_polyline(f"bc","top",0, False, True, False)
+    data_base.add_coordinates(f"r1", r1)
+    data_base.add_polyline(f"r1","top",0, False, True, False)
+    data_base.add_coordinates(f"r4", r4)
+    data_base.add_polyline(f"r4","top",0, False, True, False)
+
+    c2x,c2y = calculate_new_point(0,0,80,-120)
+    r2 =  get_circle_points(center=(c2x,c2y),radius=20,begin_angle=0,end_angle=360)
+    data_base.add_coordinates(f"r2", r2)
+    data_base.add_polyline(f"r2","top",0, False, True, False)
+
+    c3x,c3y = calculate_new_point(0,0,80,-60)
+    r3 =  get_circle_points(center=(c3x,c3y),radius=20,begin_angle=0,end_angle=360)
+    data_base.add_coordinates(f"r3", r3)
+    data_base.add_polyline(f"r3","top",0, False, True, False)
+
+    x,y = find_intersection((105,0),(105,-30),calculate_new_point(80,0,25,-30),calculate_new_point(c3x,c3y,25,-30))
+    x2,y2 = find_intersection((c2x,c2y-25),(c3x,c3y-25),calculate_new_point(80,0,25,-30),calculate_new_point(c3x,c3y,25,-30))    
+    x3,y3 = find_intersection((c2x,c2y-45),(c3x,c3y-45),calculate_new_point(80,0,25,-30),calculate_new_point(c3x,c3y,25,-30))  
+
+    p1 = calculate_new_point(80,0,25,-30)
+    p2 = calculate_new_point(80,0,30,-30)
+    p3 = calculate_new_point2(calculate_new_point(80,0,30,-30),30,-120)
+    p4 = calculate_new_point2(calculate_new_point2(calculate_new_point(80,0,29,-30),30,-120),4,150)
+
+
+    p5 = calculate_new_point(c3x,c3y,25,-30)
+    p6 = calculate_new_point(c3x,c3y,30,-30)
+    p7 = calculate_new_point2(p6,30,60)
+    p8 = calculate_new_point2(p5,30,60)
+
+
+    contur = [(-105,40),(-100+30,40),(-100+30,40+4),(-100+60,40+4),(-100+60,40),(100-60,40),(100-60,40+4),(100-30,40+4),(100-30,40),(105,40),(105,30),(109,30),(109,0),(105,0),(x,y),p1,p2,p3,p4,p8,p7,p6,p5,(x2,y2),(x2-20,y2),(x2-20,y2-4),(x2-40,y2-4),(x2-40,y2),(-x2+40,y2),(-x2+40,y2-4),(-x2+20,y2-4),(-x2+20,y2),(-x2,y2) , (-p5[0],p5[1]), (-p6[0],p6[1]), (-p7[0],p7[1]), (-p8[0],p8[1]), (-p4[0],p4[1]), (-p3[0],p3[1]), (-p2[0],p2[1]), (-p1[0],p1[1]),(-x,y), (-105,0),(-109,0),(-109,30),(-105,30) ,(-105,40)] 
+
+    data_base.add_coordinates(f"contur", contur)
+    data_base.add_polyline(f"contur","top",0, False, True, False)
+
+    contur2 = [(-105,40),(-100+30,40),(-100+30,40+4),(-100+60,40+4),(-100+60,40),(100-60,40),(100-60,40+4),(100-30,40+4),(100-30,40),(105,40),(105,30),(109,30),(109,0),(105,0),(x,y),p1,p2,p3,p4,p8,p7,p6,p5,(x3,y3),(x2-20,y3),(x2-20,y3-4),(x2-40,y3-4),(x2-40,y3),(-x2+40,y3),(-x2+40,y3-4),(-x2+20,y3-4),(-x2+20,y3),(-x3,y3) , (-p5[0],p5[1]), (-p6[0],p6[1]), (-p7[0],p7[1]), (-p8[0],p8[1]), (-p4[0],p4[1]), (-p3[0],p3[1]), (-p2[0],p2[1]), (-p1[0],p1[1]),(-x,y), (-105,0),(-109,0),(-109,30),(-105,30) ,(-105,40)] 
+
+    data_base.add_coordinates(f"contur2", contur2)
+    data_base.add_polyline(f"contur2","bottom",1, False, True, False)
+
+
+    contur3 = [(-x3-4,0),(-x2+20,0),(-x2+20,4),(-x2+40,4),(-x2+40,0),(x2-40,0),(x2-40,4),(x2-20,4),(x2-20,0),(x3+4,0),(x2+4,40.31),(x2-20,40.31),(x2-20,40.31-4) ,(x2-40,40.31-4),(x2-40,40.31),(-x2+40,40.31) ,(-x2+40,40.31-4) ,(-x2+20,40.31-4),(-x2+20,40.31) ,(-x2-4,40.31),(-x3-4,0)] 
+
+    data_base.add_coordinates(f"contur3", contur3)
+    data_base.add_polyline(f"contur3","panel",1, False, True, False)
+    
+    data_base.add_polyline(f"potent1","panel",1, False, True, False)
+    data_base.add_coordinates(f"potent1", get_circle_points(center=(24,20),radius=3.5,begin_angle=0,end_angle=360))
+   
+    data_base.add_polyline(f"oled1","panel",1, False, True, False)
+    data_base.add_coordinates(f"oled1", [(-36.5,11.5),(-36.5,28.5),(-11.5,28.5),(-11.5,11.5),(-36.5,11.5)])
+
+    
+    
+    contur4 = [(4,0),(39,0),(39,4),(69,4),(69,0),(149,0),(149,4),(179,4),(179,0),(214,0),(214,10),(218,10),(218,25) ,(214,25),(214,35),(179,35) ,(179,31) ,(149,31),(149,35) ,(69,35),(69,31),(39,31),(39,35),(4,35),(4,25),(0,25),(0,10),(4,10),(4,0)] 
+
+    data_base.add_coordinates(f"contur4", contur4)
+    data_base.add_polyline(f"contur4","panel2",1, False, True, False)
+
+
+
+    contur5 = [(0,10),(0,0),(10,0),(10,4),(40,4),(40,0),(46.7,0),(46.7,10),(42.7,10),(42.7,25),(46.7,25),(46.7,35),(40,35) ,(40,31),(10,31),(10,35) ,(0,35) ,(0,25),(4,25) ,(4,10),(0,10)] 
+
+    data_base.add_coordinates(f"contur5", contur5)
+    data_base.add_polyline(f"contur5","panel3",1, False, True, False)
+
+    contur6 = [(-4,10),(-4,0),(6.7,0),(6.7,4),(36.7,4),(36.7,0),(56.7,0),(56.7,4),(86.7,4),(86.7,0),(124.3,0),(101.1,35),(86.7,35) ,(86.7,31),(56.7,31),(56.7,35) ,(36.7,35) ,(36.7,31),(6.7,31) ,(6.7,35),(-4,35),(-4,25),(0,25),(0,10),(-4,10)] 
+
+    data_base.add_coordinates(f"contur6", contur6)
+    data_base.add_polyline(f"contur6","panel4",1, False, True, False)
+
+
+    redraw()
+
+
+
+
+
+
+
+
+
+
+
 
 def test3():
 
@@ -3406,8 +3715,8 @@ def test3():
 
     CENTER_X = 21
     CENTER_Y = 25
-    width = 10
-    height = 4
+    width = 12.7
+    height = 5.6
 
     data_base.add_polyline(f"knk3","podrumku",0, False, True, False)
     data_base.add_coordinates("knk3", [(CENTER_X-width/2,CENTER_Y-height/2),(CENTER_X-width/2,CENTER_Y+height/2),(CENTER_X+width/2,CENTER_Y+height/2),(CENTER_X+width/2,CENTER_Y-height/2),(CENTER_X-width/2,CENTER_Y-height/2)])
@@ -3547,8 +3856,20 @@ def calculate_polyline_length(points):
     return length
 def test_callback():
     dpg.add_button(label="test",parent='butonss',tag="test1",callback=active_but)
-    radius = 193.11
-    NUMLINS = 25
+    A = 39
+    B = 43.83
+    l = 73
+    L = 106
+    d = 12-0.424
+    angle_degrees = 45.3
+
+    # y = ((d * l / np.sin(np.deg2rad(angle_degrees))) + (39 * l))/(L-l)
+    y = l * 360 / 2/np.pi/angle_degrees
+    print(y)
+   
+    # radius = 193.11
+    radius = y
+    NUMLINS = 35
     NUMLINS2 = 3
     rect1 = [(0,radius),(-15,radius),(-15,radius+4),(-45,radius+4),(-45,radius),(-80,radius),(-80,radius+39),(-45,radius+39),(-45,radius+35),(-15,radius+35),(-15,radius+39),(0,radius+39)]
 
@@ -3556,12 +3877,11 @@ def test_callback():
     data_base.add_coordinates(f"test", rect1)
     data_base.add_polyline(f"test","test1",0, False, True, False)
     
-    angle_degrees = 21.75
     
-    angles = np.linspace(np.pi/2 - np.deg2rad(angle_degrees),np.pi/2, 40)
+    
 
     angles2 = np.linspace(np.pi/2 - np.deg2rad(angle_degrees),np.pi/2, NUMLINS//2)
-    angles3 = np.linspace(np.pi/2 - np.deg2rad(angle_degrees) + np.deg2rad(21.75/22) ,np.pi/2 - np.deg2rad(21.75/22), NUMLINS//2-1)
+    angles3 = np.linspace(np.pi/2 - np.deg2rad(angle_degrees) + np.deg2rad(angle_degrees/(NUMLINS-3)) ,np.pi/2 - np.deg2rad(angle_degrees/(NUMLINS-3)), NUMLINS//2-1)
 
     points = [(radius * np.cos(angle), radius * np.sin(angle)) for angle in reversed(angles2)]
     data_base.add_coordinates(f"rtest", points)
@@ -3576,22 +3896,23 @@ def test_callback():
     rect2.append((rect2[-1][0]+ 18 * math.cos(np.deg2rad(angle_degrees) ),rect2[-1][1]- 18 * math.sin(np.deg2rad(angle_degrees))))
     rect2.append((rect2[-1][0]+ 4 * math.cos(np.deg2rad(angle_degrees+ 90) ),rect2[-1][1]- 4 * math.sin(np.deg2rad(angle_degrees+ 90))))
     rect2.append((rect2[-1][0]+ 10 * math.cos(np.deg2rad(angle_degrees) ),rect2[-1][1]- 10 * math.sin(np.deg2rad(angle_degrees))))
-    rect2.append((rect2[-1][0]+ 41.173 * math.cos(np.deg2rad(angle_degrees- 90) ),rect2[-1][1]- 41.173 * math.sin(np.deg2rad(angle_degrees- 90))))
+    rect2.append((rect2[-1][0]+ 43.83 * math.cos(np.deg2rad(angle_degrees- 90) ),rect2[-1][1]- 43.83 * math.sin(np.deg2rad(angle_degrees- 90))))
     rect2.append((rect2[-1][0]+ 10 * math.cos(np.deg2rad(angle_degrees - 180) ),rect2[-1][1]- 10 * math.sin(np.deg2rad(angle_degrees - 180 ))))
     rect2.append((rect2[-1][0]+ 4 * math.cos(np.deg2rad(angle_degrees+ 90) ),rect2[-1][1]- 4 * math.sin(np.deg2rad(angle_degrees+ 90))))
     rect2.append((rect2[-1][0]+ 18 * math.cos(np.deg2rad(angle_degrees- 180) ),rect2[-1][1]- 18 * math.sin(np.deg2rad(angle_degrees- 180))))
     rect2.append((rect2[-1][0]+ 4 * math.cos(np.deg2rad(angle_degrees- 90) ),rect2[-1][1]- 4 * math.sin(np.deg2rad(angle_degrees- 90))))
-    rect2.append((rect2[-1][0]+ 0.684 * math.cos(np.deg2rad(angle_degrees- 180) ),rect2[-1][1]-  0.684 * math.sin(np.deg2rad(angle_degrees- 180))))
+    rect2.append((rect2[-1][0]+ 0.424 * math.cos(np.deg2rad(angle_degrees- 180) ),rect2[-1][1]-  0.424 * math.sin(np.deg2rad(angle_degrees- 180))))
 
 
     data_base.add_coordinates(f"rrtest", rect2)
     data_base.add_polyline(f"rrtest","test1",0, False, True, False)
     center2 = [0,rect2[-1][1]- rect2[-1][0] * math.tan(np.deg2rad(-angle_degrees - 90 ))]
-
+    
     points2 = [((radius + 39-center2[1]) * np.cos(angle) , (radius+ 39-center2[1]) * np.sin(angle) +center2[1] ) for angle in reversed(angles2)]
     data_base.add_coordinates(f"r2test", points2)
     data_base.add_polyline(f"r2test","test1",1, False, True, False)
-
+    print(calculate_polyline_length(points2))
+    print(calculate_polyline_length(points))
     points3 = [((radius + 10.3333333 - 0.264957 * center2[1]) * np.cos(angle) , (radius + 10.3333333- 0.264957 * center2[1]) * np.sin(angle) + 0.264957 *center2[1] ) for angle in reversed(angles2)]
 
     points4 = [((radius + 28.6666667- 0.735042 * center2[1]) * np.cos(angle) , (radius + 28.6666667- 0.735042 * center2[1]) * np.sin(angle) +  0.735042 *center2[1] ) for angle in reversed(angles2)]
@@ -3609,7 +3930,7 @@ def test_callback():
     points10 = [((radius + 21.5 - 0.551282 * center2[1]) * np.cos(angle) , (radius + 21.5 - 0.551282 * center2[1]) * np.sin(angle) + 0.551282 *center2[1] ) for angle in reversed(angles3)]
 
     W1 = (-center2[1] - 4 * (NUMLINS2-1))/NUMLINS2
-    print(W1)
+    
     for a,b in zip(points6,points5):
         data_base.add_coordinates(f"r2test{a}", [a,b])
         data_base.add_polyline(f"r2test{a}","test1",2, False, True, False)
@@ -4039,6 +4360,7 @@ with dpg.viewport_menu_bar():
         dpg.add_menu_item(label="Scale", callback=scale_lines)
         dpg.add_menu_item(label="buffer(-0.5)", callback=bufferm)
         dpg.add_menu_item(label="buffer(+0.5)", callback=bufferp)
+        dpg.add_menu_item(label="Optimize", callback=optimize_)
     with dpg.menu(label="Geom"):
         dpg.add_menu_item(label="Circle", callback=lambda:dpg.configure_item("CIRCLE", show=True))
         dpg.add_menu_item(label="Rectangle", callback=lambda:dpg.configure_item("RECTANGLEFROMCENTER", show=True))
@@ -4060,7 +4382,8 @@ with dpg.viewport_menu_bar():
         dpg.add_menu_item(label="krysha nalivatora", callback=test2)
         dpg.add_menu_item(label="pod stakan", callback=test3)
 
-
+        dpg.add_menu_item(label="bot", callback=test4)
+        dpg.add_menu_item(label="nice", callback=test5)
 
     with dpg.menu(label="Widget Items"):
         dpg.add_checkbox(label="Pick Me", callback=print_me)
@@ -4089,7 +4412,7 @@ with dpg.window(pos=(0,0),width=900, height=775,tag='papa'):
                 dpg.bind_item_theme("series_center", "plot_theme")
                 # dpg.set_axis_limits_constraints(Y_AXIS_TAG,-80,210)
                 # dpg.set_axis_limits_constraints(X_AXIS_TAG,-80,210)
-            
+                
             with dpg.group(horizontal=True):
                 with dpg.group():
                     dpg.add_text("order")
