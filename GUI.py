@@ -32,10 +32,7 @@ from shapely.ops import split
 from shapely.geometry import box
 
 def active_but(sender):
-    
-
     state = data_base.get_polyline_where(f"big_tag='{sender}'")
-    
     if place_in_a_circle:
         if not state[0][4]:
             dpg.set_value('activetext',dpg.get_value('activetext') + f"{sender}\n")
@@ -43,18 +40,13 @@ def active_but(sender):
             dpg.set_value('activetext',dpg.get_value('activetext').replace(f"{sender}\n", ""))
     tags = [s[1] for s in state]
     data_base.update_polylines(tags,active=False if state[0][4]==1  else True)
-    
     data_base.update_polylines(tags,color_change_flag=True)
-    
     dpg.bind_item_theme(sender, enabled_theme if state[0][4]==1 else disabled_theme)
     recolor()
-
 def arc_to_lines(center, radius, start_angle, end_angle, num_segments):
     start_angle_rad = np.radians(start_angle)
     end_angle_rad = np.radians(end_angle)
-
     angles = np.linspace(start_angle_rad, end_angle_rad, num_segments + 1)
-
     points = [(center[0] + radius * np.cos(angle), center[1] + radius * np.sin(angle)) for angle in angles]
     return points
 def extract_black_lines(image_path, pixel_distance):
@@ -74,7 +66,6 @@ def extract_black_lines(image_path, pixel_distance):
     img_array = np.array(img)
     height, width = img_array.shape
     liness = []
-    
     for y in range(height):
         start = None
         for x in range(0, width):
@@ -84,13 +75,8 @@ def extract_black_lines(image_path, pixel_distance):
                     start = (x, y) 
             else:
                 if start is not None:
-                    liness.append((round(start[0]*pixel_distance,4),round(start[1]*pixel_distance,4),round(x*pixel_distance,4),round(y*pixel_distance,4),0,nice_path,0,1))
-                    
+                    liness.append((round(start[0]*pixel_distance,4),round(start[1]*pixel_distance,4),round(x*pixel_distance,4),round(y*pixel_distance,4),0,nice_path,0,1))    
                     start = None
-        
-        #if start is not None:
-            #liness.append((start,y, width - pixel_distance,y,0,nice_path,0,1))
-
     return liness
 
 def remove_close_points(points, threshold=0.02):
@@ -190,6 +176,9 @@ def draw_hatched_area(rect, circles,rectangles):
 
     return y_lines
 def find_intersection(x1, y1, x2, y2, c):
+    #находит точку пересечения между отрезком, 
+    # заданным координатами двух его концов 
+    # и горизонтальной линией
 
     if (y1 - c) * (y2 - c) > 0:
         return None
@@ -207,64 +196,7 @@ def find_intersection(x1, y1, x2, y2, c):
         return (x_intersection, c)
     
     return None 
-def extend_line(a, b, w):
-    
-    dx = b[0] - a[0]
-    dy = b[1] - a[1]
-    
-    length = math.sqrt(dx**2 + dy**2)
-    
-    if length == 0:
-        return b 
-    
-    dx /= length
-    dy /= length
-    
-    c_x = b[0] + dx * w
-    c_y = b[1] + dy * w
-    
-    return c_x, c_y
 
-def points_on_rectangle_sides(corners, distance):
-    points = []
-    
-    sides = [
-        LineString([corners[0], corners[1]]),
-        LineString([corners[1], corners[2]]),
-        LineString([corners[2], corners[3]]),
-        LineString([corners[3], corners[0]])  
-    ]
-
-    for side in sides:
-        length = side.length
-       
-        num_points = int(length // distance)
-        
-        for i in range(num_points + 1): 
-            point = side.interpolate(i * distance)
-            points.append(point)
-    return points
-def manual_clustering(multipoint, min_distance=2):
-   
-    points = list(multipoint.geoms)
-    clusters = []
-
-    for point in points:
-        
-        can_add_to_cluster = False
-        for cluster in clusters:
-            
-            for cluster_point in cluster:
-                if point.distance(cluster_point) < min_distance:
-                    cluster.append(point)
-                    can_add_to_cluster = True
-                    break
-            if can_add_to_cluster:
-                break
-        
-        if not can_add_to_cluster:
-            clusters.append([point])
-    return [MultiPoint(cluster) for cluster in clusters]
 def Polygon_to_lines(union_polygon,num_lines,width_lines,nice_path):
 
     c = 0
@@ -389,15 +321,13 @@ def combine_lines(lines):
     
     combined_line = []
     
-    # Начинаем с первой линии
     current_line = lines[0]
     combined_line.extend(current_line)
     used_lines = {line_dict[tuple(current_line)]}
 
     while len(used_lines) < len(lines):
-        last_point = current_line[1]  # Конечная точка текущей линии
+        last_point = current_line[1] 
 
-        # Поиск следующей линии, которая начинается с конца текущей
         found = False
         for line in lines:
             if line_dict.get((tuple(line[0]), tuple(line[1]))) not in used_lines:
@@ -598,39 +528,6 @@ def read_dxf_lines_from_esyeda(sender, app_data, user_data):
     redraw()
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def read_dxf_lines_from_esyeda2(sender, app_data, user_data):
 
     for_buffer = 0.08
@@ -764,9 +661,6 @@ def read_dxf_lines_from_esyeda2(sender, app_data, user_data):
         Polygon_to_lines(unary_union(MultiPolygon([p for p in polygons2])),num_lines,width_lines,nice_path)
         
     redraw()
-
-
-
 
 
 def read_dxf_with_grabber(file_path):
@@ -924,288 +818,7 @@ def read_dxf_with_grabber(file_path):
             else:
                 print(f"{entity.dxftype} sss")
             counter+=1
-            # print(f"{entity.dxftype}")
-
-
-def read_dxf_lines(file_path):
-    nice_path = find_nice_path(os.path.basename(file_path))
-    
-    dpg.add_button(label=nice_path,parent='butonss',tag=nice_path,callback=active_but)
-    doc = ezdxf.readfile(file_path)
-    msp = doc.modelspace()
-
-
-    layers = doc.layers
-    ll = []
-    lll = {}
-    pattern = r'^power(\d+)speed(\d+)$'
-    h = 1
-    for layer in layers:
-        match = re.match(pattern, layer.dxf.name)
-        if match:
-            ll.append(layer.dxf.name)
-            power = int(match.group(1))
-            speed = int(match.group(2))
-            dpg.set_value(f"{h}_value",power)
-            dpg.set_value(f"{h}1_value",speed)
-            lll[layer.dxf.name] = h - 1 
-            h+=1
-
-
-    border_lines = []
-    colors = []
-    counter= 0
-    for line in msp.query('LINE'):
-        
-        layer = line.dxf.layer
-        #border_lines.append([(round(line.dxf.start.x,4),  round(line.dxf.start.y,4)), (round(line.dxf.end.x,4), round(line.dxf.end.y,4))])
-        if layer in ll:
-            colors.append(lll[layer])
-            data_base.add_polyline(nice_path+f"_line_"+f"{counter}",nice_path,lll[layer], False, True, False)
-        else:
-            colors.append(0)
-            data_base.add_polyline(nice_path+f"_line_"+f"{counter}",nice_path,0, False, True, False)
-        data_base.add_coordinates(nice_path+f"_line_"+f"{counter}", [[round(line.dxf.start.x,4),  round(line.dxf.start.y,4)], [round(line.dxf.end.x,4), round(line.dxf.end.y,4)]])
-        
-        counter+=1
-    for spline in msp.query('SPLINE'):
-        layer = spline.dxf.layer
-        
-        control_points = list(spline.control_points)
-        fit_points = list(spline.fit_points)
-        
-        spline_coords = []
-        
-        if len(fit_points)!= 0:
-            spline_coords = [[round(p[0], 4), round(p[1], 4)] for p in fit_points]
-        
-        elif control_points:
-            
-            degree = spline.dxf.degree
-            num_segments = max(10, len(control_points) * 5)  
-            
-            for i in range(num_segments + 1):
-                t = i / num_segments
-                try:
-                    point = spline.evaluate_point(t)
-                    spline_coords.append([round(point.x, 4), round(point.y, 4)])
-                except:
-                   
-                    spline_coords = [[round(p[0], 4), round(p[1], 4)] for p in control_points]
-                    break
-        
-        if not spline_coords and control_points:
-            spline_coords = [[round(p[0], 4), round(p[1], 4)] for p in control_points]
-        
-        if len(spline_coords) > 1:
-            if layer in ll:
-                colors.append(lll[layer])
-                data_base.add_polyline(nice_path + f"_spline_{counter}", nice_path, lll[layer], False, True, False)
-            else:
-                colors.append(0)
-                data_base.add_polyline(nice_path + f"_spline_{counter}", nice_path, 0, False, True, False)
-            
-            data_base.add_coordinates(nice_path + f"_spline_{counter}", spline_coords)
-            counter += 1
-
-
-
-    # sett = {i for i in range(len(border_lines))}
-    
-    # counter = 0
-    # while sett:
-    #     print(len(sett))
-    #     i = next(iter(sett))
-    #     coords = []
-    #     l,m = find_closest_lines(border_lines,border_lines[i][0],sett)
-        
-        
-    #     coords.append((round(border_lines[i][0][0],4),  round(border_lines[i][0][1],4)))
-    #     color = colors[i]
-    #     for h,j in zip(l,m):
-    #         if j:
-    #             coords.append((round(border_lines[h][1][0],4),  round(border_lines[h][1][1],4)))
-    #         else:
-    #             coords.append((round(border_lines[h][0][0],4),  round(border_lines[h][0][1],4)))
-    #         sett.remove(h)
-    #     data_base.add_polyline(nice_path+f"_3dface_"+f"{counter}",nice_path,color, False, True, False)
-    #     data_base.add_coordinates(nice_path+f"_3dface_"+f"{counter}", coords)
-    #     counter+=1
-
-    
-        
-    hlines = []
-    hcol = []
-    for line in msp.query('3DFACE'): 
-        layer = line.dxf.layer
-        if layer in ll:
-            hcol.append(lll[layer])
-            hcol.append(lll[layer])
-            hcol.append(lll[layer])
-        else:
-            hcol.append(0)
-            hcol.append(0)
-            hcol.append(0)
-        hlines.append({
-            'start': (line.dxf.vtx0[0], line.dxf.vtx0[1]),
-            'end': (line.dxf.vtx1[0], line.dxf.vtx1[1])
-        })
-        
-        hlines.append({
-            'start': (line.dxf.vtx1[0], line.dxf.vtx1[1]),
-            'end': (line.dxf.vtx2[0], line.dxf.vtx2[1])
-        })
-        
-        hlines.append({
-            'start': (line.dxf.vtx2[0], line.dxf.vtx2[1]),
-            'end': (line.dxf.vtx0[0], line.dxf.vtx0[1])
-        })
-        
-    sett = {i for i in range(len(hlines))}
-    settt = []
-    while sett:
-        found = False
-        for i in sett:
-            for j in sett:
-                if i != j:
-                    if (abs(hlines[i]['start'][0] - hlines[j]['start'][0])<0.0001 and abs(hlines[i]['start'][1] - hlines[j]['start'][1])<0.0001 and abs(hlines[i]['end'][0] - hlines[j]['end'][0])<0.0001 and abs(hlines[i]['end'][1] - hlines[j]['end'][1])<0.0001) or (abs(hlines[i]['start'][0] - hlines[j]['end'][0])<0.0001 and abs(hlines[i]['start'][1] - hlines[j]['end'][1])<0.0001 and abs(hlines[j]['start'][0] - hlines[i]['end'][0])<0.0001 and abs(hlines[j]['start'][1] - hlines[i]['end'][1])<0.0001):
-                        sett.remove(i)
-                        sett.remove(j)
-                        found = True
-                        break
-            if found:
-                break
-            settt.append(i)
-            sett.remove(i)
-            break
-    
-    
-    border_lines = []
-    for i in settt:
-        border_lines.append([(round(hlines[i]['start'][0],4),  round(hlines[i]['start'][1],4)),(round(hlines[i]['end'][0],4),  round(hlines[i]['end'][1],4))])
-
-
-    sett = {i for i in range(len(border_lines))}
-    
-    counter = 0
-    while sett:
-        i = next(iter(sett))
-        coords = []
-        l,m = find_closest_lines(border_lines,border_lines[i][0],sett)
-        
-        
-        coords.append((round(border_lines[i][0][0],4),  round(border_lines[i][0][1],4)))
-       
-        for h,j in zip(l,m):
-            if j:
-                coords.append((round(border_lines[h][1][0],4),  round(border_lines[h][1][1],4)))
-            else:
-                coords.append((round(border_lines[h][0][0],4),  round(border_lines[h][0][1],4)))
-            sett.remove(h)
-        data_base.add_polyline(nice_path+f"_3dface_"+f"{counter}",nice_path,0, False, True, False)
-        data_base.add_coordinates(nice_path+f"_3dface_"+f"{counter}", coords)
-        counter+=1
-
-
-
-
-
-
-
-
-   
-    counter = 0
-    for arc in msp.query('ARC'):
-        center = arc.dxf.center  
-        radius = arc.dxf.radius   
-        start_angle = arc.dxf.start_angle 
-        end_angle = arc.dxf.end_angle
-        layer = arc.dxf.layer
-        if radius<10:
-            points = arc_to_lines(center, radius, start_angle, end_angle,10)
-        else:
-            points = arc_to_lines(center, radius, start_angle, end_angle,50)
-        if layer in ll:
-            data_base.add_polyline(nice_path+f"_arc_"+f"{counter}",nice_path,lll[layer], False, True, False)
-        else:
-            data_base.add_polyline(nice_path+f"_arc_"+f"{counter}",nice_path,0, False, True, False)
-        data_base.add_coordinates(nice_path+f"_arc_"+f"{counter}", points)
-        counter+=1
-
-
-    for circle in msp.query('CIRCLE'):
-        center = circle.dxf.center 
-        radius = circle.dxf.radius  
-        num_points = 50  
-        layer = circle.dxf.layer
-        points = [
-            (
-                center.x + radius * math.cos(2 * math.pi * i / num_points),
-                center.y + radius * math.sin(2 * math.pi * i / num_points)
-            )
-            for i in list(range(num_points)) + [0]
-        ]
-        if layer in ll:
-            data_base.add_polyline(nice_path+f"_circle_"+f"{counter}",nice_path,lll[layer], False, True, False)
-        else:
-            data_base.add_polyline(nice_path+f"_circle_"+f"{counter}",nice_path,0, False, True, False)
-        data_base.add_coordinates(nice_path+f"_circle_"+f"{counter}", points)
-        counter+=1
-    # counter = 0
-    # for polyline in msp.query('SOLID'):
-    #     layer = polyline.dxf.layer
-        
-    #     points = polyline.get_points() 
-    #     coords = []
-    #     for i in range(len(points)):
-    #         coords.append((round(points[i][0],4),  round(points[i][1],4)))
-    #     if layer in ll:
-    #         data_base.add_polyline(nice_path+f"_solid_"+f"{counter}",nice_path,lll[layer], False, True, False)
-    #     else:
-    #         data_base.add_polyline(nice_path+f"_solid_"+f"{counter}",nice_path,0, False, True, False)
-    #     data_base.add_coordinates(nice_path+f"_solid_"+f"{counter}", coords)
-    #     counter +=1
-            
-    counter= 0
-    for polyline in msp.query('LWPOLYLINE'):
-        layer = polyline.dxf.layer
-        points = polyline.get_points() 
-        coords = []
-        for i in range(len(points)):
-            coords.append((round(points[i][0],4),  round(points[i][1],4)))
-        coords.append((round(points[0][0],4),  round(points[0][1],4)))
-        if layer in ll:
-            data_base.add_polyline(nice_path+f"_lwpoly_"+f"{counter}",nice_path,lll[layer], False, True, False)
-        else:
-            data_base.add_polyline(nice_path+f"_lwpoly_"+f"{counter}",nice_path,0, False, True, False)
-        data_base.add_coordinates(nice_path+f"_lwpoly_"+f"{counter}", coords)
-        counter +=1
-    
-    counter= 0
-    for polyline in msp.query('POLYLINE'):
-        layer = polyline.dxf.layer
-        points = polyline.vertices
-        
-        if layer in ll:
-            data_base.add_polyline(nice_path+f"_poly_"+f"{counter}",nice_path,lll[layer], False, True, False)
-        else:
-            data_base.add_polyline(nice_path+f"_poly_"+f"{counter}",nice_path,0, False, True, False)
-        data_base.add_coordinates(nice_path+f"_poly_"+f"{counter}", [(p.dxf.location.x,p.dxf.location.y)for p in points])
-        counter +=1
-    counter= 0
-    for hatch in msp.query('HATCH'):
-        for path in hatch.paths:
-            layer = hatch.dxf.layer
-            
-            coords = []
-            for i in range(len(points)):
-                coords.append((round(points[i][0],4),  round(points[i][1],4)))
-            if layer in ll:
-                data_base.add_polyline(nice_path+f"_hatch_"+f"{counter}",nice_path,lll[layer], False, True, False)
-            else:
-                data_base.add_polyline(nice_path+f"_hatch_"+f"{counter}",nice_path,0, False, True, False)
-            data_base.add_coordinates(nice_path+f"_hatch_"+f"{counter}", coords)
-            counter +=1
+           
 def distance(point1, point2):
     return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
 def find_closest_pointt(lines, target_point,nums):### возвращает точку, индекс линии, старт (1) или конец(0), и растояние до нее  
@@ -1257,20 +870,8 @@ def dxf_to_svg(dxf_file, svg_file):
     dwg.save()
 def save_as_gcode():
     dpg.show_item("file_dialog_id2")
-
-def callback_to_gcode2(sender, app_data, user_data):
-    current_file = app_data['file_path_name']
+def get_gcode_from_tags(tags):
     gcode_lines = []
-    gcode_lines.append("G90")
-    gcode_lines.append("M4 S0")
-
-    tag0 = data_base.get_tag_where('color=0')
-    tag1 = data_base.get_tag_where('color=1')
-    tag2 = data_base.get_tag_where('color=2')
-    tag3 = data_base.get_tag_where('color=3')
-    tag4 = data_base.get_tag_where('color=4')
-
-    tags = [tag0,tag1,tag2,tag3,tag4]
     h = 1
     curr_pos = [0,0]
     for tag in tags:
@@ -1282,7 +883,7 @@ def callback_to_gcode2(sender, app_data, user_data):
         
         i = 0 
         while sett:
-            #poly = data_base.xz(curr_pos[0],curr_pos[1],list(sett))
+            
             poly = tag[i]
             i+=1
             sett.remove(poly)
@@ -1305,10 +906,25 @@ def callback_to_gcode2(sender, app_data, user_data):
                 gcode_lines.append(j)
 
     gcode_lines.append(f"M5 S0")
+    return gcode_lines
+
+def callback_to_gcode2(sender, app_data, user_data):
+    current_file = app_data['file_path_name']
+    
+    tag0 = data_base.get_tag_where('color=0')
+    tag1 = data_base.get_tag_where('color=1')
+    tag2 = data_base.get_tag_where('color=2')
+    tag3 = data_base.get_tag_where('color=3')
+    tag4 = data_base.get_tag_where('color=4')
+
+    gcode_lines = get_gcode_from_tags([tag0,tag1,tag2,tag3,tag4])
     with open(current_file, 'w') as f:
         f.write("\n".join(gcode_lines))
 
     dpg.set_value('multiline_input',"\n".join(gcode_lines))
+
+
+
 def save_as_dxf():
     dpg.show_item("file_dialog_id1")
 def save_sel_as_dxf():
@@ -1615,10 +1231,10 @@ def organizer_callback():
     
     c = int(dpg.get_value('Column'))
     r = int(dpg.get_value('Row'))
-    w = int(dpg.get_value('cell_width'))
-    h = int(dpg.get_value('cell_height'))
-    d = int(dpg.get_value('cell_depth'))
-    t = int(dpg.get_value('thickness'))
+    w = float(dpg.get_value('cell_width'))
+    h = float(dpg.get_value('cell_height'))
+    d = float(dpg.get_value('cell_depth'))
+    t = float(dpg.get_value('thickness'))
     main_rectangle = box(0, 0,c * (w + t) + t , d)####нижняя и верхняя стенки
     main_rectangle2 = box(0, 0, d,r * (h + t) + t)
     k = int(d/20)
@@ -1694,6 +1310,19 @@ def circle_callback():
     data_base.add_polyline("circle_"+f"{r}","circle"+f"{r}",0, False, True, False)
     data_base.add_coordinates("circle_"+f"{r}", points)
     
+    redraw()
+def test10():
+
+    dpg.add_button(label="ruchka",parent='butonss',tag="ruchka",callback=active_but)
+    data_base.add_coordinates(f"knk",[(-14,0),(-12,0),(-12,-4),(-2,-4),(-2,0),(0,0),(0,8),(4,12),(32,12),(36,8),(36,0)] + [(38,0),(38,-4),(48,-4),(48,0),(50,0),(50,14),(40,24),(-4,24),(-14,14),(-14,0)] )
+    data_base.add_coordinates(f"knk2",[(-14,0),(-12,0),(-12,-4),(-2,-4),(-2,0),(0,0)] + get_circle_points(center=(4,8),radius=4,begin_angle=180,end_angle=90)+get_circle_points(center=(32,8),radius=4,begin_angle=90,end_angle=0)+ [(36,0),(38,0),(38,-4),(48,-4),(48,0),(50,0)] + get_circle_points(center=(40,14),radius=10,begin_angle=0,end_angle=90) + get_circle_points(center=(-4,14),radius=10,begin_angle=90,end_angle=180) + [(-14,0)] )
+    
+    # data_base.add_coordinates(f"knk",[(-14,0),(-12,0),(-12,-4),(-2,-4),(-2,0)] + get_circle_points(center=(15,0),radius=15,begin_angle=180,end_angle=90) + get_circle_points(center=(21,0),radius=15,begin_angle=90,end_angle=0) + [(38,0),(38,-4),(48,-4),(48,0),(50,0)]+ get_circle_points(center=(21,0),radius=29,begin_angle=0,end_angle=90)+ get_circle_points(center=(15,0),radius=29,begin_angle=90,end_angle=180) )
+    data_base.add_polyline(f"knk","ruchka",0, False, True, False)
+    data_base.add_polyline(f"knk2","ruchka",0, False, True, False)
+    
+
+  
     redraw()
 def split_linestring_at_nearest_point(line_coords, target_point_coords,x,y , tolerance=1e-9):
     
@@ -1948,7 +1577,7 @@ def call_rot():
     rotating(tags,CENTER_X,CENTER_Y,float(dpg.get_value('rotate_angle')))
     redraw()  
 def rotating(tags,centerx,centery,angle):
-    print(tags)
+   
 
     CENTER_X = centerx
     CENTER_Y = centery
@@ -2219,6 +1848,12 @@ def move_to_center_lines():
     data_base.increment_field_value_with_condition(-min(xx)+CENTER_X,-min(yy) + CENTER_Y,f'polyline_tag IN ({placeholders})')
     data_base.update_polylines(tags,redraw_flag = True)
     redraw()
+def print_coords():
+    
+    tags = data_base.get_tag_where('active=1')
+    for tag in tags:
+        print([(round(x, 2), round(y, 2)) for x, y in data_base.get_coordinates(tag)])
+        
 def normalize_lines():
     coords = []
     tags = data_base.get_tag_where('active=1')
@@ -2296,33 +1931,7 @@ def midpoint_between_two_points(pointA, pointB):
     cy = (y1 + y2) / 2.0
     
     return (cx, cy)    
-def bernstein_poly(i, n, t):
-    """Полином Бернштейна"""
-    return comb(n, i) * (t**(n - i)) * ((1 - t)**i)
 
-def bezier_curve_points(points, num_points=100):
-    """
-    Вычисляет точки кривой Безье.
-    points: список кортежей или NumPy массив (N, 2) контрольных точек.
-    num_points: количество точек для построения кривой.
-    """
-    points = np.array(points)
-    n_points = len(points)
-    n_degree = n_points - 1  # Степень кривой
-    
-    t = np.linspace(0.0, 1.0, num_points)
-    
-    curve_points = np.zeros((num_points, 2))
-    
-    for i in range(n_points):
-        # Вычисление полинома Бернштейна для каждой контрольной точки
-        B_i = bernstein_poly(i, n_degree, t)
-        
-        # Умножение на контрольную точку и накопление
-        # points[i] - это [X_i, Y_i]
-        curve_points += np.outer(B_i, points[i])
-        
-    return curve_points
 def determine_rotation_direction(O, A, B):
    
     x_A_prime = A[0] - O[0]
@@ -2652,130 +2261,48 @@ def extract_points_from_ggb(ggb_file_path):
         counter+=1            
     
     return points, segments
-def extract_coordinates(d_string,currx,curry):
-    # Регулярное выражение для извлечения команд и координат
-    pattern = r'([MLHVCSQTAZmlhvcsqtaz])|([-+]?\d*\.\d+|[-+]?\d+)'
-    tokens = re.findall(pattern, d_string)
+
+def extract_coordinates2(d_string):
+    # Регулярное выражение для поиска команд и координат
+    pattern = re.compile(r'([MLHVCSZ])([^MLHVCSZ]*)')
+    coordinates = []
+    current_position = (0, 0)  # Начальная позиция (можно установить на произвольные значения)
     
-    x_coords = []
-    y_coords = []
-    XYX = True
-    big = False
-    current_x, current_y = currx, curry  
-    coordinates_after_c = []
-    collecting = False
-    for token in tokens:
+    for command, params in pattern.findall(d_string):
+        # Преобразование параметров в координаты
+        params = params.strip().split()
+        if command in 'ML':
+            # Absolute move (M) или line (L)
+            for i in range(0, len(params), 2):
+                x = float(params[i])
+                y = float(params[i + 1])
+                coordinates.append((x, y))
+                current_position = (x, y)
+        elif command in 'HV':  # Horizontal (H) or Vertical (V)
+            for param in params:
+                if command == 'H':
+                    x = float(param)
+                    coordinates.append((x, current_position[1]))
+                    current_position = (x, current_position[1])
+                elif command == 'V':
+                    y = float(param)
+                    coordinates.append((current_position[0], y))
+                    current_position = (current_position[0], y)
+        elif command == 'C':  # Cubic Bézier Curve
+            # Параметры для кривой: C x1, y1, x2, y2, x, y
+            for i in range(0, len(params), 6):
+                x1 = float(params[i])
+                y1 = float(params[i + 1])
+                x2 = float(params[i + 2])
+                y2 = float(params[i + 3])
+                x = float(params[i + 4])
+                y = float(params[i + 5])
+                coordinates.append((x1, y1))
+                coordinates.append((x2, y2))
+                coordinates.append((x, y))
+                current_position = (x, y)
     
-        command, value = token
-        
-        if command:
-            previous_command = command
-
-            if len(coordinates_after_c)!= 0:
-                    
-                curve_array = bezier_curve_points([[coordinates_after_c[i*2],coordinates_after_c[i*2+1]] for i in range(int(len(coordinates_after_c)/2))], num_points=60)
-                x_coords.extend([x[0] for x in curve_array])
-                y_coords.extend([x[1] for x in curve_array])
-
-            if command in ['C', 'c']:
-                
-
-
-                collecting = True 
-                if command == 'C':
-                    big = True
-                else:
-                    big = False
-                coordinates_after_c = []
-            else:
-                
-                collecting = False
-            if  command in ['Z', 'z']:
-                x_coords.append(x_coords[0])
-                y_coords.append(y_coords[0])
-        elif value and collecting:
-            value = float(value)
-            if XYX:
-                if big:
-                    coordinates_after_c.append(value)
-                    current_x = value
-                else:
-                    current_x = value
-                    coordinates_after_c.append(current_x+value)
-                    current_x += value
-                XYX = False
-            else: 
-                XYX = True
-                if big:
-                    coordinates_after_c.append(value)
-                    current_y = value
-                else:
-                    coordinates_after_c.append(current_y + value)
-                    current_y += value
-        elif value:
-            value = float(value)
-            if previous_command in ['M']:  
-                if XYX:  
-                    current_x = value           
-                    XYX = False
-                else:  
-                    XYX = True
-                    
-                    current_y = value
-                    previous_command = "L"
-            elif previous_command in ['L']:  
-                if XYX:  
-                    
-                    x_coords.append(value)
-                    current_x = value           
-                    
-                    XYX = False
-                else:  
-                    XYX = True
-                    
-                    y_coords.append(value)
-                    current_y = value
-                    
-            elif previous_command in ['m']:  
-                if XYX:  
-                    
-                    current_x += value
-                    XYX = False
-                else:  
-                    XYX = True
-                    previous_command = 'l'
-                    current_y += value
-            elif previous_command in ['l']:  
-                if XYX:  
-                    
-                    x_coords.append(current_x + value)
-                    current_x += value
-                    XYX = False
-                else:  
-                    XYX = True
-                    
-                    y_coords.append(current_y + value)
-                    current_y += value
-            elif previous_command == 'C' or previous_command == 'c':  
-                
-                continue
-            elif previous_command in ['h']:  # Horizontal line
-                x_coords.append(current_x + value)
-                y_coords.append(current_y)
-                current_x += value
-            elif previous_command in ['H']:  # Horizontal line
-                x_coords.append( value)
-                y_coords.append(current_y)
-                current_x = value
-            elif previous_command in ['v']:  # Vertical line
-                y_coords.append(current_y + value)
-                x_coords.append(current_x)
-                current_y += value
-            elif previous_command in ['V']:  # Vertical line
-                y_coords.append(value)
-                x_coords.append(current_x)
-                current_y = value
-    return x_coords, y_coords,current_x,current_y
+    return coordinates
 
 def extract_points_from_svg(path):
     nice_path = find_nice_path(path)
@@ -2788,11 +2315,11 @@ def extract_points_from_svg(path):
         if element.tag.endswith('path') and 'd' in element.attrib:
             d_string = element.attrib['d']
             
-            xx,yy,ccx,ccy = extract_coordinates(d_string,0,0)
-            
+            # xx,yy,ccx,ccy = extract_coordinates(d_string,0,0)
+            ass = extract_coordinates2(d_string)
             data_base.add_polyline(nice_path+f"{counter}",nice_path,0, False, True, False)
-                    
-            data_base.add_coordinates(nice_path+f"{counter}", [(x,y) for x,y in zip(xx,yy)])
+                    # [(x,y) for x,y in zip(xx,yy)]
+            data_base.add_coordinates(nice_path+f"{counter}", ass)
         elif 'x' in element.attrib and 'y' in element.attrib:
             x = float(element.attrib['x'])
             y = float(element.attrib['y'])
@@ -3253,6 +2780,37 @@ def potent_callback():
     data_base.add_polyline(f"potent1","potent",0, False, True, False)
     data_base.add_coordinates(f"potent1", get_circle_points(center=(-92,20),radius=3.5,begin_angle=0,end_angle=360))
     redraw()
+
+
+
+
+def load_all():
+    
+    tag0 = data_base.get_tag_where('color=0')
+    tag1 = data_base.get_tag_where('color=1')
+    tag2 = data_base.get_tag_where('color=2')
+    tag3 = data_base.get_tag_where('color=3')
+    tag4 = data_base.get_tag_where('color=4')
+
+    gcode_lines = get_gcode_from_tags([tag0,tag1,tag2,tag3,tag4])
+    
+    dpg.set_value('multiline_input',"\n".join(gcode_lines))
+
+def load_sel():
+    
+    tag0 = data_base.get_tag_where('color=0 AND active=True')
+    tag1 = data_base.get_tag_where('color=1 AND active=True')
+    tag2 = data_base.get_tag_where('color=2 AND active=True')
+    tag3 = data_base.get_tag_where('color=3 AND active=True')
+    tag4 = data_base.get_tag_where('color=4 AND active=True')
+
+    gcode_lines = get_gcode_from_tags([tag0,tag1,tag2,tag3,tag4])
+    
+    dpg.set_value('multiline_input',"\n".join(gcode_lines))
+
+
+
+
 def oled_callback(): 
     dpg.add_button(label="oled",parent='butonss',tag="oled",callback=active_but)
     data_base.add_polyline(f"oled1","oled",0, False, True, False)
@@ -3406,6 +2964,41 @@ def add_circle_to_plot(center=(0,0),radius=1,begin_angle=0,end_angle=360,name='n
 def get_circle_points(center=(0,0),radius=1,begin_angle=0,end_angle=360):
     angles = np.linspace(np.deg2rad(begin_angle), np.deg2rad(end_angle), 40)
     points = [(radius * np.cos(angle) + center[0], radius * np.sin(angle)+ center[1]) for angle in angles]
+    return points
+def rotate_point(point, angle, center):
+    angle_rad = math.radians(angle)
+    cos_angle = math.cos(angle_rad)
+    sin_angle = math.sin(angle_rad)
+
+    # Смещение точки относительно центра
+    translated_x = point[0] - center[0]
+    translated_y = point[1] - center[1]
+
+    # Применение вращения
+    rotated_x = translated_x * cos_angle - translated_y * sin_angle + center[0]
+    rotated_y = translated_x * sin_angle + translated_y * cos_angle + center[1]
+
+    return (rotated_x, rotated_y)
+
+def get_rectangle_points_from_center(width,height,center=(0,0),angle=0):
+    points = [(center[0]-width/2,center[1]-height/2),
+            (center[0]-width/2,center[1]+height/2),
+            (center[0]+width/2,center[1]+height/2),
+            (center[0]+width/2,center[1]-height/2),
+            (center[0]-width/2,center[1]-height/2)]
+    if angle != 0:
+        points = [rotate_point(point, angle, center) for point in points]
+        
+    return points
+def get_rectangle_points_from_left_bot(width,height,lb=(0,0),angle=0):
+    points = [(lb[0],lb[1]),
+            (lb[0]+width,lb[1]),
+            (lb[0]+width,lb[1]+height),
+            (lb[0],lb[1]+height),
+            (lb[0],lb[1])]
+    if angle != 0:
+        points = [rotate_point(point, angle, lb) for point in points]
+        
     return points
 def place_in_a_circle_callback():
     centerx = float(dpg.get_value('centerxplace'))
@@ -3692,6 +3285,27 @@ def test5():
     redraw()
 
 
+def testvlad1():
+
+    # dpg.add_button(label="vlad1",parent='butonss',tag="vlad1",callback=active_but)
+    dpg.add_button(label="vlad2",parent='butonss',tag="vlad2",callback=active_but)
+    # dpg.add_button(label="vlad3",parent='butonss',tag="vlad3",callback=active_but)
+    
+    # data_base.add_coordinates(f"vlad11", [(4.02, 0.0), (19.02, 0.0), (19.03, 0.0), (19.04, 0.01), (19.04, 0.02), (19.04, 4.0), (27.0, 4.0), (27.0, 0.02), (27.0, 0.01), (27.01, 0.0), (27.02, 0.0), (35.02, 0.0), (35.03, 0.0), (35.04, 0.01), (35.04, 0.02), (35.04, 4.0), (43.0, 4.0), (43.0, 0.02), (43.0, 0.01), (43.01, 0.0), (43.02, 0.0), (51.02, 0.0), (51.03, 0.0), (51.04, 0.01), (51.04, 0.02), (51.04, 4.0), (59.0, 4.0), (59.0, 0.02), (59.0, 0.01), (59.01, 0.0), (59.02, 0.0), (67.02, 0.0), (67.03, 0.0), (67.04, 0.01), (67.04, 0.02), (67.04, 4.0), (75.0, 4.0), (75.0, 0.02), (75.0, 0.01), (75.01, 0.0), (75.02, 0.0), (83.02, 0.0), (83.03, 0.0), (83.04, 0.01), (83.04, 0.02), (83.04, 4.0), (91.0, 4.0), (91.0, 0.02), (91.0, 0.01), (91.01, 0.0), (91.02, 0.0), (99.02, 0.0), (99.03, 0.0), (99.04, 0.01), (99.04, 0.02), (99.04, 4.0), (107.0, 4.0), (107.0, 0.02), (107.0, 0.01), (107.01, 0.0), (107.02, 0.0), (115.02, 0.0), (115.03, 0.0), (115.04, 0.01), (115.04, 0.02), (115.04, 4.0), (123.0, 4.0), (123.0, 0.02), (123.0, 0.01), (123.01, 0.0), (123.02, 0.0), (131.02, 0.0), (131.03, 0.0), (131.04, 0.01), (131.04, 0.02), (131.04, 4.0), (139.0, 4.0), (139.0, 0.02), (139.0, 0.01), (139.01, 0.0), (139.02, 0.0), (147.02, 0.0), (147.03, 0.0), (147.04, 0.01), (147.04, 0.02), (147.04, 4.0), (155.0, 4.0), (155.0, 0.02), (155.0, 0.01), (155.01, 0.0), (155.02, 0.0), (163.02, 0.0), (163.03, 0.0), (163.04, 0.01), (163.04, 0.02), (163.04, 4.0), (171.0, 4.0), (171.0, 0.02), (171.0, 0.01), (171.01, 0.0), (171.02, 0.0), (186.02, 0.0), (186.03, 0.0), (186.04, 0.01), (186.04, 0.02), (186.04, 8.5), (190.02, 8.5), (190.03, 8.5), (190.04, 8.51), (190.04, 8.52), (190.04, 16.52), (190.04, 16.53), (190.03, 16.54), (190.02, 16.54), (186.04, 16.54), (186.04, 24.5), (190.02, 24.5), (190.03, 24.5), (190.04, 24.51), (190.04, 24.52), (190.04, 32.52), (190.04, 32.53), (190.03, 32.54), (190.02, 32.54), (186.04, 32.54), (186.04, 40.5), (190.02, 40.5), (190.03, 40.5), (190.04, 40.51), (190.04, 40.52), (190.04, 48.52), (190.04, 48.53), (190.03, 48.54), (190.02, 48.54), (186.04, 48.54), (186.04, 56.5), (190.02, 56.5), (190.03, 56.5), (190.04, 56.51), (190.04, 56.52), (190.04, 64.52), (190.04, 64.53), (190.03, 64.54), (190.02, 64.54), (186.04, 64.54), (186.04, 73.02), (186.04, 73.03), (186.03, 73.04), (186.02, 73.04), (4.02, 73.04), (4.01, 73.04), (4.0, 73.03), (4.0, 73.02), (4.0, 64.54), (0.02, 64.54), (0.01, 64.54), (0.0, 64.53), (0.0, 64.52), (0.0, 56.52), (0.0, 56.51), (0.01, 56.5), (0.02, 56.5), (4.0, 56.5), (4.0, 48.54), (0.02, 48.54), (0.01, 48.54), (0.0, 48.53), (0.0, 48.52), (0.0, 40.52), (0.0, 40.51), (0.01, 40.5), (0.02, 40.5), (4.0, 40.5), (4.0, 32.54), (0.02, 32.54), (0.01, 32.54), (0.0, 32.53), (0.0, 32.52), (0.0, 24.52), (0.0, 24.51), (0.01, 24.5), (0.02, 24.5), (4.0, 24.5), (4.0, 16.54), (0.02, 16.54), (0.01, 16.54), (0.0, 16.53), (0.0, 16.52), (0.0, 8.52), (0.0, 8.51), (0.01, 8.5), (0.02, 8.5), (4.0, 8.5), (4.0, 0.02), (4.0, 0.01), (4.01, 0.0), (4.02, 0.0)])
+    # data_base.add_polyline(f"vlad11","vlad1",0, False, True, False)
+    data_base.add_coordinates(f"vlad12", get_circle_points(center=(46+15+3,70.04),radius=3,begin_angle=90,end_angle=180) + get_circle_points(center=(46,70.04),radius=15,begin_angle=360,end_angle=180) + get_circle_points(center=(46-15-3,70.04),radius=3,begin_angle=0,end_angle=90)+[(0.01, 73.04), (0.0, 73.03), (0.0, 73.02), (0.0, 64.52), (0.0, 64.51), (0.01, 64.5), (0.02, 64.5), (4.0, 64.5), (4.0, 56.54), (0.02, 56.54), (0.01, 56.54), (0.0, 56.53), (0.0, 56.52), (0.0, 48.52), (0.0, 48.51), (0.01, 48.5), (0.02, 48.5), (4.0, 48.5), (4.0, 40.54), (0.02, 40.54), (0.01, 40.54), (0.0, 40.53), (0.0, 40.52), (0.0, 32.52), (0.0, 32.51), (0.01, 32.5), (0.02, 32.5), (4.0, 32.5), (4.0, 24.54), (0.02, 24.54), (0.01, 24.54), (0.0, 24.53), (0.0, 24.52), (0.0, 16.52), (0.0, 16.51), (0.01, 16.5), (0.02, 16.5), (4.0, 16.5), (4.0, 8.54), (0.02, 8.54), (0.01, 8.54), (0.0, 8.53), (0.0, 8.52), (0.0, 0.02), (0.0, 0.01), (0.01, 0.0), (0.02, 0.0),(4.02, 0.0), (18.02, 0.0), (18.03, 0.0), (18.04, 0.01), (18.04, 0.02), (18.04, 4.0), (26.0, 4.0), (26.0, 0.02), (26.0, 0.01), (26.01, 0.0), (26.02, 0.0), (34.02, 0.0), (34.03, 0.0), (34.04, 0.01), (34.04, 0.02), (34.04, 4.0), (42.0, 4.0), (42.0, 0.02), (42.0, 0.01), (42.01, 0.0), (42.02, 0.0), (50.02, 0.0), (50.03, 0.0), (50.04, 0.01), (50.04, 0.02), (50.04, 4.0), (58.0, 4.0), (58.0, 0.02), (58.0, 0.01), (58.01, 0.0), (58.02, 0.0), (66.02, 0.0), (66.03, 0.0), (66.04, 0.01), (66.04, 0.02), (66.04, 4.0), (74.0, 4.0), (74.0, 0.02), (74.0, 0.01), (74.01, 0.0), (74.02, 0.0), (88.02, 0.0), (92.02, 0.0), (92.03, 0.0), (92.04, 0.01), (92.04, 0.02), (92.04, 8.52), (92.04, 8.53), (92.03, 8.54), (92.02, 8.54), (88.04, 8.54), (88.04, 16.5), (92.02, 16.5), (92.03, 16.5), (92.04, 16.51), (92.04, 16.52), (92.04, 24.52), (92.04, 24.53), (92.03, 24.54), (92.02, 24.54), (88.04, 24.54), (88.04, 32.5), (92.02, 32.5), (92.03, 32.5), (92.04, 32.51), (92.04, 32.52), (92.04, 40.52), (92.04, 40.53), (92.03, 40.54), (92.02, 40.54), (88.04, 40.54), (88.04, 48.5), (92.02, 48.5), (92.03, 48.5), (92.04, 48.51), (92.04, 48.52), (92.04, 56.52), (92.04, 56.53), (92.03, 56.54), (92.02, 56.54), (88.04, 56.54), (88.04, 64.5), (92.02, 64.5), (92.03, 64.5), (92.04, 64.51), (92.04, 64.52), (92.04, 73.02), (92.04, 73.03), (92.03, 73.04), (64, 73.04)])
+    data_base.add_polyline(f"vlad12","vlad2",0, False, True, False)
+    # data_base.add_coordinates(f"vlad13",[(186.04, 88.02), (186.04, 74.04), (190.02, 74.04), (190.03, 74.04), (190.04, 74.03), (190.04, 74.02), (190.04, 66.02), (190.04, 66.01), (190.03, 66.0), (190.02, 66.0), (186.04, 66.0), (186.04, 58.04), (190.02, 58.04), (190.03, 58.04), (190.04, 58.03), (190.04, 58.02), (190.04, 50.02), (190.04, 50.01), (190.03, 50.0), (190.02, 50.0), (186.04, 50.0), (186.04, 42.04), (190.02, 42.04), (190.03, 42.04), (190.04, 42.03), (190.04, 42.02), (190.04, 34.02), (190.04, 34.01), (190.03, 34.0), (190.02, 34.0), (186.04, 34.0), (186.04, 26.04), (190.02, 26.04), (190.03, 26.04), (190.04, 26.03), (190.04, 26.02), (190.04, 18.02), (190.04, 18.01), (190.03, 18.0), (190.02, 18.0), (186.04, 18.0), (186.04, 4.02), (186.04, 4.01), (186.03, 4.0), (186.02, 4.0), (171.04, 4.0), (171.04, 0.02), (171.04, 0.01), (171.03, 0.0), (171.02, 0.0), (163.02, 0.0), (163.01, 0.0), (163.0, 0.01), (163.0, 0.02), (163.0, 4.0), (155.04, 4.0), (155.04, 0.02), (155.04, 0.01), (155.03, 0.0), (155.02, 0.0), (147.02, 0.0), (147.01, 0.0), (147.0, 0.01), (147.0, 0.02), (147.0, 4.0), (139.04, 4.0), (139.04, 0.02), (139.04, 0.01), (139.03, 0.0), (139.02, 0.0), (131.02, 0.0), (131.01, 0.0), (131.0, 0.01), (131.0, 0.02), (131.0, 4.0), (123.04, 4.0), (123.04, 0.02), (123.04, 0.01), (123.03, 0.0), (123.02, 0.0), (115.02, 0.0), (115.01, 0.0), (115.0, 0.01), (115.0, 0.02), (115.0, 4.0), (107.04, 4.0), (107.04, 0.02), (107.04, 0.01), (107.03, 0.0), (107.02, 0.0), (99.02, 0.0), (99.01, 0.0), (99.0, 0.01), (99.0, 0.02), (99.0, 4.0), (91.04, 4.0), (91.04, 0.02), (91.04, 0.01), (91.03, 0.0), (91.02, 0.0), (83.02, 0.0), (83.01, 0.0), (83.0, 0.01), (83.0, 0.02), (83.0, 4.0), (75.04, 4.0), (75.04, 0.02), (75.04, 0.01), (75.03, 0.0), (75.02, 0.0), (67.02, 0.0), (67.01, 0.0), (67.0, 0.01), (67.0, 0.02), (67.0, 4.0), (59.04, 4.0), (59.04, 0.02), (59.04, 0.01), (59.03, 0.0), (59.02, 0.0), (51.02, 0.0), (51.01, 0.0), (51.0, 0.01), (51.0, 0.02), (51.0, 4.0), (43.04, 4.0), (43.04, 0.02), (43.04, 0.01), (43.03, 0.0), (43.02, 0.0), (35.02, 0.0), (35.01, 0.0), (35.0, 0.01), (35.0, 0.02), (35.0, 4.0), (27.04, 4.0), (27.04, 0.02), (27.04, 0.01), (27.03, 0.0), (27.02, 0.0), (19.02, 0.0), (19.01, 0.0), (19.0, 0.01), (19.0, 0.02), (19.0, 4.0), (4.02, 4.0), (4.01, 4.0), (4.0, 4.01), (4.0, 4.02), (4.0, 18.0), (0.02, 18.0), (0.01, 18.0), (0.0, 18.01), (0.0, 18.02), (0.0, 26.02), (0.0, 26.03), (0.01, 26.04), (0.02, 26.04), (4.0, 26.04), (4.0, 34.0), (0.02, 34.0), (0.01, 34.0), (0.0, 34.01), (0.0, 34.02), (0.0, 42.02), (0.0, 42.03), (0.01, 42.04), (0.02, 42.04), (4.0, 42.04), (4.0, 50.0), (0.02, 50.0), (0.01, 50.0), (0.0, 50.01), (0.0, 50.02), (0.0, 58.02), (0.0, 58.03), (0.01, 58.04), (0.02, 58.04), (4.0, 58.04), (4.0, 66.0), (0.02, 66.0), (0.01, 66.0), (0.0, 66.01), (0.0, 66.02), (0.0, 74.02), (0.0, 74.03), (0.01, 74.04), (0.02, 74.04), (4.0, 74.04), (4.0, 88.02), (4.0, 88.03), (4.01, 88.04), (4.02, 88.04), (19.0, 88.04), (19.0, 92.02), (19.0, 92.03), (19.01, 92.04), (19.02, 92.04), (27.02, 92.04), (27.03, 92.04), (27.04, 92.03), (27.04, 92.02), (27.04, 88.04), (35.0, 88.04), (35.0, 92.02), (35.0, 92.03), (35.01, 92.04), (35.02, 92.04), (43.02, 92.04), (43.03, 92.04), (43.04, 92.03), (43.04, 92.02), (43.04, 88.04), (51.0, 88.04), (51.0, 92.02), (51.0, 92.03), (51.01, 92.04), (51.02, 92.04), (59.02, 92.04), (59.03, 92.04), (59.04, 92.03), (59.04, 92.02), (59.04, 88.04), (67.0, 88.04), (67.0, 92.02), (67.0, 92.03), (67.01, 92.04), (67.02, 92.04), (75.02, 92.04), (75.03, 92.04), (75.04, 92.03), (75.04, 92.02), (75.04, 88.04), (83.0, 88.04), (83.0, 92.02), (83.0, 92.03), (83.01, 92.04), (83.02, 92.04), (91.02, 92.04), (91.03, 92.04), (91.04, 92.03), (91.04, 92.02), (91.04, 88.04), (99.0, 88.04), (99.0, 92.02), (99.0, 92.03), (99.01, 92.04), (99.02, 92.04), (107.02, 92.04), (107.03, 92.04), (107.04, 92.03), (107.04, 92.02), (107.04, 88.04), (115.0, 88.04), (115.0, 92.02), (115.0, 92.03), (115.01, 92.04), (115.02, 92.04), (123.02, 92.04), (123.03, 92.04), (123.04, 92.03), (123.04, 92.02), (123.04, 88.04), (131.0, 88.04), (131.0, 92.02), (131.0, 92.03), (131.01, 92.04), (131.02, 92.04), (139.02, 92.04), (139.03, 92.04), (139.04, 92.03), (139.04, 92.02), (139.04, 88.04), (147.0, 88.04), (147.0, 92.02), (147.0, 92.03), (147.01, 92.04), (147.02, 92.04), (155.02, 92.04), (155.03, 92.04), (155.04, 92.03), (155.04, 92.02), (155.04, 88.04), (163.0, 88.04), (163.0, 92.02), (163.0, 92.03), (163.01, 92.04), (163.02, 92.04), (171.02, 92.04), (171.03, 92.04), (171.04, 92.03), (171.04, 92.02), (171.04, 88.04), (186.02, 88.04), (186.03, 88.04), (186.04, 88.03), (186.04, 88.02)])
+    # data_base.add_polyline(f"vlad13","vlad3",0, False, True, False)
+    
+    # data_base.add_coordinates(f"vlad122",get_circle_points(center=(46-15-3,70.04),radius=3,begin_angle=90,end_angle=0) + get_circle_points(center=(46,70.04),radius=15,begin_angle=180,end_angle=360) + get_circle_points(center=(46+15+3,70.04),radius=3,begin_angle=180,end_angle=90))
+
+    # data_base.add_coordinates(f"vlad122",get_rectangle_points_from_left_bot(width=10,height=4,lb=(16,30)))
+    # data_base.add_coordinates(f"vlad123",get_rectangle_points_from_left_bot(width=10,height=4,lb=(66,30)))
+
+    # data_base.add_polyline(f"vlad122","vlad2",0, False, True, False)
+    # data_base.add_polyline(f"vlad123","vlad2",0, False, True, False)
+    redraw()
 
 
 
@@ -3861,9 +3475,9 @@ def test_callback():
     l = 73
     L = 106
     d = 12-0.424
-    angle_degrees = 45.3
+    angle_degrees = 45.295
 
-    # y = ((d * l / np.sin(np.deg2rad(angle_degrees))) + (39 * l))/(L-l)
+    y = ((d * l / np.tan(np.deg2rad(angle_degrees))) + (B * l))/(L-l)
     y = l * 360 / 2/np.pi/angle_degrees
     print(y)
    
@@ -4361,6 +3975,7 @@ with dpg.viewport_menu_bar():
         dpg.add_menu_item(label="buffer(-0.5)", callback=bufferm)
         dpg.add_menu_item(label="buffer(+0.5)", callback=bufferp)
         dpg.add_menu_item(label="Optimize", callback=optimize_)
+        dpg.add_menu_item(label="Print coords selected", callback=print_coords)
     with dpg.menu(label="Geom"):
         dpg.add_menu_item(label="Circle", callback=lambda:dpg.configure_item("CIRCLE", show=True))
         dpg.add_menu_item(label="Rectangle", callback=lambda:dpg.configure_item("RECTANGLEFROMCENTER", show=True))
@@ -4381,15 +3996,19 @@ with dpg.viewport_menu_bar():
         dpg.add_menu_item(label="zapolnit dlya lazera", callback=kam_callback)
         dpg.add_menu_item(label="krysha nalivatora", callback=test2)
         dpg.add_menu_item(label="pod stakan", callback=test3)
-
+        dpg.add_menu_item(label="ruchka", callback=test10)
         dpg.add_menu_item(label="bot", callback=test4)
         dpg.add_menu_item(label="nice", callback=test5)
+        dpg.add_menu_item(label="vlad", callback=testvlad1)
 
     with dpg.menu(label="Widget Items"):
         dpg.add_checkbox(label="Pick Me", callback=print_me)
         dpg.add_button(label="Press Me", callback=print_me)
         dpg.add_color_picker(label="Color Me", callback=print_me)      
-
+    with dpg.menu(label="G-Code"):
+        dpg.add_menu_item(label="Load All", callback=load_all)
+        dpg.add_menu_item(label="Load Selected", callback=load_sel)
+        
 
 with dpg.window(pos=(0,0),width=900, height=775,tag='papa'):
     
@@ -4469,7 +4088,15 @@ with dpg.window(pos=(0,0),width=900, height=775,tag='papa'):
 
 
         with dpg.group():
-            dpg.add_input_text(multiline=True, label="", default_value="", tag="multiline_input", readonly=False,width=300,height=600)
+            dpg.add_spacer()
+            dpg.add_spacer()
+            dpg.add_spacer()
+            dpg.add_text("completed")
+            dpg.add_input_text(multiline=True, label="", default_value="", tag="multiline_input2",width=300,height=250)
+            dpg.add_text("prepared")
+            dpg.add_input_text(multiline=True, label="", default_value="", tag="multiline_input", readonly=False,width=300,height=250)
+            
+
             dpg.add_checkbox(label="erase old",default_value=True,tag='eraseold')
             with dpg.group(horizontal=True):
                 
@@ -4484,15 +4111,17 @@ with dpg.window(pos=(0,0),width=900, height=775,tag='papa'):
                 dpg.add_checkbox(label="rotate",default_value=False,tag='rotate',callback=rasberitesb)
                 dpg.add_input_text( label="", default_value="", tag="rotate_angle", readonly=False,scientific=True,width=50)
                 dpg.add_button(label='rotate',tag='r',callback=call_rot)
+        
+
 with dpg.item_handler_registry() as registry:
     dpg.add_item_clicked_handler(button=dpg.mvMouseButton_Right, callback=plot_mouse_click_callback)
 dpg.bind_item_handler_registry(plot, registry)
 dpg.set_primary_window("papa", True)
 
-dpg.add_window(pos=(900,0),width=200, height=525,tag='butonss',label='lines')
+dpg.add_window(pos=(925,0),width=200, height=525,tag='butonss',label='lines')
 
 
-with dpg.window(pos=(900,544),width=200, height=200,tag='pult',label=''):
+with dpg.window(pos=(925,544),width=200, height=200,tag='pult',label=''):
     
         
     with dpg.group(horizontal=True,tag='forcombo'):
@@ -4513,7 +4142,7 @@ with dpg.window(pos=(900,544),width=200, height=200,tag='pult',label=''):
         dpg.add_button(label='v',width=40,height=40,callback=calback_but8)
         dpg.add_button(label='arc',width=40,height=40,callback=calback_but9)
 
-dpg.create_viewport(width=1115, height=825, title="GCODE IDE")
+dpg.create_viewport(width=1145, height=825, title="GCODE IDE")
 dpg.setup_dearpygui()
 dpg.show_viewport()
 
