@@ -1,6 +1,5 @@
 import serial
 import time
-
 class LaserController:
     def __init__(self, port, baudrate=115200, timeout=1):
         self.port = port
@@ -16,13 +15,15 @@ class LaserController:
             time.sleep(2)
             self.connection.flushInput()
             print(f"✅ Подключено к {self.port}")
+            return True
         except Exception as e:
             print(f"❌ Ошибка подключения: {e}")
+            return False
 
     def send_command(self, gcode):
         if not self.connection or not self.connection.is_open:
             print("Соединение не установлено!")
-            return None
+            return False
 
         # Очищаем команду и добавляем символ переноса строки
         full_command = gcode.strip() + '\n'
@@ -44,26 +45,3 @@ class LaserController:
         if self.connection:
             self.connection.close()
             print("🔌 Соединение закрыто")
-
-
-# laser = LaserController(port='COM3')
-# laser.connect()
-
-# commands = [
-#     "$X",          # Разблокировать (Unlock) если нужно
-#     "G21",         # Установка метрической системы (мм)
-#     "G90",         # Абсолютные координаты
-#     "G0 X10 Y10",  # Быстрое перемещение
-#     "M3 S500",     # Включить лазер (мощность 500)
-#     "G1 X30 F1000",# Рез/движение по линии со скоростью 1000
-#     "M5",          # Выключить лазер
-#     "G0 X0 Y0"     # Домой
-# ]
-
-# for cmd in commands:
-#     success = laser.send_command(cmd)
-#     if not success:
-#         print("Прерывание цикла из-за ошибки.")
-#         break
-
-# laser.close()

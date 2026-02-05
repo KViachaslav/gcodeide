@@ -30,7 +30,7 @@ from scipy.interpolate import splprep, splev,splrep,BSpline
 from shapely.geometry import LineString, Point, GeometryCollection
 from shapely.ops import split
 from shapely.geometry import box
-
+from laser import LaserController
 def active_but(sender):
     state = data_base.get_polyline_where(f"big_tag='{sender}'")
     if place_in_a_circle:
@@ -875,7 +875,7 @@ def get_gcode_from_tags(tags):
     h = 1
     curr_pos = [0,0]
     for tag in tags:
-        tag_lines = []
+        tag_lines = ['G90','G21','M4 S0']
         power = dpg.get_value(f"{h}_value")
         speed = dpg.get_value(f"{h}1_value")
         repeat = int(dpg.get_value(f"{h}11_value"))
@@ -2670,43 +2670,21 @@ def check_com_callback():
     
 def load_gcode_callback():
 
-
-    PORT = dpg.get_value('com_tag') 
-    BAUDRATE = 115200
-
-
     gcode_commands = dpg.get_value('multiline_input').split('\n')
     
     try:
        
-        ser = serial.Serial(PORT, BAUDRATE, timeout=1)
-        time.sleep(2)  
-
-        ser.write(b'\r\n\r\n')
-        time.sleep(2)
-        ser.flushInput() 
-
-        print("Подключено к GRBL.")
-
         for line in gcode_commands:
             if line != '':
-                l = line.strip()
-                print(f"Отправка: {l}")
-                ser.write((l + '\n').encode('utf-8')) 
-
-                grbl_out = ser.readline().decode('utf-8').strip()
-                print(f"Ответ GRBL: {grbl_out}")
-
-        print("Отправка G-code завершена.")
+                if laser.send_command(line):
+                    dpg.set_value("multiline_input2",dpg.get_value("multiline_input2")+f"\nyes {line}")
+                else:
+                    dpg.set_value("multiline_input2",dpg.get_value("multiline_input2")+f"\nno  {line}")
 
     except serial.SerialException as e:
         print(f"Ошибка последовательного порта: {e}")
 
-    finally:
-        if 'ser' in locals() and ser.is_open:
-            ser.close()
-            print("Порт закрыт.")
-
+    
 
 def calback_but1():
     gcode_l = 'G28\n'
@@ -2775,11 +2753,6 @@ def izgib_callback():
             data_base.add_coordinates(f"{col}_{i+numlins}", [(col*w+w/2+a,mas2[i*2]),(col*w+w/2+a,mas2[i*2+1])])
     
     redraw()
-def potent_callback():
-    dpg.add_button(label="potent",parent='butonss',tag="potent",callback=active_but)
-    data_base.add_polyline(f"potent1","potent",0, False, True, False)
-    data_base.add_coordinates(f"potent1", get_circle_points(center=(-92,20),radius=3.5,begin_angle=0,end_angle=360))
-    redraw()
 
 
 
@@ -2811,11 +2784,6 @@ def load_sel():
 
 
 
-def oled_callback(): 
-    dpg.add_button(label="oled",parent='butonss',tag="oled",callback=active_but)
-    data_base.add_polyline(f"oled1","oled",0, False, True, False)
-    data_base.add_coordinates(f"oled1", [(-100.5,32.5),(-100.5,7.5),(-83.5,7.5),(-83.5,32.5),(-100.5,32.5)])
-    redraw()
 def konus_callback():
     dpg.configure_item("KONUS", show=False)
     l = float(dpg.get_value('l'))
@@ -3199,6 +3167,8 @@ def test4():
 
 def get_schip_points(center,width,height):
     return [(center[0]-width/2,center[1]),(center[0]-width/2,center[1]+height),(center[0]+width/2,center[1]+height),(center[0]+width/2,center[1])]
+def get_bok_schip_points(center,width,height):
+    return [(center[0],center[1]+ width/2),(center[0]+height,center[1]+ width/2),(center[0]+height,center[1]- width/2),(center[0],center[1]- width/2)]
 
 def test11():
     dpg.add_button(label="CNC",parent='butonss',tag="CNC",callback=active_but)
@@ -3271,16 +3241,76 @@ def test11():
     data_base.add_coordinates(f"2a4", get_rectangle_points_from_center(width=6,height=20,center=(141,-20)))
     data_base.add_polyline(f"2a4","CNC",0, False, True, False)
 
+    data_base.add_coordinates(f"1nema17", get_circle_points(center=(0+15.5,160-15.5),radius=1.5))
+    data_base.add_polyline(f"1nema17","CNC",0, False, True, False) 
+    data_base.add_coordinates(f"2nema17", get_circle_points(center=(0+15.5,160+15.5),radius=1.5))
+    data_base.add_polyline(f"2nema17","CNC",0, False, True, False)
+    data_base.add_coordinates(f"3nema17", get_circle_points(center=(0-15.5,160+15.5),radius=1.5))
+    data_base.add_polyline(f"3nema17","CNC",0, False, True, False)
+    data_base.add_coordinates(f"4nema17", get_circle_points(center=(0-15.5,160-15.5),radius=1.5))
+    data_base.add_polyline(f"4nema17","CNC",0, False, True, False)
+    data_base.add_coordinates(f"5nema17", get_circle_points(center=(0,160),radius=10))
+    data_base.add_polyline(f"5nema17","CNC",0, False, True, False)
+
+
+
+
+
+    data_base.add_coordinates(f"napr", get_circle_points(center=(32,60),radius=6))
+    data_base.add_polyline(f"napr","ctena1",0, False, True, False)
+    data_base.add_coordinates(f"napr1", get_circle_points(center=(232,60),radius=6))
+    data_base.add_polyline(f"napr1","ctena1",0, False, True, False)
+
+    data_base.add_coordinates(f"1nema172", get_circle_points(center=(132+15.5,60-15.5),radius=1.5))
+    data_base.add_polyline(f"1nema172","ctena1",0, False, True, False) 
+    data_base.add_coordinates(f"2nema172", get_circle_points(center=(132+15.5,60+15.5),radius=1.5))
+    data_base.add_polyline(f"2nema172","ctena1",0, False, True, False)
+    data_base.add_coordinates(f"3nema172", get_circle_points(center=(132-15.5,60+15.5),radius=1.5))
+    data_base.add_polyline(f"3nema172","ctena1",0, False, True, False)
+    data_base.add_coordinates(f"4nema172", get_circle_points(center=(132-15.5,60-15.5),radius=1.5))
+    data_base.add_polyline(f"4nema172","ctena1",0, False, True, False)
+    data_base.add_coordinates(f"5nema172", get_circle_points(center=(132,60),radius=10))
+    data_base.add_polyline(f"5nema172","ctena1",0, False, True, False)
+
     dpg.add_button(label="ctena1",parent='butonss',tag="ctena1",callback=active_but)
     data_base.add_coordinates(f"ctena11", [(0,10),(12,10),(12,0),(252,0),(252,10),(264,10),(264,30),(252,30),(252,50),(264,50),(264,70),(252,70),(252,80),(12,80),(12,70),(0,70),(0,50),(12,50),(12,30),(0,30),(0,10)])
     data_base.add_polyline(f"ctena11","ctena1",0, False, True, False)
+
+    data_base.add_coordinates(f"ct11", get_rectangle_points_from_center(width=20,height=6,center=(32,7)))
+    data_base.add_polyline(f"ct11","ctena1",0, False, True, False)
+    data_base.add_coordinates(f"ct12", get_rectangle_points_from_center(width=20,height=6,center=(72,7)))
+    data_base.add_polyline(f"ct12","ctena1",0, False, True, False)
+    data_base.add_coordinates(f"ct13", get_rectangle_points_from_center(width=20,height=6,center=(112,7)))
+    data_base.add_polyline(f"ct13","ctena1",0, False, True, False)
+    data_base.add_coordinates(f"ct14", get_rectangle_points_from_center(width=20,height=6,center=(152,7)))
+    data_base.add_polyline(f"ct14","ctena1",0, False, True, False)
+    data_base.add_coordinates(f"ct15", get_rectangle_points_from_center(width=20,height=6,center=(192,7)))
+    data_base.add_polyline(f"ct15","ctena1",0, False, True, False)
+    data_base.add_coordinates(f"ct16", get_rectangle_points_from_center(width=20,height=6,center=(232,7)))
+    data_base.add_polyline(f"ct16","ctena1",0, False, True, False)
+
+
+    data_base.add_coordinates(f"2ct11", get_rectangle_points_from_center(width=20,height=6,center=(32,37)))
+    data_base.add_polyline(f"2ct11","ctena1",0, False, True, False)
+    data_base.add_coordinates(f"2ct12", get_rectangle_points_from_center(width=20,height=6,center=(72,37)))
+    data_base.add_polyline(f"2ct12","ctena1",0, False, True, False)
+    data_base.add_coordinates(f"2ct13", get_rectangle_points_from_center(width=20,height=6,center=(112,37)))
+    data_base.add_polyline(f"2ct13","ctena1",0, False, True, False)
+    data_base.add_coordinates(f"2ct14", get_rectangle_points_from_center(width=20,height=6,center=(152,37)))
+    data_base.add_polyline(f"2ct14","ctena1",0, False, True, False)
+    data_base.add_coordinates(f"2ct15", get_rectangle_points_from_center(width=20,height=6,center=(192,37)))
+    data_base.add_polyline(f"2ct15","ctena1",0, False, True, False)
+    data_base.add_coordinates(f"2ct16", get_rectangle_points_from_center(width=20,height=6,center=(232,37)))
+    data_base.add_polyline(f"2ct16","ctena1",0, False, True, False)
+
+
 
     dpg.add_button(label="ctena3",parent='butonss',tag="ctena3",callback=active_but)
     data_base.add_coordinates(f"ctena31", [(0,10),(12,10),(12,0),(252,0),(252,10),(264,10),(264,30),(252,30),(252,50),(264,50),(264,70),(252,70),(252,90),(264,90),(264,110),(252,110),(252,120),(12,120),(12,110),(0,110),(0,90),(12,90),(12,70),(0,70),(0,50),(12,50),(12,30),(0,30),(0,10)])
     data_base.add_polyline(f"ctena31","ctena3",0, False, True, False)
 
     dpg.add_button(label="base1",parent='butonss',tag="base1",callback=active_but)
-    data_base.add_coordinates(f"base11",get_schip_points(center=(-120,0),width=20,height=12) + get_schip_points(center=(-80,0),width=20,height=12)+get_schip_points(center=(-40,0),width=20,height=12)+ get_schip_points(center=(0,0),width=20,height=12)+ get_schip_points(center=(40,0),width=20,height=12)+ get_schip_points(center=(80,0),width=20,height=12)+ get_schip_points(center=(120,0),width=20,height=12) + [(138,0)] + [(138,-240)] + get_schip_points(center=(120,-240),width=-20,height=-12)+ get_schip_points(center=(80,-240),width=-20,height=-12)+ get_schip_points(center=(40,-240),width=-20,height=-12)+ get_schip_points(center=(0,-240),width=-20,height=-12)+ get_schip_points(center=(-40,-240),width=-20,height=-12)+ get_schip_points(center=(-80,-240),width=-20,height=-12)+ get_schip_points(center=(-120,-240),width=-20,height=-12) + [(-138,-240)] + [(-138,0),(-130,0)])
+    data_base.add_coordinates(f"base11",[(-138,0)] + get_schip_points(center=(-120,0),width=20,height=12) + get_schip_points(center=(-80,0),width=20,height=12)+get_schip_points(center=(-40,0),width=20,height=12)+ get_schip_points(center=(0,0),width=20,height=12)+ get_schip_points(center=(40,0),width=20,height=12)+ get_schip_points(center=(80,0),width=20,height=12)+ get_schip_points(center=(120,0),width=20,height=12) + [(138,0)] + get_bok_schip_points(center=(138,-20),width=20,height=6)+ get_bok_schip_points(center=(138,-60),width=20,height=6)+ get_bok_schip_points(center=(138,-100),width=20,height=6)+ get_bok_schip_points(center=(138,-140),width=20,height=6)+ get_bok_schip_points(center=(138,-180),width=20,height=6)+ get_bok_schip_points(center=(138,-220),width=20,height=6) + [(138,-240)] + get_schip_points(center=(120,-240),width=-20,height=-12)+ get_schip_points(center=(80,-240),width=-20,height=-12)+ get_schip_points(center=(40,-240),width=-20,height=-12)+ get_schip_points(center=(0,-240),width=-20,height=-12)+ get_schip_points(center=(-40,-240),width=-20,height=-12)+ get_schip_points(center=(-80,-240),width=-20,height=-12)+ get_schip_points(center=(-120,-240),width=-20,height=-12) + [(-138,-240)] + get_bok_schip_points(center=(-138,-220),width=-20,height=-6)+get_bok_schip_points(center=(-138,-180),width=-20,height=-6)+get_bok_schip_points(center=(-138,-140),width=-20,height=-6)+get_bok_schip_points(center=(-138,-100),width=-20,height=-6)+get_bok_schip_points(center=(-138,-60),width=-20,height=-6)+get_bok_schip_points(center=(-138,-20),width=-20,height=-6) + [(-138,0)])
     data_base.add_polyline(f"base11","base1",0, False, True, False)
 
     
@@ -3425,34 +3455,130 @@ def testvlad1():
     redraw()
 
 
-
-
-
-
-
-
-
-
 def test3():
+    dpg.add_button(label="sekciya",parent='butonss',tag="sekciya",callback=active_but)
+    data_base.add_coordinates(f"ss", [(0, 270)] + get_schip_points(center=(30,270),width=20,height=-6)+ get_schip_points(center=(90,270),width=60,height=-6)+ get_schip_points(center=(150,270),width=20,height=-6)+ get_schip_points(center=(210,270),width=60,height=-6)+ get_schip_points(center=(270,270),width=20,height=-6) + [(300,270),(300,6)] + get_schip_points(center=(210,6),width=-60,height=-6) + get_schip_points(center=(90,6),width=-60,height=-6) + [(0,6),(0,270)])
+    data_base.add_polyline(f"ss","sekciya",0, False, True, False)
 
-    dpg.add_button(label="podrumku",parent='butonss',tag="podrumku",callback=active_but)
-    
-    points =  get_circle_points(center=(21,21),radius=20,begin_angle=0,end_angle=360)
-    points2 =  get_circle_points(center=(21,21-3.5),radius=2.5,begin_angle=0,end_angle=360)
-    data_base.add_coordinates(f"knk", points)
-    data_base.add_polyline(f"knk","podrumku",0, False, True, False)
-    data_base.add_coordinates(f"knk2", points2)
-    data_base.add_polyline(f"knk2","podrumku",0, False, True, False)
 
-    CENTER_X = 21
-    CENTER_Y = 25
-    width = 12.7
-    height = 5.6
+    data_base.add_coordinates(f"ss1", get_rectangle_points_from_center(width=20,height=6,center=(30,69)))
+    data_base.add_coordinates(f"ss2", get_rectangle_points_from_center(width=20,height=6,center=(30,69+66)))
+    data_base.add_coordinates(f"ss3", get_rectangle_points_from_center(width=20,height=6,center=(30,69+66+66)))
 
-    data_base.add_polyline(f"knk3","podrumku",0, False, True, False)
-    data_base.add_coordinates("knk3", [(CENTER_X-width/2,CENTER_Y-height/2),(CENTER_X-width/2,CENTER_Y+height/2),(CENTER_X+width/2,CENTER_Y+height/2),(CENTER_X+width/2,CENTER_Y-height/2),(CENTER_X-width/2,CENTER_Y-height/2)])
-    
+    data_base.add_coordinates(f"ss4", get_rectangle_points_from_center(width=20,height=6,center=(150,69)))
+    data_base.add_coordinates(f"ss5", get_rectangle_points_from_center(width=20,height=6,center=(150,69+66)))
+    data_base.add_coordinates(f"ss6", get_rectangle_points_from_center(width=20,height=6,center=(150,69+66+66)))
+
+    data_base.add_coordinates(f"ss7", get_rectangle_points_from_center(width=20,height=6,center=(270,69)))
+    data_base.add_coordinates(f"ss8", get_rectangle_points_from_center(width=20,height=6,center=(270,69+66)))
+    data_base.add_coordinates(f"ss9", get_rectangle_points_from_center(width=20,height=6,center=(270,69+66+66)))
+    data_base.add_polyline(f"ss1","sekciya",0, False, True, False)
+    data_base.add_polyline(f"ss2","sekciya",0, False, True, False)
+    data_base.add_polyline(f"ss3","sekciya",0, False, True, False)
+    data_base.add_polyline(f"ss4","sekciya",0, False, True, False)
+    data_base.add_polyline(f"ss5","sekciya",0, False, True, False)
+    data_base.add_polyline(f"ss6","sekciya",0, False, True, False)
+    data_base.add_polyline(f"ss7","sekciya",0, False, True, False)
+    data_base.add_polyline(f"ss8","sekciya",0, False, True, False)
+    data_base.add_polyline(f"ss9","sekciya",0, False, True, False)
+
+
+    dpg.add_button(label="polka",parent='butonss',tag="polka",callback=active_but)
+    data_base.add_coordinates(f"sss", [(0, 294)] + get_schip_points(center=(30,294),width=20,height=6)  + get_schip_points(center=(150,294),width=20,height=6)  + get_schip_points(center=(270,294),width=20,height=6)  + [(300,294),(300,6)] + get_schip_points(center=(270,6),width=-20,height=-6) + get_schip_points(center=(150,6),width=-20,height=-6)+ get_schip_points(center=(30,6),width=-20,height=-6) + [(0,6),(0,294)])
+    data_base.add_polyline(f"sss","polka",0, False, True, False)
+
     redraw()
+
+def testkoleso():
+    # alph = 10
+    # r = 138 * np.cos(math.radians(alph)) 
+    # b =  138 * 2  * np.sin(math.radians(alph))
+    # faska = 1.5
+    dpg.add_button(label="koleso",parent='butonss',tag="koleso",callback=active_but)
+    # dpg.add_button(label="v",parent='butonss',tag="v",callback=active_but)
+    
+    # data_base.add_coordinates(f"kol", get_circle_points(center=(0,0),radius=150))
+    # data_base.add_polyline(f"kol","koleso",0, False, True, False)
+    # data_base.add_coordinates(f"kol2", get_circle_points(center=(0,0),radius=10))
+    # data_base.add_polyline(f"kol2","koleso",0, False, True, False)
+    
+    # data_base.add_coordinates(f"kol3", get_rectangle_points_from_center(width=b/2,height=6,center=(0,r+3)))
+    # data_base.add_polyline(f"kol3","v",0, False, True, False)
+    
+    dpg.add_button(label="pol",parent='butonss',tag="pol",callback=active_but)
+    # data_base.add_coordinates(f"з0", [(0,b/4+faska),(0+faska,b/4),(6,b/4),(6,0),(166,0),(166,b/4),(172-faska,b/4),(172,b/4+faska),(172,3*b/4-faska),(172-faska,3*b/4),(166,3*b/4),(166,b),(6,b),(6,3*b/4),(0+faska,3*b/4),(0,3*b/4-faska),(0,b/4+faska)])
+    # data_base.add_polyline(f"з0","pol",0, False, True, False)
+
+    data_base.add_coordinates(f"k1", [(159.51, 149.88), (159.38, 151.48), (159.0, 153.05), (158.37, 154.53), (157.51, 155.89), (156.44, 157.09), (155.19, 158.11), (153.8, 158.91), (152.3, 159.48), (150.72, 159.81), (149.11, 159.87), (147.51, 159.68), (145.97, 159.23), (144.51, 158.54), (143.19, 157.62), (142.03, 156.51), (141.06, 155.22), (140.31, 153.8), (139.8, 152.27), (139.55, 150.68), (139.55, 149.07), (139.8, 147.49), (140.31, 145.96), (141.06, 144.53), (142.03, 143.25), (143.19, 142.13), (144.51, 141.22), (145.97, 140.53), (147.51, 140.08), (149.11, 139.89), (150.72, 139.95), (152.3, 140.27), (153.8, 140.84), (155.19, 141.65), (156.44, 142.67), (157.51, 143.87), (158.37, 145.23), (159.0, 146.71), (159.38, 148.27), (159.51, 149.88)])
+    data_base.add_polyline(f"k1","koleso",0, False, True, False)
+    data_base.add_coordinates(f"k0",[(299.51, 149.88), (297.57, 173.94), (291.79, 197.38), (282.33, 219.59), (269.43, 239.99), (253.42, 258.06), (234.72, 273.33), (213.82, 285.4), (191.25, 293.96), (167.59, 298.78), (143.47, 299.76), (119.51, 296.85), (96.32, 290.13), (74.51, 279.78), (54.65, 266.07), (37.24, 249.35), (22.74, 230.05), (11.52, 208.67), (3.87, 185.78), (0.0, 161.95), (0.0, 137.81), (3.87, 113.98), (11.52, 91.08), (22.74, 69.71), (37.24, 50.41), (54.65, 33.69), (74.51, 19.97), (96.32, 9.63), (119.51, 2.91), (143.47, 0.0), (167.59, 0.97), (191.25, 5.8), (213.82, 14.36), (234.72, 26.43), (253.42, 41.7), (269.43, 59.77), (282.33, 80.17), (291.79, 102.38), (297.57, 125.82), (299.51, 149.88)])
+    data_base.add_polyline(f"k0","koleso",0, False, True, False)
+
+
+    data_base.add_coordinates(f"k2", [(137.53, 285.78), (137.53, 291.78), (161.5, 291.78), (161.5, 285.78), (137.53, 285.78)])
+    data_base.add_polyline(f"k2","koleso",0, False, True, False)
+    data_base.add_coordinates(f"k3", [(184.74, 281.68), (186.79, 287.32), (209.31, 279.13), (207.25, 273.49), (184.74, 281.68)])
+    data_base.add_polyline(f"k3","koleso",0, False, True, False)
+    data_base.add_coordinates(f"k4", [(227.69, 261.69), (231.55, 266.28), (249.91, 250.88), (246.05, 246.28), (227.69, 261.69)])
+    data_base.add_polyline(f"k4","koleso",0, False, True, False)
+    data_base.add_coordinates(f"k5", [(261.22, 228.21), (266.41, 231.21), (278.4, 210.45), (273.2, 207.45), (261.22, 228.21)])
+    data_base.add_polyline(f"k5","koleso",0, False, True, False)
+    data_base.add_coordinates(f"k6", [(281.27, 185.28), (287.18, 186.32), (291.34, 162.72), (285.43, 161.68), (281.27, 185.28)])
+    data_base.add_polyline(f"k6","koleso",0, False, True, False)
+    data_base.add_coordinates(f"k7", [(285.43, 138.08), (291.34, 137.04), (287.18, 113.44), (281.27, 114.48), (285.43, 138.08)])
+    data_base.add_polyline(f"k7","koleso",0, False, True, False)
+    data_base.add_coordinates(f"k8", [(273.2, 92.3), (278.4, 89.3), (266.41, 68.55), (261.22, 71.55), (273.2, 92.3)])
+    data_base.add_polyline(f"k8","koleso",0, False, True, False)
+    data_base.add_coordinates(f"k9", [(246.05, 53.47), (249.91, 48.88), (231.55, 33.47), (227.69, 38.07), (246.05, 53.47)])
+    data_base.add_polyline(f"k9","koleso",0, False, True, False)
+    data_base.add_coordinates(f"k10", [(207.25, 26.27), (209.31, 20.63), (186.79, 12.43), (184.74, 18.07), (207.25, 26.27)])
+    data_base.add_polyline(f"k10","koleso",0, False, True, False)
+    data_base.add_coordinates(f"k11", [(161.5, 13.97), (161.5, 7.97), (137.53, 7.97), (137.53, 13.97), (161.5, 13.97)])
+    data_base.add_polyline(f"k11","koleso",0, False, True, False)
+    data_base.add_coordinates(f"k12", [(114.29, 18.07), (112.24, 12.43), (89.72, 20.63), (91.77, 26.27), (114.29, 18.07)])
+    data_base.add_polyline(f"k12","koleso",0, False, True, False)
+    data_base.add_coordinates(f"k13", [(71.34, 38.07), (67.48, 33.47), (49.12, 48.88), (52.98, 53.47), (71.34, 38.07)])
+    data_base.add_polyline(f"k13","koleso",0, False, True, False)
+    data_base.add_coordinates(f"k14", [(37.81, 71.55), (32.61, 68.55), (20.63, 89.3), (25.83, 92.3), (37.81, 71.55)])
+    data_base.add_polyline(f"k14","koleso",0, False, True, False)
+    data_base.add_coordinates(f"k15", [(17.76, 114.48), (11.85, 113.44), (7.69, 137.04), (13.59, 138.08), (17.76, 114.48)])
+    data_base.add_polyline(f"k15","koleso",0, False, True, False)
+    data_base.add_coordinates(f"k16", [(13.59, 161.68), (7.69, 162.72), (11.85, 186.32), (17.76, 185.28), (13.59, 161.68)])
+    data_base.add_polyline(f"k16","koleso",0, False, True, False)
+    data_base.add_coordinates(f"k17", [(25.83, 207.45), (20.63, 210.45), (32.61, 231.21), (37.81, 228.21), (25.83, 207.45)])
+    data_base.add_polyline(f"k17","koleso",0, False, True, False)
+    data_base.add_coordinates(f"k18", [(52.98, 246.28), (49.12, 250.88), (67.48, 266.28), (71.34, 261.69), (52.98, 246.28)])
+    data_base.add_polyline(f"k18","koleso",0, False, True, False)
+    data_base.add_coordinates(f"k19", [(91.77, 273.49), (89.72, 279.13), (112.24, 287.32), (114.29, 281.68), (91.77, 273.49)])
+    data_base.add_polyline(f"k19","koleso",0, False, True, False)
+    
+
+
+
+    
+
+
+    data_base.add_coordinates(f"k21", [(0.0, 13.48), (1.5, 11.98), (6.0, 11.98), (6.0, 0.0), (166.0, 0.0), (166.0, 11.98), (170.5, 11.98), (172.0, 13.48), (172.0, 34.45), (170.5, 35.95), (166.0, 35.95), (166.0, 47.93), (6.0, 47.93), (6.0, 35.95), (1.5, 35.95), (0.0, 34.45), (0.0, 13.48)])
+    data_base.add_polyline(f"k21","pol",0, False, True, False)
+
+
+
+
+
+
+
+
+
+
+    redraw()
+
+def GRBL_connect(sender):
+    global laser 
+    laser = LaserController(port=dpg.get_value('com_tag'))
+    if (laser.connect()):
+        dpg.bind_item_theme(sender, green_theme)
+    else:
+        dpg.bind_item_theme(sender, disabled_theme)
 
 
 def kam_callback():
@@ -3740,7 +3866,7 @@ poliline_themes = {}
 esyedaflag = False
 borderflag = False
 data_base = PolylineDatabase()
-
+laser = 'laser'
 
 
 with dpg.window(label="Delete Files", show=False, tag="modal_id", no_title_bar=True):
@@ -4052,6 +4178,9 @@ with dpg.theme() as coloured_Core_theme5:
 with dpg.theme() as enabled_theme:
     with dpg.theme_component(dpg.mvAll):
         dpg.add_theme_color(dpg.mvThemeCol_Text, (255, 255, 255), category=dpg.mvThemeCat_Core)
+with dpg.theme() as green_theme:
+    with dpg.theme_component(dpg.mvAll):
+        dpg.add_theme_color(dpg.mvThemeCol_Text, (0, 255, 0), category=dpg.mvThemeCat_Core)
 
 
 with dpg.theme() as disabled_theme:
@@ -4092,6 +4221,8 @@ with dpg.viewport_menu_bar():
         dpg.add_menu_item(label="buffer(-0.5)", callback=bufferm)
         dpg.add_menu_item(label="buffer(+0.5)", callback=bufferp)
         dpg.add_menu_item(label="Optimize", callback=optimize_)
+        
+        dpg.add_menu_item(label="Place in a circle", callback=lambda:(dpg.configure_item("place_in_a_circle", show=True),set_place()))
         dpg.add_menu_item(label="Print coords selected", callback=print_coords)
     with dpg.menu(label="Geom"):
         dpg.add_menu_item(label="Circle", callback=lambda:dpg.configure_item("CIRCLE", show=True))
@@ -4101,23 +4232,27 @@ with dpg.viewport_menu_bar():
         dpg.add_menu_item(label="Epitrohoida", callback=lambda:dpg.configure_item("Epitrohoida_window", show=True))
         
     with dpg.menu(label="Generated"):
-        dpg.add_menu_item(label="horizont line", callback=horizont_callback)
-        dpg.add_menu_item(label="vertical line", callback=vertical_callback)
-        dpg.add_menu_item(label="diagonal line", callback=diagonal_callback)
-        dpg.add_menu_item(label="konus", callback=lambda:dpg.configure_item("KONUS", show=True)) 
-        dpg.add_menu_item(label="izgib", callback=lambda:dpg.configure_item("IZGIB", show=True)) 
+        with dpg.menu(label="test line"):
+            dpg.add_menu_item(label="horizont line", callback=horizont_callback)
+            dpg.add_menu_item(label="vertical line", callback=vertical_callback)
+            dpg.add_menu_item(label="diagonal line", callback=diagonal_callback)
+        with dpg.menu(label="izgib"):
+            dpg.add_menu_item(label="konus", callback=lambda:dpg.configure_item("KONUS", show=True)) 
+            dpg.add_menu_item(label="cilindr", callback=lambda:dpg.configure_item("IZGIB", show=True)) 
+
         dpg.add_menu_item(label="nosik", callback=nosik_callback) 
-        dpg.add_menu_item(label="for potenciometr", callback=potent_callback)
-        dpg.add_menu_item(label="for oled", callback=oled_callback)
-        dpg.add_menu_item(label="Place in a circle", callback=lambda:(dpg.configure_item("place_in_a_circle", show=True),set_place()))
+        
         dpg.add_menu_item(label="zapolnit dlya lazera", callback=kam_callback)
         dpg.add_menu_item(label="krysha nalivatora", callback=test2)
-        dpg.add_menu_item(label="pod stakan", callback=test3)
+        
         dpg.add_menu_item(label="ruchka", callback=test10)
-        dpg.add_menu_item(label="bot", callback=test4)
+        dpg.add_menu_item(label="staraya versiya", callback=test4)
         dpg.add_menu_item(label="nalivator", callback=test5)
         dpg.add_menu_item(label="vlad", callback=testvlad1)
         dpg.add_menu_item(label="CNC bok", callback=test11)
+        dpg.add_menu_item(label="koleso", callback=testkoleso)
+        dpg.add_menu_item(label="sekciya", callback=test3)
+        
     with dpg.menu(label="Widget Items"):
         dpg.add_checkbox(label="Pick Me", callback=print_me)
         dpg.add_button(label="Press Me", callback=print_me)
@@ -4245,7 +4380,8 @@ with dpg.window(pos=(925,544),width=200, height=200,tag='pult',label=''):
         dpg.add_button(label="check", callback=check_com_callback)
         dpg.add_button(label="load", callback=load_gcode_callback)
         dpg.add_combo(label="Port", items=['port','ne port'],width=60,tag='com_tag')
-    
+    with dpg.group(horizontal=True):
+        dpg.add_button(label="Connect", callback=GRBL_connect)
     with dpg.group(horizontal=True):
         dpg.add_button(label='home',width=40,height=40,callback=calback_but1)
         dpg.add_button(label='^',width=40,height=40,callback=calback_but2)
