@@ -871,6 +871,8 @@ def dxf_to_svg(dxf_file, svg_file):
 def save_as_gcode():
     dpg.show_item("file_dialog_id2")
 def get_gcode_from_tags(tags):
+    lenwork = 0
+    lennowork = 0
     gcode_lines = []
     h = 1
     curr_pos = [0,0]
@@ -889,13 +891,18 @@ def get_gcode_from_tags(tags):
             sett.remove(poly)
             coords = data_base.get_coordinates(poly)
             if len(coords) > 1:
-                
+                lennowork+= distance(curr_pos,(round(coords[0][0],4),round(coords[0][1],4)))
+                curr_pos = [round(coords[0][0],4),round(coords[0][1],4)]
                 tag_lines.append(f"G0 X{round(coords[0][0],4)} Y{round(coords[0][1],4)}")
                 tag_lines.append(f"F{speed}")
                 tag_lines.append(f"S{power}")
+                lenwork+= distance(curr_pos,(round(coords[1][0],4),round(coords[1][1],4)))
+                curr_pos = [round(coords[1][0],4),round(coords[1][1],4)]
                 tag_lines.append(f"G1 X{round(coords[1][0],4)} Y{round(coords[1][1],4)}")
                 if len(coords) > 2:
                     for coord in coords[2:]:
+                        lenwork+= distance(curr_pos,(round(coord[0],4),round(coord[1],4)))
+                        curr_pos = [round(coord[0],4),round(coord[1],4)]
                         tag_lines.append(f"X{round(coord[0],4)} Y{round(coord[1],4)}")
                 tag_lines.append("S0")
 
@@ -906,6 +913,8 @@ def get_gcode_from_tags(tags):
                 gcode_lines.append(j)
 
     gcode_lines.append(f"M5 S0")
+    print(lennowork)
+    print(lenwork)
     return gcode_lines
 
 def callback_to_gcode2(sender, app_data, user_data):
@@ -3447,13 +3456,39 @@ def testvlad1():
     
     data_base.add_coordinates(f"vlad122",get_circle_points(center=(46-15-3,70.04),radius=3,begin_angle=90,end_angle=0) + get_circle_points(center=(46,70.04),radius=15,begin_angle=180,end_angle=360) + get_circle_points(center=(46+15+3,70.04),radius=3,begin_angle=180,end_angle=90))
 
-    # data_base.add_coordinates(f"vlad124",get_rectangle_points_from_left_bot(width=10,height=4,lb=(16,30)))
-    # data_base.add_coordinates(f"vlad123",get_rectangle_points_from_left_bot(width=10,height=4,lb=(66,30)))
-
     data_base.add_polyline(f"vlad122","vlad2",0, False, True, False)
     data_base.add_polyline(f"vlad123","vlad2",0, False, True, False)
     redraw()
 
+def test7():
+    dpg.add_button(label="kr",parent='butonss',tag="kr",callback=active_but)
+    dpg.add_button(label="krr",parent='butonss',tag="krr",callback=active_but)
+    dpg.add_button(label="krrr",parent='butonss',tag="krrr",callback=active_but)
+    data_base.add_coordinates(f"kr1", [(-4, -4)] + get_schip_points((2,0),4,-4)[2:]+get_schip_points((10,0),4,-4)+get_schip_points((18,0),4,-4)+get_schip_points((26,0),4,-4)+get_schip_points((34,0),4,-4)+get_schip_points((42,0),4,-4)+get_schip_points((50,0),4,-4)+get_schip_points((58,0),4,-4)[:2]  + [(64,-4)]+ get_bok_schip_points((60,2),-4,4)[2:]+ get_bok_schip_points((60,10),-4,4)+ get_bok_schip_points((60,18),-4,4)+ get_bok_schip_points((60,26),-4,4)+ get_bok_schip_points((60,34),-4,4)[:2] + [(64,40)]+get_schip_points((58,36),-4,4)[2:] +get_schip_points((50,36),-4,4)+get_schip_points((42,36),-4,4)+get_schip_points((34,36),-4,4)+get_schip_points((26,36),-4,4)+get_schip_points((18,36),-4,4)+get_schip_points((10,36),-4,4)+get_schip_points((2,36),-4,4)[:2] + [(-4,40)] + get_bok_schip_points((0,34),4,-4)[2:]+ get_bok_schip_points((0,26),4,-4)+ get_bok_schip_points((0,18),4,-4)+ get_bok_schip_points((0,10),4,-4)+ get_bok_schip_points((0,2),4,-4)[:2] + [(-4,-4)])
+    data_base.add_polyline(f"kr1","kr",0, False, True, False)
+    data_base.add_coordinates(f"c1",get_circle_points(center=(3,5.5),radius=1.5))
+    data_base.add_polyline(f"c1","kr",0, False, True, False)
+    data_base.add_coordinates(f"c2",get_circle_points(center=(57,5.5),radius=1.5))
+    data_base.add_polyline(f"c2","kr",0, False, True, False)
+    data_base.add_coordinates(f"c3",get_circle_points(center=(3,30.5),radius=1.5))
+    data_base.add_polyline(f"c3","kr",0, False, True, False)
+    data_base.add_coordinates(f"c4",get_circle_points(center=(57,30.5),radius=1.5))
+    data_base.add_polyline(f"c4","kr",0, False, True, False)
+    data_base.add_coordinates(f"r1",get_rectangle_points_from_center(center=(3+25+12.5,5.5+6+7.5),width=25,height=15))
+    data_base.add_polyline(f"r1","kr",0, False, True, False)
+
+
+
+    data_base.add_coordinates(f"kr2", [(0, -4)] + get_schip_points((2,0),4,-4)[2:]+get_schip_points((10,0),4,-4)+get_schip_points((18,0),4,-4)+get_schip_points((26,0),4,-4)+get_schip_points((34,0),4,-4)+get_schip_points((42,0),4,-4)+get_schip_points((50,0),4,-4)+get_schip_points((58,0),4,-4)[:2]  + get_bok_schip_points((60,-6),4,4)+ get_bok_schip_points((60,-14),4,4)+get_schip_points((54,-16),-4,-4)+get_schip_points((46,-16),-4,-4)+get_schip_points((38,-16),-4,-4)+get_schip_points((30,-16),-4,-4)+get_schip_points((22,-16),-4,-4)+get_schip_points((14,-16),-4,-4)+get_schip_points((6,-16),-4,-4)+ get_bok_schip_points((0,-14),-4,-4)+ get_bok_schip_points((0,-6),-4,-4))
+    data_base.add_polyline(f"kr2","krr",0, False, True, False)
+    
+    
+    data_base.add_coordinates(f"krr2", get_bok_schip_points((64,6),-4,-4)+ get_bok_schip_points((64,14),-4,-4)+ get_bok_schip_points((64,22),-4,-4)+ get_bok_schip_points((64,30),-4,-4) + [(64,36)] + get_schip_points((70,36),4,4) + [(76,36)]+ get_bok_schip_points((76,30),4,4)+ get_bok_schip_points((76,22),4,4)+ get_bok_schip_points((76,14),4,4)+ get_bok_schip_points((76,6),4,4) + [(76,0)] + get_schip_points((70,0),-4,-4) + [(64,0),(64,4)])
+    data_base.add_polyline(f"krr2","krrr",0, False, True, False)
+    data_base.add_coordinates(f"krr3", get_circle_points((68.5,18-2.5),2.5,180,360) + get_circle_points((68.5,18+2.5),2.5,0,180) + [(66,15.5)])
+    data_base.add_polyline(f"krr3","krrr",0, False, True, False)
+
+    redraw()
 
 def test3():
     dpg.add_button(label="sekciya",parent='butonss',tag="sekciya",callback=active_but)
@@ -4252,6 +4287,7 @@ with dpg.viewport_menu_bar():
         dpg.add_menu_item(label="CNC bok", callback=test11)
         dpg.add_menu_item(label="koleso", callback=testkoleso)
         dpg.add_menu_item(label="sekciya", callback=test3)
+        dpg.add_menu_item(label="krinj", callback=test7)
         
     with dpg.menu(label="Widget Items"):
         dpg.add_checkbox(label="Pick Me", callback=print_me)
