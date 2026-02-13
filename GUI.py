@@ -117,6 +117,29 @@ def calculate_boundary_coordinates(x1, y1, x2, y2, width):
         "left_end": left_end,
         "right_end": right_end
     }
+def calculate_boundary_coordinates2(x1, y1, x2, y2, width):
+
+    dx = x2 - x1
+    dy = y2 - y1
+    d = math.sqrt(dx**2 + dy**2)
+    
+    if d == 0:
+        print(x1,y1, x2, y2)
+        return get_circle_points(center=(x1, y1),radius=width/2)
+        # return  [(x1-width/2,y1-width/2),(x1-width/2,y1+width/2),(x1+width/2,y1+width/2),(x1+width/2,y1-width/2),(x1-width/2,y1-width/2),(x1-width/2,y1-width/2)]
+    else:
+        ux = dx / d
+        uy = dy / d
+
+        nx, ny = -uy, ux 
+        
+        half_width = width / 2
+        left_start = (x1 + half_width * nx, y1 + half_width * ny)
+        right_start = (x1 - half_width * nx, y1 - half_width * ny)
+        left_end = (x2 + half_width * nx, y2 + half_width * ny)
+        right_end = (x2 - half_width * nx, y2 - half_width * ny)
+        return  [left_start, right_start, right_end,left_end,left_start]
+        
 
 
 def exclude_intervals(include_intervals, exclude_intervals):
@@ -350,9 +373,9 @@ def combine_lines(lines):
     return combined_line
 
 def read_dxf_lines_from_esyeda(sender, app_data, user_data):
-    for_correct = 0.09 #0.1 было
+    for_correct = 0.06 #0.1 было
     for_buffer = 0.08
-    for_buffer2 = 0.057 #47  было
+    for_buffer2 = 0.065 #47  было
     doc = ezdxf.readfile(user_data[0])
     full = dpg.get_value('varradio') == 'full'
    
@@ -668,7 +691,10 @@ def read_dxf_with_grabber(file_path):
     global borderflag
     dpg.add_button(label=nice_path,parent='butonss',tag=nice_path,callback=active_but)
     dxf = dxfgrabber.readfile(file_path)
-    
+    for_correct = 0.06 #0.1 было
+    # for_buffer = 0.08/25.4
+    for_buffer2 = 0.065 #47  было
+    for_buffer = 0
     ll = []
     lll = {}
     pattern = r'^power(\d+)speed(\d+)$'
@@ -708,91 +734,114 @@ def read_dxf_with_grabber(file_path):
                     data_base.add_polyline(nice_path+f"_circle_"+f"{counter}",nice_path,0, False, True, False)
                 data_base.add_coordinates(nice_path+f"_circle_"+f"{counter}", points)
                 counter+=1
-            elif entity.dxftype == 'SPLINE':
-                degree = entity.degree
-                if hasattr(entity, 'knots') and entity.knots:  
-                    knot_vector = np.array(entity.knots)
-                    control_points = np.array(entity.control_points)
+            # elif entity.dxftype == 'SPLINE':
+            #     degree = entity.degree
+            #     if hasattr(entity, 'knots') and entity.knots:  
+            #         knot_vector = np.array(entity.knots)
+            #         control_points = np.array(entity.control_points)
                     
-                    x = control_points[:, 0]
-                    y = control_points[:, 1]   
-                    weights = getattr(entity, 'weights', None) 
-                    if weights is not None and not all(w == 1.0 for w in weights):
-                        print(f"Предупреждение: Сплайн является NURBS. Используется нерациональное приближение.") 
-                    try:   
-                        u_min = knot_vector[degree]
-                        u_max = knot_vector[len(knot_vector) - degree - 1]
-                        u_range = np.linspace(u_min, u_max, 20)
+            #         x = control_points[:, 0]
+            #         y = control_points[:, 1]   
+            #         weights = getattr(entity, 'weights', None) 
+            #         if weights is not None and not all(w == 1.0 for w in weights):
+            #             print(f"Предупреждение: Сплайн является NURBS. Используется нерациональное приближение.") 
+            #         try:   
+            #             u_min = knot_vector[degree]
+            #             u_max = knot_vector[len(knot_vector) - degree - 1]
+            #             u_range = np.linspace(u_min, u_max, 20)
                         
-                        spline_x = BSpline(knot_vector, x, degree)
-                        spline_y = BSpline(knot_vector, y, degree)
+            #             spline_x = BSpline(knot_vector, x, degree)
+            #             spline_y = BSpline(knot_vector, y, degree)
                         
-                        curve_x = spline_x(u_range)
-                        curve_y = spline_y(u_range)
+            #             curve_x = spline_x(u_range)
+            #             curve_y = spline_y(u_range)
                         
-                        # ax.plot(curve_x, curve_y, '-', label=f'Сплайн {spline_count} (BSpline)')
-                        data_base.add_polyline(nice_path+f"_spline_"+f"{counter}",nice_path,0, False, True, False)
-                        data_base.add_coordinates(nice_path+f"_spline_"+f"{counter}", [(x,y)for x,y, in zip(curve_x,curve_y)])
+            #             # ax.plot(curve_x, curve_y, '-', label=f'Сплайн {spline_count} (BSpline)')
+            #             data_base.add_polyline(nice_path+f"_spline_"+f"{counter}",nice_path,0, False, True, False)
+            #             data_base.add_coordinates(nice_path+f"_spline_"+f"{counter}", [(x,y)for x,y, in zip(curve_x,curve_y)])
             
                         
-                    except Exception as e:
-                        print(f"Ошибка SciPy при обработке BSpline : {e}")
+            #         except Exception as e:
+            #             print(f"Ошибка SciPy при обработке BSpline : {e}")
 
-                elif hasattr(entity, 'fit_points') and entity.fit_points:
+            #     elif hasattr(entity, 'fit_points') and entity.fit_points:
                     
-                    fit_points = np.array(entity.fit_points)
-                    x = fit_points[:, 0]
-                    y = fit_points[:, 1]
+            #         fit_points = np.array(entity.fit_points)
+            #         x = fit_points[:, 0]
+            #         y = fit_points[:, 1]
                     
-                    try:
+            #         try:
                     
-                        tck, u = splprep([x, y], k=degree, s=0) 
-                        u_new = np.linspace(u.min(), u.max(), 20)
-                        curve_points = splev(u_new, tck)
+            #             tck, u = splprep([x, y], k=degree, s=0) 
+            #             u_new = np.linspace(u.min(), u.max(), 20)
+            #             curve_points = splev(u_new, tck)
                         
                         
-                        data_base.add_polyline(nice_path+f"_spline_"+f"{counter}",nice_path,0, False, True, False)
-                        data_base.add_coordinates(nice_path+f"_spline_"+f"{counter}", [(x,y)for x,y, in zip(curve_points[0],curve_points[1])])
+            #             data_base.add_polyline(nice_path+f"_spline_"+f"{counter}",nice_path,0, False, True, False)
+            #             data_base.add_coordinates(nice_path+f"_spline_"+f"{counter}", [(x,y)for x,y, in zip(curve_points[0],curve_points[1])])
             
-                    except Exception as e:
-                        print(f"Ошибка SciPy при интерполяции (Fit Points) : {e}")
+            #         except Exception as e:
+            #             print(f"Ошибка SciPy при интерполяции (Fit Points) : {e}")
 
-                else:
-                    print(f"Сплайн пропущен: Нет ни knots, ни fit_points.")
+            #     else:
+            #         print(f"Сплайн пропущен: Нет ни knots, ни fit_points.")
 
 
-            elif entity.dxftype == 'ARC':
+            # elif entity.dxftype == 'ARC':
                 
-                center = entity.center 
-                radius = entity.radius  
-                start_angle = entity.start_angle
-                end_angle = entity.end_angle
-                layer = entity.layer
-                if radius<10:
-                    points = arc_to_lines(center, radius, start_angle, end_angle,10)
-                else:
-                    points = arc_to_lines(center, radius, start_angle, end_angle,50)
-                if layer in ll:
-                    data_base.add_polyline(nice_path+f"_arc_"+f"{counter}",nice_path,lll[layer], False, True, False)
-                else:
-                    data_base.add_polyline(nice_path+f"_arc_"+f"{counter}",nice_path,0, False, True, False)
-                data_base.add_coordinates(nice_path+f"_arc_"+f"{counter}", points)
-                counter+=1
+            #     center = entity.center 
+            #     radius = entity.radius  
+            #     start_angle = entity.start_angle
+            #     end_angle = entity.end_angle
+            #     layer = entity.layer
+            #     if radius<10:
+            #         points = arc_to_lines(center, radius, start_angle, end_angle,10)
+            #     else:
+            #         points = arc_to_lines(center, radius, start_angle, end_angle,50)
+            #     if layer in ll:
+            #         data_base.add_polyline(nice_path+f"_arc_"+f"{counter}",nice_path,lll[layer], False, True, False)
+            #     else:
+            #         data_base.add_polyline(nice_path+f"_arc_"+f"{counter}",nice_path,0, False, True, False)
+            #     data_base.add_coordinates(nice_path+f"_arc_"+f"{counter}", points)
+            #     counter+=1
 
             elif entity.dxftype == 'LWPOLYLINE':
-            
-                layer = entity.layer
-                points = entity.points 
-                coords = []
-                for i in range(len(points)):
-                    coords.append((round(points[i][0],4),  round(points[i][1],4)))
-                if entity.is_closed:
-                    coords.append((round(points[0][0],4),  round(points[0][1],4)))
-                if layer in ll:
-                    data_base.add_polyline(nice_path+f"_lwpoly_"+f"{counter}",nice_path,lll[layer], False, True, False)
+                # if entity.width != []:
+                #     print(entity.width)
+                # for attribute, value in vars(entity).items():
+                #     print(f"{attribute}: {value}")
+                if hasattr(entity, 'const_width')and entity.const_width != 0 :
+                    if entity.const_width != 0.008:
+                        c = entity.const_width
+                        
+
+                        
+                        points = entity.points 
+                        counter4 = 0
+                        for j in range(len(points)-1):
+                            counter4+=1
+                            if points[j][0] == points[j+1][0] and points[j][1] == points[j+1][1]:
+                                for attribute, value in vars(entity).items():
+                                    print(f"{attribute}: {value}")
+                            data_base.add_polyline(nice_path+f"_lwpolyc_"+f"{counter}_{counter4}",nice_path,0, False, True, False)
+                            data_base.add_coordinates(nice_path+f"_lwpolyc_"+f"{counter}_{counter4}",get_circle_points(center=(points[j][0], points[j][1]),radius=c/2 + for_buffer) )
+                            data_base.add_polyline(nice_path+f"_lwpoly_"+f"{counter}_{counter4}",nice_path,0, False, True, False)
+                            data_base.add_coordinates(nice_path+f"_lwpoly_"+f"{counter}_{counter4}", calculate_boundary_coordinates2(points[j][0], points[j][1], points[j + 1][0], points[j + 1][1], c + for_buffer*2))
+                    
                 else:
-                    data_base.add_polyline(nice_path+f"_lwpoly_"+f"{counter}",nice_path,0, False, True, False)
-                data_base.add_coordinates(nice_path+f"_lwpoly_"+f"{counter}", coords)
+                        
+                    layer = entity.layer
+                    points = entity.points 
+                    coords = []
+                    for i in range(len(points)):
+                        coords.append((round(points[i][0],4),  round(points[i][1],4)))
+                    if entity.is_closed:
+                        coords.append((round(points[0][0],4),  round(points[0][1],4)))
+                    if layer in ll:
+                        data_base.add_polyline(nice_path+f"_lwpoly_"+f"{counter}",nice_path,lll[layer], False, True, False)
+                    else:
+                        data_base.add_polyline(nice_path+f"_lwpoly_"+f"{counter}",nice_path,0, False, True, False)
+                    data_base.add_coordinates(nice_path+f"_lwpoly_"+f"{counter}", coords)
 
             elif entity.dxftype == 'POLYLINE':
                 
@@ -815,9 +864,24 @@ def read_dxf_with_grabber(file_path):
             elif entity.dxftype == '3DFACE':
                 print(f"Vertices: {entity.points}")
                 print(f"Type: {entity.dxftype}, Layer: {entity.layer}")
+            elif entity.dxftype == 'SOLID':
+                layer = entity.layer
+                points = entity.points 
+                coords = [(round(points[0][0],4),  round(points[0][1],4)),(round(points[1][0],4),  round(points[1][1],4)),(round(points[3][0],4),  round(points[3][1],4)),(round(points[2][0],4),  round(points[2][1],4)),(round(points[0][0],4),  round(points[0][1],4))]
+                # for i in range(len(points)):
+                #     coords.append((round(points[i][0],4),  round(points[i][1],4)))
+                # if entity.is_closed:
+                #     coords.append((round(points[0][0],4),  round(points[0][1],4)))
+                if layer in ll:
+                    data_base.add_polyline(nice_path+f"_SOLID_"+f"{counter}",nice_path,lll[layer], False, True, False)
+                else:
+                    data_base.add_polyline(nice_path+f"_SOLID_"+f"{counter}",nice_path,0, False, True, False)
+                data_base.add_coordinates(nice_path+f"_SOLID_"+f"{counter}", coords)
             else:
                 print(f"{entity.dxftype} sss")
+            print(f"{entity.dxftype}")
             counter+=1
+    # data_base.scale_value(25.4,25.4)
            
 def distance(point1, point2):
     return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
@@ -1840,7 +1904,38 @@ def dublicate_lines():
     for but in pol:
         dublicating(but)
     redraw()
+def move_center_to():
+    tags = data_base.get_tag_where('active=1')
+    coords = []
+    for tag in tags:
+        coords += data_base.get_coordinates(tag)
+
+    xx = [r[0] for r in coords]
+    yy = [r[1] for r in coords]
+    dpg.set_value('x_center',min(xx) + (max(xx)-min(xx))/2)
+    dpg.set_value('y_center',min(yy) + (max(yy)-min(yy))/2)
+    dpg.set_value("series_center",[[min(xx) + (max(xx)-min(xx))/2],[min(yy) + (max(yy)-min(yy))/2]])
+    dpg.set_value('center x',min(xx) + (max(xx)-min(xx))/2)
+    dpg.set_value('center y',min(yy) + (max(yy)-min(yy))/2)
     
+def move_center_to2():
+    tags = data_base.get_tag_where('active=1')
+    coords = []
+    for tag in tags:
+        coords += data_base.get_coordinates(tag)
+    kx = data_base.get_bigtag_where(f"tag='{tags[0]}'")[0]
+    xx = [r[0] for r in coords]
+    yy = [r[1] for r in coords]
+    dpg.set_value('x_center',min(xx) + (max(xx)-min(xx))/2)
+    dpg.set_value('y_center',min(yy) + (max(yy)-min(yy))/2)
+    dpg.set_value("series_center",[[min(xx) + (max(xx)-min(xx))/2],[min(yy) + (max(yy)-min(yy))/2]])
+    dpg.set_value('center x',min(xx) + (max(xx)-min(xx))/2)
+    dpg.set_value('center y',min(yy) + (max(yy)-min(yy))/2)
+    x = min(xx) + (max(xx)-min(xx))/2
+    y = min(yy) + (max(yy)-min(yy))/2
+    data_base.add_polyline(kx,f"{x}{y}",0, False, True, False)
+    data_base.add_coordinates(f"{x}{y}", get_circle_points((x,y),radius=(max(xx)-min(xx))/2))
+    redraw()
 def move_to_center_lines():
     CENTER_X = float(dpg.get_value('x_center'))
     CENTER_Y = float(dpg.get_value('y_center'))
@@ -3614,8 +3709,21 @@ def GRBL_connect(sender):
         dpg.bind_item_theme(sender, green_theme)
     else:
         dpg.bind_item_theme(sender, disabled_theme)
-
-
+def kam2_callback():
+    for_buffer = 0.04 
+    vnutr = data_base.get_tag('active=True')
+    
+    vpol = []
+    for vn in vnutr:
+        vpol.append(Polygon(data_base.get_coordinates(vn)).buffer(for_buffer))
+    ans = unary_union(MultiPolygon([p for p in vpol]))
+    x1, y1 = ans.exterior.xy
+    print(x1)
+    dpg.add_button(label=vnutr[0] + "_",parent='butonss',tag=vnutr[0] + "_",callback=active_but)
+    data_base.add_polyline(vnutr[0] + "__",vnutr[0] + "_",1, False, True, False)
+    
+    data_base.add_coordinates(vnutr[0] + "__",[(x_,y_) for x_,y_ in zip(x1,y1)])
+    redraw()
 def kam_callback():
     
 
@@ -3629,8 +3737,8 @@ def kam_callback():
 
 
 
-
-    for_buffer = 0.08
+    for_buffer = 0
+    # for_buffer = 0.08
     for_buffer2 = 0.047 
 
 
@@ -3644,7 +3752,7 @@ def kam_callback():
     vpol = []
     for vn in vnutr:
         vpol.append(Polygon(data_base.get_coordinates(vn)).buffer(-for_buffer))
-    multipol = MultiPolygon(vpol)
+    # multipol = MultiPolygon(vpol)
     polygons = []
     for npp in naruja:
         pol = Polygon(data_base.get_coordinates(npp)).buffer(for_buffer)
@@ -3687,7 +3795,7 @@ def kam_callback():
     dpg.add_button(label="nice_path",parent='butonss',tag="nice_path",callback=active_but)
     dpg.add_button(label="nice_path2",parent='butonss',tag="nice_path2",callback=active_but)
     width_lines = float(dpg.get_value('border_line_width'))
-    lins = MultiLineString([((0, y), (110, y))for y in np.arange(0,100,width_lines)])
+    lins = MultiLineString([((0, y), (29.7, y))for y in np.arange(0,25.1,width_lines)])
 
     linn = lins
     for p in polygons:
@@ -3702,8 +3810,8 @@ def kam_callback():
         coords.append((round(l.coords[0][0],4),  round(l.coords[0][1],4)))
         coords.append((round(l.coords[1][0],4), round(l.coords[1][1],4)))           
     
-        data_base.add_polyline('nice_path'+f"{c}" ,'nice_path',0, False, True, False)
-        data_base.add_coordinates('nice_path'+f"{c}",coords)
+        data_base.add_polyline('nice_pathh'+f"{c}" ,'nice_path',0, False, True, False)
+        data_base.add_coordinates('nice_pathh'+f"{c}",coords)
         c+=1
         
     redraw()
@@ -4244,6 +4352,8 @@ with dpg.viewport_menu_bar():
         dpg.add_menu_item(label="Split selected", callback=split_l)
         dpg.add_menu_item(label="Normalize", callback=normalize_lines)
         dpg.add_menu_item(label="Move To Center", callback=move_to_center_lines)
+        dpg.add_menu_item(label="Move Center To", callback=move_center_to)
+        dpg.add_menu_item(label="add circle to", callback=move_center_to2)
         dpg.add_menu_item(label="Dublicate", callback=dublicate_lines)
         dpg.add_menu_item(label="Rotate Y", callback=rotate_x)
         dpg.add_menu_item(label="Rotate X", callback=rotate_y)
@@ -4276,7 +4386,7 @@ with dpg.viewport_menu_bar():
             dpg.add_menu_item(label="cilindr", callback=lambda:dpg.configure_item("IZGIB", show=True)) 
 
         dpg.add_menu_item(label="nosik", callback=nosik_callback) 
-        
+        dpg.add_menu_item(label="unaru union", callback=kam2_callback)
         dpg.add_menu_item(label="zapolnit dlya lazera", callback=kam_callback)
         dpg.add_menu_item(label="krysha nalivatora", callback=test2)
         
