@@ -124,7 +124,7 @@ def calculate_boundary_coordinates2(x1, y1, x2, y2, width):
     d = math.sqrt(dx**2 + dy**2)
     
     if d == 0:
-        print(x1,y1, x2, y2)
+        # print(x1,y1, x2, y2)
         return get_circle_points(center=(x1, y1),radius=width/2)
         # return  [(x1-width/2,y1-width/2),(x1-width/2,y1+width/2),(x1+width/2,y1+width/2),(x1+width/2,y1-width/2),(x1-width/2,y1-width/2),(x1-width/2,y1-width/2)]
     else:
@@ -219,6 +219,121 @@ def find_intersection(x1, y1, x2, y2, c):
         return (x_intersection, c)
     
     return None 
+
+
+
+
+
+
+def Polygon_to_lines2(union_polygon,num_lines,width_lines,nice_path,xmin,xmax,ymin,ymax):
+    BORDER = Polygon([(xmin,ymin),(xmax,ymin),(xmax,ymax),(xmin,ymax),(xmin,ymin)])
+    c = 0
+    for k in range(num_lines):
+
+        tunion_polygon = []
+        if union_polygon.geom_type == 'Polygon':
+            
+            xm, ym = union_polygon.exterior.xy
+            
+
+            if len(remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)])) > 1 :
+                secs = shapely.intersection(LineString(remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)])),BORDER)
+                if secs.geom_type == 'LineString':
+                    data_base.add_coordinates(nice_path+f"{c}",secs.coords)
+                    data_base.add_polyline(nice_path+f"{c}",nice_path,0, False, True, False)
+                else:
+                    for g in secs.geoms:
+                        data_base.add_coordinates(nice_path+f"{c}",g.coords)
+                        data_base.add_polyline(nice_path+f"{c}",nice_path,0, False, True, False)
+                        c+=1
+            else:
+                print(len(remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)])) > 1)
+                print('проебали')
+            #data_base.add_coordinates(nice_path+f"{c}",[(x_,y_) for x_,y_ in zip(xm,ym)])
+            # print(shapely.intersection(LineString(remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)])),BORDER).coords)
+            # data_base.add_coordinates(nice_path+f"{c}",shapely.intersection(LineString(remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)])),BORDER).coords)
+            c+=1
+            
+            for inter in union_polygon.interiors:
+                xm, ym = inter.xy
+                
+                if len(remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)])) > 1 :
+                    secs = shapely.intersection(LineString(remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)])),BORDER)
+                    if secs.geom_type == 'LineString':
+                        data_base.add_coordinates(nice_path+f"{c}",secs.coords)
+                        data_base.add_polyline(nice_path+f"{c}",nice_path,0, False, True, False)
+                    else:
+                        for g in secs.geoms:
+                            data_base.add_polyline(nice_path+f"{c}",nice_path,0, False, True, False)
+                            data_base.add_coordinates(nice_path+f"{c}",g.coords)
+                            c+=1
+                else:
+                    print('проебали')
+                    print(len(remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)])) > 1)
+                # data_base.add_coordinates(nice_path+f"{c}",remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)]))
+                c+=1
+            
+            pol = union_polygon.buffer(width_lines,quad_segs=0)
+            if isinstance(pol, MultiPolygon):
+                for single_polygon in pol.geoms:
+                    tunion_polygon.append(single_polygon)
+            else:
+                tunion_polygon.append(pol)
+        else:
+           
+
+            for p in union_polygon.geoms:
+                
+                
+                
+                xm, ym = p.exterior.xy
+                
+                
+                if len(remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)])) > 1:
+                    secs = shapely.intersection(LineString(remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)])),BORDER)
+                    if secs.geom_type == 'LineString':
+                        data_base.add_polyline(nice_path+f"{c}",nice_path,0, False, True, False)
+                        data_base.add_coordinates(nice_path+f"{c}",secs.coords)
+                    else:
+                        for g in secs.geoms:
+                            data_base.add_polyline(nice_path+f"{c}",nice_path,0, False, True, False)
+                            data_base.add_coordinates(nice_path+f"{c}",g.coords)
+                            c+=1
+                else:
+                    print('проебали')
+                    print(len(remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)])) > 1)
+                c+=1
+                for inter in p.interiors:
+                    xm, ym = inter.xy
+                    
+                    
+                        
+                    if len(remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)])) > 1:
+                        secs = shapely.intersection(LineString(remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)])),BORDER)
+                        if secs.geom_type == 'LineString':
+                            data_base.add_coordinates(nice_path+f"{c}",secs.coords)
+                            data_base.add_polyline(nice_path+f"{c}",nice_path,0, False, True, False)
+                        else:
+                            for g in secs.geoms:
+                                data_base.add_coordinates(nice_path+f"{c}",g.coords)
+                                data_base.add_polyline(nice_path+f"{c}",nice_path,0, False, True, False)
+                                c+=1
+                    else:
+                        print('проебали')
+                        print(len(remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)])) > 1)
+                    # print(shapely.intersection(LineString(remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)])),BORDER).coords)
+                    # data_base.add_coordinates(nice_path+f"{c}",shapely.intersection(LineString(remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)])),BORDER).coords)
+                    
+                    c+=1
+                
+                pol = p.buffer(width_lines,quad_segs=0)
+                if isinstance(pol, MultiPolygon):
+                    for single_polygon in pol.geoms:
+                        tunion_polygon.append(single_polygon)
+                else:
+                    tunion_polygon.append(pol)
+                redraw()
+        union_polygon = unary_union(MultiPolygon([p for p in tunion_polygon]))
 
 def Polygon_to_lines(union_polygon,num_lines,width_lines,nice_path):
 
@@ -612,6 +727,7 @@ def read_dxf_lines_from_esyedapro(sender, app_data, user_data):
     nice_path = find_nice_path(os.path.basename(user_data[0]))
     global borderflag
     dpg.add_button(label=nice_path,parent='butonss',tag=nice_path,callback=active_but)
+    dpg.add_button(label='sverlovka',parent='butonss',tag='sverlovka',callback=active_but)
     dxf = dxfgrabber.readfile(user_data[0])
     full = dpg.get_value('varradio') == 'full'
     base_polygons = []
@@ -628,10 +744,16 @@ def read_dxf_lines_from_esyedapro(sender, app_data, user_data):
     dpg.delete_item('varradio')
     
     dpg.configure_item("modal_id", show=False)
-    for_correct = 0.06 #0.1 было ДЛЯ КОРРЕКЦИИ ШИРИНЫ-ВЫСОТЫ
+    for_correct = 0.05 #0.1 было ДЛЯ КОРРЕКЦИИ ШИРИНЫ-ВЫСОТЫ
     # for_buffer = 0.08/25.4 
-    for_buffer2 = 0.065 #47  было ЭТО ДЛЯ ОБВОДКИ
-    for_buffer = 0 # ЭТО ДЛЯ ШТРИХОВКИ 
+    for_buffer2 = 0.07 #47  было ЭТО ДЛЯ ОБВОДКИ
+    for_buffer = 0.09 # ЭТО ДЛЯ ШТРИХОВКИ 
+    a = 0.16
+    b = 0.04
+
+
+
+
     ll = []
     lll = {}
     pattern = r'^power(\d+)speed(\d+)$'
@@ -655,7 +777,7 @@ def read_dxf_lines_from_esyedapro(sender, app_data, user_data):
                 data_base.add_polyline(nice_path+f"_line_"+f"{counter}",nice_path,0, False, True, False)
                 data_base.add_coordinates(nice_path+f"_line_"+f"{counter}", [[entity.start[0],entity.start[1]], [entity.end[0],entity.end[1]]])
             elif entity.dxftype == 'CIRCLE':
-                
+                print('circ')
                 center = entity.center 
                 radius = entity.radius
                 r1 = radius + for_buffer
@@ -745,14 +867,22 @@ def read_dxf_lines_from_esyedapro(sender, app_data, user_data):
                 data_base.add_coordinates(nice_path+f"_arc_"+f"{counter}", points)
                 counter+=1
 
-            elif entity.dxftype == 'LWPOLYLINE':
-                # for a in dir(entity):
-                #     if not a.startswith("_"):
-                #         try:
-                #             val = getattr(entity, a)
-                #             print(f"  {a} = {val!r}")
-                #         except Exception:
-                #             pass
+            elif entity.dxftype == 'LWPOLYLINE' and entity.const_width != 0.645162580647742:
+                # if len(entity.points ) == 1:
+                #     print('asd')
+                # if len(entity.points ) == 2 and entity.points[0][0] ==  entity.points[1][0] and entity.points[0][1] ==  entity.points[1][1]:
+                #     print('la')
+                # print(len(entity.points ))
+                # if all(6 <= x <= 7 for x, _ in entity.points):
+                #     print(entity.flags)
+                    # for a in dir(entity):
+                    #     if not a.startswith("_"):
+                            
+                    #         try:
+                    #             val = getattr(entity, a)
+                    #             print(f"  {a} = {val!r}")
+                    #         except Exception:
+                    #             pass
                 
                 if hasattr(entity, 'const_width')and entity.const_width != 0:
                     
@@ -768,17 +898,20 @@ def read_dxf_lines_from_esyedapro(sender, app_data, user_data):
                         bugl = entity.bulge
                         
                         for j in range(len(points)-1):
+
+
+                            r1 = c/2 + for_buffer
+                            r2 = c/2 + for_buffer2
                             base_polygons.append(Polygon(get_circle_points(center=(points[j][0], points[j][1]),radius=c/2)))
                             scale_polygons.append(scale_polygon_horizontal(Polygon(get_circle_points(center=(points[j][0], points[j][1]),radius=r2)),for_correct))
                             horscale_polygons.append(scale_polygon_horizontal(Polygon(get_circle_points(center=(points[j][0], points[j][1]),radius=r1)),for_correct))
                             if bugl[j] == 0:
-                                r1 = c/2 + for_buffer
-                                r2 = c/2 + for_buffer2
+                                
                                 
 
                                 base_polygons.append(Polygon(calculate_boundary_coordinates2(points[j][0], points[j][1], points[j + 1][0], points[j + 1][1], c)))
-                                scale_polygons.append(scale_polygon_horizontal(Polygon(calculate_boundary_coordinates2(points[j][0], points[j][1], points[j + 1][0], points[j + 1][1], c)),for_correct).buffer(for_buffer2))
-                                horscale_polygons.append(scale_polygon_horizontal(Polygon(calculate_boundary_coordinates2(points[j][0], points[j][1], points[j + 1][0], points[j + 1][1], c)),for_correct).buffer(for_buffer))
+                                scale_polygons.append(Polygon(calculate_boundary_coordinates2(points[j][0], points[j][1], points[j + 1][0], points[j + 1][1], c+2*for_buffer2 + get_radius(a,b,(points[j][0] - points[j+1][0]),(points[j][1] - points[j+1][1]))-b)))
+                                horscale_polygons.append(Polygon(calculate_boundary_coordinates2(points[j][0], points[j][1], points[j + 1][0], points[j + 1][1], c+2*for_buffer + get_radius(a,b,(points[j][0] - points[j+1][0]),(points[j][1] - points[j+1][1]))-b)))
 
                                 vpol.append(Polygon(get_circle_points(center=(points[j][0], points[j][1]),radius=c/2 + for_buffer)))
                                 vpol.append(Polygon(calculate_boundary_coordinates2(points[j][0], points[j][1], points[j + 1][0], points[j + 1][1], c)))
@@ -796,9 +929,10 @@ def read_dxf_lines_from_esyedapro(sender, app_data, user_data):
 
 
                                 base_polygons.append(Polygon(get_circle_points(center=center,radius=r-c/2,begin_angle=angl2,end_angle=angl1) + get_circle_points(center=center,radius=r+c/2,begin_angle=angl1,end_angle=angl2)))
-                                scale_polygons.append(Polygon(get_ellipse_points(center=center,radius1=r-c/2-for_buffer2-for_correct,radius2=r-c/2-for_buffer2,begin_angle=angl2,end_angle=angl1) + get_circle_points(center=center,radius1=r+c/2+for_buffer2+for_correct,radius2=r+c/2+for_buffer2,begin_angle=angl1,end_angle=angl2)))
-                                horscale_polygons.append(Polygon(get_ellipse_points(center=center,radius1=r-c/2-for_buffer-for_correct,radius2=r-c/2-for_buffer,begin_angle=angl2,end_angle=angl1) + get_circle_points(center=center,radius1=r+c/2+for_buffer+for_correct,radius2=r+c/2+for_buffer,begin_angle=angl1,end_angle=angl2)))
-
+                                scale_polygons.append(Polygon(get_ellipse_points(center=center,radius1=r-c/2-for_buffer2-for_correct,radius2=r-c/2-for_buffer2,begin_angle=angl2,end_angle=angl1) + get_ellipse_points(center=center,radius1=r+c/2+for_buffer2+for_correct,radius2=r+c/2+for_buffer2,begin_angle=angl1,end_angle=angl2)))
+                                horscale_polygons.append(Polygon(get_ellipse_points(center=center,radius1=r-c/2-for_buffer-for_correct,radius2=r-c/2-for_buffer,begin_angle=angl2,end_angle=angl1) + get_ellipse_points(center=center,radius1=r+c/2+for_buffer+for_correct,radius2=r+c/2+for_buffer,begin_angle=angl1,end_angle=angl2)))
+                                # data_base.add_polyline('sverlovka'+f"{counter}",'sverlovka',0, False, True, False)
+                                # data_base.add_coordinates('sverlovka'+f"{counter}", get_circle_points(center=center,radius=0.06))
 
 
 
@@ -808,8 +942,8 @@ def read_dxf_lines_from_esyedapro(sender, app_data, user_data):
                             
                             if bugl[-1] == 0:
                                 base_polygons.append(Polygon(calculate_boundary_coordinates2(points[-1][0], points[-1][1], points[0][0], points[0][1], c)))
-                                scale_polygons.append(scale_polygon_horizontal(Polygon(calculate_boundary_coordinates2(points[-1][0], points[-1][1], points[0][0], points[0][1], c)),for_correct).buffer(for_buffer2))
-                                horscale_polygons.append(scale_polygon_horizontal(Polygon(calculate_boundary_coordinates2(points[-1][0], points[-1][1], points[0][0], points[0][1], c)),for_correct).buffer(for_buffer))
+                                scale_polygons.append(Polygon(calculate_boundary_coordinates2(points[-1][0], points[-1][1], points[0][0], points[0][1], c+ 2*for_buffer2+ get_radius(a,b,(points[j][0] - points[j+1][0]),(points[j][1] - points[j+1][1]))-b)))
+                                horscale_polygons.append(Polygon(calculate_boundary_coordinates2(points[-1][0], points[-1][1], points[0][0], points[0][1], c+ 2*for_buffer+ get_radius(a,b,(points[j][0] - points[j+1][0]),(points[j][1] - points[j+1][1]))-b)))
                                 vpol.append(Polygon(calculate_boundary_coordinates2(points[-1][0], points[-1][1], points[0][0], points[0][1], c + for_buffer*2)))
                             else:
                                 center = arc_center_from_p1_p2_bulge((points[0][0], points[0][1]),(points[-1][0], points[-1][1]),bugl[j])
@@ -835,8 +969,8 @@ def read_dxf_lines_from_esyedapro(sender, app_data, user_data):
                             vpol.append(Polygon(calculate_boundary_coordinates2(points[j][0], points[j][1], points[j + 1][0], points[j + 1][1], c + for_buffer*2)))
 
                             base_polygons.append(Polygon(calculate_boundary_coordinates2(points[j][0], points[j][1], points[j + 1][0], points[j + 1][1], c)))
-                            scale_polygons.append(scale_polygon_horizontal(Polygon(calculate_boundary_coordinates2(points[j][0], points[j][1], points[j + 1][0], points[j + 1][1], c)),for_correct).buffer(for_buffer2))
-                            horscale_polygons.append(scale_polygon_horizontal(Polygon(calculate_boundary_coordinates2(points[j][0], points[j][1], points[j + 1][0], points[j + 1][1], c)),for_correct).buffer(for_buffer))
+                            scale_polygons.append(Polygon(calculate_boundary_coordinates2(points[j][0], points[j][1], points[j + 1][0], points[j + 1][1], c+ 2*for_buffer2+ get_radius(a,b,(points[j][0] - points[j+1][0]),(points[j][1] - points[j+1][1]))-b)))
+                            horscale_polygons.append(Polygon(calculate_boundary_coordinates2(points[j][0], points[j][1], points[j + 1][0], points[j + 1][1], c+2* for_buffer+ get_radius(a,b,(points[j][0] - points[j+1][0]),(points[j][1] - points[j+1][1]))-b)))
                             r1 = c/2 + for_buffer
                             r2 = c/2 + for_buffer2
                                 
@@ -852,8 +986,13 @@ def read_dxf_lines_from_esyedapro(sender, app_data, user_data):
                         if entity.is_closed == True:
                             vpol.append(Polygon(calculate_boundary_coordinates2(points[-1][0], points[-1][1], points[0][0], points[0][1], c + for_buffer*2)))
                         vpol.append(Polygon(get_circle_points(center=(points[len(points)-1][0], points[len(points)-1][1]),radius=c/2 + for_buffer)))
-                    
-                    ans = unary_union(MultiPolygon([p for p in vpol]))
+                    vpol2 = []
+                    for geom in vpol:
+                        if not geom.is_valid:
+                            print(geom.is_invalid)
+                        else:
+                            vpol2.append(geom)
+                    ans = unary_union(MultiPolygon([p for p in vpol2]))
                     if ans.geom_type == 'Polygon':
                         
                         x1, y1 = ans.exterior.xy
@@ -895,40 +1034,79 @@ def read_dxf_lines_from_esyedapro(sender, app_data, user_data):
 
 
                     if hasattr(entity, 'bulge')and any(x != 0 for x in entity.bulge):
-                        bugl = entity.bulge
                         
-                        for j in range(len(points)-1):
-                            if bugl[j] == 0:
-                                coords.append((round(points[j+1][0],4),  round(points[j+1][1],4)))
-                              
-                            else:
-                                center = arc_center_from_p1_p2_bulge((points[j+1][0], points[j+1][1]),(points[j][0], points[j][1]),bugl[j])
+                        bugl = entity.bulge
+                        if len(points) == 2 and bugl == [1,1]:
+                            centerx = (points[0][0] + points[1][0])/2
+                            centery = (points[0][1] + points[1][1])/2
+                            radius = distance((centerx,centery),points[0])
+                            center = (centerx,centery)
+                            r1 = radius + for_buffer
+                            r2 = radius + for_buffer2
+                            
+                            layer = entity.layer
+                            #  Сверловка
+                            data_base.add_polyline('sverlovka'+f"{counter}",'sverlovka',0, False, True, False)
+                            data_base.add_coordinates('sverlovka'+f"{counter}", get_circle_points(center=center,radius=0.06))
+                            
+                            base_polygons.append(Polygon(get_circle_points(center=center,radius=radius)))
+                            scale_polygons.append(scale_polygon_horizontal(Polygon(get_circle_points(center=center,radius=r2)),for_correct))
+                            horscale_polygons.append(scale_polygon_horizontal(Polygon(get_circle_points(center=center,radius=r1)),for_correct))
 
-                                angl1 = angle_from_horizontal(center,(points[j][0], points[j][1]))
-                                angl2 = 0
+                            if layer in ll:
+                                data_base.add_polyline(nice_path+f"_circle_"+f"{counter}",nice_path,lll[layer], False, True, False)
+                            else:
+                                data_base.add_polyline(nice_path+f"_circle_"+f"{counter}",nice_path,0, False, True, False)
+                            data_base.add_coordinates(nice_path+f"_circle_"+f"{counter}", get_circle_points(center=center,radius=radius))
+
+                        else:        
+
+                            for j in range(len(points)-1):
+                                if bugl[j] == 0:
+                                    coords.append((round(points[j+1][0],4),  round(points[j+1][1],4)))
                                 
-                                angl2 = angle_from_horizontal(center,(points[j+1][0], points[j+1][1]))
-                                if angl2 < angl1:
-                                    angl2 += 360
-                                r = distance(center,(points[j][0], points[j][1]))
-                              
-                                coords += get_circle_points(center=center,radius=r,begin_angle=angl1,end_angle=angl2)
-                        if entity.is_closed:
-                            if bugl[-1] == 0:
-                                coords.append((round(points[0][0],4),  round(points[0][1],4)))
-                            else:
-                                center = arc_center_from_p1_p2_bulge((points[0][0], points[0][1]),(points[-1][0], points[-1][1]),bugl[-1])
-
-                                angl1 = angle_from_horizontal(center,(points[-1][0], points[-1][1]))
-                                angl2 = 0
-                                if bugl[j] >1:
-                                    angl2 = 360 + angle_from_horizontal(center,(points[0][0], points[0][1]))
                                 else:
-                                    angl2 = angle_from_horizontal(center,(points[0][0], points[0][1]))
+                                    center = arc_center_from_p1_p2_bulge((points[j+1][0], points[j+1][1]),(points[j][0], points[j][1]),bugl[j])
+
+                                    angl1 = angle_from_horizontal(center,(points[j][0], points[j][1]))
+                                    angl2 = 0
+                                    data_base.add_polyline('sverlovka '+f"{counter}",'sverlovka',0, False, True, False)
+                                    data_base.add_coordinates('sverlovka '+f"{counter}", get_circle_points(center=center,radius=0.06))
+                                    counter+=1
+                                    angl2 = angle_from_horizontal(center,(points[j+1][0], points[j+1][1]))
+                                    if angl2 < angl1:
+                                        angl2 += 360
+                                    r = distance(center,(points[j][0], points[j][1]))
                                 
-                                r = distance(center,(points[-1][0], points[-1][1]))
-                                # vpol.append(Polygon(get_circle_points(center=center,radius=r-c/2,begin_angle=angl2,end_angle=angl1) + get_circle_points(center=center,radius=r+c/2,begin_angle=angl1,end_angle=angl2)))
-                                coords += get_circle_points(center=center,radius=r,begin_angle=angl1,end_angle=angl2)
+                                    coords += get_circle_points(center=center,radius=r,begin_angle=angl1,end_angle=angl2)
+                            if entity.is_closed:
+                                if bugl[-1] == 0:
+                                    coords.append((round(points[0][0],4),  round(points[0][1],4)))
+                                else:
+                                    center = arc_center_from_p1_p2_bulge((points[0][0], points[0][1]),(points[-1][0], points[-1][1]),bugl[-1])
+
+                                    angl1 = angle_from_horizontal(center,(points[-1][0], points[-1][1]))
+                                    angl2 = 0
+                                    if bugl[j] >1:
+                                        angl2 = 360 + angle_from_horizontal(center,(points[0][0], points[0][1]))
+                                    else:
+                                        angl2 = angle_from_horizontal(center,(points[0][0], points[0][1]))
+                                    
+                                    r = distance(center,(points[-1][0], points[-1][1]))
+                                    # vpol.append(Polygon(get_circle_points(center=center,radius=r-c/2,begin_angle=angl2,end_angle=angl1) + get_circle_points(center=center,radius=r+c/2,begin_angle=angl1,end_angle=angl2)))
+                                    coords += get_circle_points(center=center,radius=r,begin_angle=angl1,end_angle=angl2)
+
+
+
+                                base_polygons.append(Polygon(coords))
+                                scale_polygons.append(scale_polygon_horizontal(Polygon(coords).buffer(for_buffer2),for_correct))
+                                horscale_polygons.append(scale_polygon_horizontal(Polygon(coords).buffer(for_buffer),for_correct))
+                            elif coords[0][0] - coords[-1][0] < 0.00001 and coords[0][1] - coords[-1][1]< 0.00001:
+                                base_polygons.append(Polygon(coords))
+                                scale_polygons.append(scale_polygon_horizontal(Polygon(coords).buffer(for_buffer2),for_correct))
+                                horscale_polygons.append(scale_polygon_horizontal(Polygon(coords).buffer(for_buffer),for_correct))       
+
+
                     else:
 
 
@@ -938,6 +1116,9 @@ def read_dxf_lines_from_esyedapro(sender, app_data, user_data):
                         if entity.is_closed:
                             coords.append((round(points[0][0],4),  round(points[0][1],4)))
 
+                            base_polygons.append(Polygon(coords))
+                            scale_polygons.append(scale_polygon_horizontal(Polygon(coords).buffer(for_buffer2),for_correct))
+                            horscale_polygons.append(scale_polygon_horizontal(Polygon(coords).buffer(for_buffer),for_correct))
 
                     if layer in ll:
                         data_base.add_polyline(nice_path+f"_lwpoly_"+f"{counter}",nice_path,lll[layer], False, True, False)
@@ -981,49 +1162,109 @@ def read_dxf_lines_from_esyedapro(sender, app_data, user_data):
                     data_base.add_polyline(nice_path+f"_SOLID_"+f"{counter}",nice_path,0, False, True, False)
                 data_base.add_coordinates(nice_path+f"_SOLID_"+f"{counter}", coords)
             elif entity.dxftype == 'TEXT':
-                print(entity.style)
+                for a in dir(entity):
+                    if not a.startswith("_"):
+                        try:
+                            val = getattr(entity, a)
+                            print(f"  {a} = {val!r}")
+                        except Exception:
+                            pass
             else:
                 print(f"{entity.dxftype} sss")
             # print(f"{entity.dxftype}")
             counter+=1
-        ans1 = unary_union(MultiPolygon([p for p in base_polygons]))
-        base_polygons = []
-        ans2 = unary_union(MultiPolygon([p for p in scale_polygons]))
-        ans3 = unary_union(MultiPolygon([p for p in horscale_polygons]))
-        dpg.add_button(label=entity.layer,parent='butonss',tag=entity.layer,callback=active_but)
-        if ans1.geom_type == 'Polygon':
-            
-            x1, y1 = ans1.exterior.xy
-            data_base.add_polyline(entity.layer+f"_lwpolyc_"+f"{counter}",entity.layer,1, False, True, False)
-            data_base.add_coordinates(entity.layer+f"_lwpolyc_"+f"{counter}",[(x_,y_) for x_,y_ in zip(x1,y1)])
-            for inter in ans1.interiors:
-                counter+=1
-                xm, ym = inter.xy
-                data_base.add_polyline(entity.layer+f"_lwpolyc_"+f"{counter}",entity.layer,0, False, True, False)
-                data_base.add_coordinates(entity.layer+f"_lwpolyc_"+f"{counter}",remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)]))
-        elif ans1.geom_type == 'MultiPolygon':
-            
-            counter2 = 0
-            for pol in ans1.geoms:
-                x1, y1 = pol.exterior.xy
+    ans1 = unary_union(MultiPolygon([p for p in base_polygons]))
+    scale_polygons2 = []
+    for geom in scale_polygons:
+        if not geom.is_valid:
+            # print(geom.exterior.xy)
+            print()
+        else:
+            scale_polygons2.append(geom)
+    horscale_polygons2 = []
+    for geom in horscale_polygons:
+        if not geom.is_valid:
+            # print(geom.exterior.xy)
+            print()
+        else:
+            horscale_polygons2.append(geom)
+    ans2 = unary_union(MultiPolygon([p for p in scale_polygons2]))
+    ans3 = unary_union(MultiPolygon([p for p in horscale_polygons2]))
+    dpg.add_button(label='base',parent='butonss',tag='base',callback=active_but)
+    dpg.add_button(label='scale',parent='butonss',tag='scale',callback=active_but)
+    dpg.add_button(label='horscale',parent='butonss',tag='horscale',callback=active_but)
+    counter = polygon_to_daatbase(ans1,'base',counter)
+    counter = polygon_to_daatbase(ans2,'scale',counter)
+    counter = polygon_to_daatbase(ans3,'horscale',counter,'for_zapolnit')
+    # if ans1.geom_type == 'Polygon':
         
-                data_base.add_polyline(entity.layer+f"_lwpolyc_"+f"{counter}_{counter2}",entity.layer,1, False, True, False)
+    #     x1, y1 = ans1.exterior.xy
+    #     data_base.add_polyline(entity.layer+f"_lwpolyc_"+f"{counter}",entity.layer,1, False, True, False)
+    #     data_base.add_coordinates(entity.layer+f"_lwpolyc_"+f"{counter}",[(x_,y_) for x_,y_ in zip(x1,y1)])
+    #     for inter in ans1.interiors:
+    #         counter+=1
+    #         xm, ym = inter.xy
+    #         data_base.add_polyline(entity.layer+f"_lwpolyc_"+f"{counter}",entity.layer,0, False, True, False)
+    #         data_base.add_coordinates(entity.layer+f"_lwpolyc_"+f"{counter}",remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)]))
+    # elif ans1.geom_type == 'MultiPolygon':
+        
+    #     counter2 = 0
+    #     for pol in ans1.geoms:
+    #         x1, y1 = pol.exterior.xy
+    
+    #         data_base.add_polyline(entity.layer+f"_lwpolyc_"+f"{counter}_{counter2}",entity.layer,1, False, True, False)
+            
+    #         data_base.add_coordinates(entity.layer+f"_lwpolyc_"+f"{counter}_{counter2}",[(x_,y_) for x_,y_ in zip(x1,y1)])
+    #         for inter in pol.interiors:
+    #             counter+=1
+    #             xm, ym = inter.xy
+    #             data_base.add_polyline(entity.layer+f"_lwpolyc_"+f"{counter}",entity.layer,0, False, True, False)
                 
-                data_base.add_coordinates(entity.layer+f"_lwpolyc_"+f"{counter}_{counter2}",[(x_,y_) for x_,y_ in zip(x1,y1)])
-                for inter in pol.interiors:
-                    counter+=1
-                    xm, ym = inter.xy
-                    data_base.add_polyline(entity.layer+f"_lwpolyc_"+f"{counter}",entity.layer,0, False, True, False)
-                    
-                    data_base.add_coordinates(entity.layer+f"_lwpolyc_"+f"{counter}",remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)]))
-                
-                counter2+=1
+    #             data_base.add_coordinates(entity.layer+f"_lwpolyc_"+f"{counter}",remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)]))
+            
+    #         counter2+=1
 
 
 
             
     
     redraw()
+
+def polygon_to_daatbase(ans1, tag, cou=0,fl=''):
+    counter = cou
+    if ans1.geom_type == 'Polygon':
+        
+        x1, y1 = ans1.exterior.xy
+        data_base.add_polyline(tag+f"{counter}",tag,1, False, True, False)
+        data_base.add_coordinates(tag+f"{counter}",[(x_,y_) for x_,y_ in zip(x1,y1)])
+        for inter in ans1.interiors:
+            counter+=1
+            xm, ym = inter.xy
+            data_base.add_polyline(tag+f"{counter}",tag,0, False, True, False)
+            data_base.add_coordinates(tag+f"{counter}",remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)]))
+    elif ans1.geom_type == 'MultiPolygon':
+        
+        counter2 = 0
+        for pol in ans1.geoms:
+            x1, y1 = pol.exterior.xy
+            if fl == 'for_zapolnit':
+                data_base.add_polyline(tag+f"{counter}_{counter2}",tag,2, False, True, False)
+            else:
+                data_base.add_polyline(tag+f"{counter}_{counter2}",tag,0, False, True, False)
+            
+            data_base.add_coordinates(tag+f"{counter}_{counter2}",[(x_,y_) for x_,y_ in zip(x1,y1)])
+            for inter in pol.interiors:
+                counter+=1
+                xm, ym = inter.xy
+                if fl == 'for_zapolnit':
+                    data_base.add_polyline(tag+f"{counter}",tag,1, False, True, False)
+                else:
+                    data_base.add_polyline(tag+f"{counter}",tag,0, False, True, False)
+                
+                data_base.add_coordinates(tag+f"{counter}",remove_close_points([(x_,y_) for x_,y_ in zip(xm,ym)]))
+            
+            counter+=1
+    return counter
 def read_dxf_with_grabber(file_path):
     nice_path = find_nice_path(os.path.basename(file_path))
     global borderflag
@@ -1145,13 +1386,13 @@ def read_dxf_with_grabber(file_path):
                 counter+=1
 
             elif entity.dxftype == 'LWPOLYLINE':
-                for a in dir(entity):
-                    if not a.startswith("_"):
-                        try:
-                            val = getattr(entity, a)
-                            print(f"  {a} = {val!r}")
-                        except Exception:
-                            pass
+                # for a in dir(entity):
+                #     if not a.startswith("_"):
+                #         try:
+                #             val = getattr(entity, a)
+                #             print(f"  {a} = {val!r}")
+                #         except Exception:
+                #             pass
                 
                 if hasattr(entity, 'const_width')and entity.const_width != 0:
                    
@@ -1206,8 +1447,15 @@ def read_dxf_with_grabber(file_path):
                         if entity.is_closed == True:
                             vpol.append(Polygon(calculate_boundary_coordinates2(points[-1][0], points[-1][1], points[0][0], points[0][1], c + for_buffer*2)))
                         vpol.append(Polygon(get_circle_points(center=(points[len(points)-1][0], points[len(points)-1][1]),radius=c/2 + for_buffer)))
-                    
-                    ans = unary_union(MultiPolygon([p for p in vpol]))
+
+                    vpol2 = []
+                    for geom in vpol:
+                        if not geom.is_valid:
+                            print(geom.is_invalid)
+                        else:
+                            vpol2.append(geom)
+
+                    ans = unary_union(MultiPolygon([p for p in vpol2]))
                     if ans.geom_type == 'Polygon':
                         x1, y1 = ans.exterior.xy
                         data_base.add_polyline(nice_path+f"_lwpolyc_"+f"{counter}",f"{entity.layer}_"+nice_path,1, False, True, False)
@@ -1333,6 +1581,13 @@ def read_dxf_with_grabber(file_path):
                 data_base.add_coordinates(nice_path+f"_SOLID_"+f"{counter}", coords)
             elif entity.dxftype == 'TEXT':
                 print(entity.style)
+                for a in dir(entity):
+                    if not a.startswith("_"):
+                        try:
+                            val = getattr(entity, a)
+                            print(f"  {a} = {val!r}")
+                        except Exception:
+                            pass
             else:
                 print(f"{entity.dxftype} sss")
             # print(f"{entity.dxftype}")
@@ -1398,21 +1653,24 @@ def save_as_gcode():
 def get_gcode_from_tags(tags):
     lenwork = 0
     lennowork = 0
-    gcode_lines = []
+    gcode_lines = ['G90','G21','M4 S0']
     h = 1
     curr_pos = [0,0]
     for tag in tags:
-        tag_lines = ['G90','G21','M4 S0']
+        tag_lines = []
         power = dpg.get_value(f"{h}_value")
         speed = dpg.get_value(f"{h}1_value")
         repeat = int(dpg.get_value(f"{h}11_value"))
         sett = set(tag)
-        
+        print("этап " + f"{len(tag)}")
+
         i = 0 
         while sett:
             
             poly = tag[i]
             i+=1
+            if i % 100 == 0:
+                print(i)
             sett.remove(poly)
             coords = data_base.get_coordinates(poly)
             if len(coords) > 1:
@@ -4213,28 +4471,48 @@ def kam2_callback():
     
     data_base.add_coordinates(vnutr[0] + "__",[(x_,y_) for x_,y_ in zip(x1,y1)])
     redraw()
+
+
+def kam3_callback():
+    naruja = data_base.get_tag('color="2"')
+    vnutr = data_base.get_tag('color="1"')
+    vpol = []
+    for vn in vnutr:
+        vpol.append(Polygon(data_base.get_coordinates(vn)))
+    
+    polygons = []
+    for npp in naruja:
+        pol = Polygon(data_base.get_coordinates(npp))
+        p = 0
+        nnn = []
+        for p in vpol:
+            if shapely.contains(pol,p):
+                nnn.append(p)
+        for p in nnn:
+            pol = shapely.difference(pol,p)
+        
+        polygon2 = pol
+        if polygon2.geom_type == 'Polygon':
+            polygons.append(polygon2)
+            
+        else:
+            for pol in polygon2.geoms:
+                polygons.append(pol)
+                
+    CENTER_X = float(dpg.get_value('x_center'))
+    CENTER_Y = float(dpg.get_value('y_center'))
+
+    width_lines = float(dpg.get_value('border_line_width'))
+    Polygon_to_lines2(unary_union(MultiPolygon([p for p in polygons])),40,width_lines,'nice_path',0,CENTER_X,0,CENTER_Y)
+    redraw()
+    dpg.add_button(label="nice_path",parent='butonss',tag="nice_path",callback=active_but)
+    
 def kam_callback():
     
-
-
-
-
-
-
-
-
-
-
 
     for_buffer = 0
     # for_buffer = 0.08
     for_buffer2 = 0.047 
-
-
-
-
-
-
 
     naruja = data_base.get_tag('color="2"')
     vnutr = data_base.get_tag('color="1"')
@@ -4257,39 +4535,42 @@ def kam_callback():
         if polygon2.geom_type == 'Polygon':
             polygons.append(polygon2)
             x1, y1 = polygon2.exterior.xy
-            data_base.add_polyline(npp+f"__{p}",'nice_path2',1, False, True, False)
+            data_base.add_polyline(npp+f"__{p}",'nice_path2',1, False, False, False)
            
             data_base.add_coordinates(npp+f"__{p}",[(x_,y_) for x_,y_ in zip(x1,y1)])
             d = 0
             for p in polygon2.interiors:
                 x1, y1 = p.xy
-                data_base.add_polyline(npp+f"__{p}{d}",'nice_path2',1, False, True, False)
+                data_base.add_polyline(npp+f"__{p}{d}",'nice_path2',1, False, False, False)
            
                 data_base.add_coordinates(npp+f"__{p}{d}",[(x_,y_) for x_,y_ in zip(x1,y1)])
         else:
             for pol in polygon2.geoms:
                 polygons.append(pol)
                 x1, y1 = pol.exterior.xy
-                data_base.add_polyline(npp+f"__{p}",'nice_path2',1, False, True, False)
+                data_base.add_polyline(npp+f"__{p}",'nice_path2',1, False, False, False)
                 
                 data_base.add_coordinates(npp+f"__{p}",[(x_,y_) for x_,y_ in zip(x1,y1)])
                 p+=1
                 d = 0
                 for p in pol.interiors:
                     x1, y1 = p.xy
-                    data_base.add_polyline(npp+f"__{p}_{d}",'nice_path2',1, False, True, False)
+                    data_base.add_polyline(npp+f"__{p}_{d}",'nice_path2',1, False, False, False)
             
                     data_base.add_coordinates(npp+f"__{p}_{d}",[(x_,y_) for x_,y_ in zip(x1,y1)])
-
+    CENTER_X = float(dpg.get_value('x_center'))
+    CENTER_Y = float(dpg.get_value('y_center'))
     dpg.add_button(label="nice_path",parent='butonss',tag="nice_path",callback=active_but)
     dpg.add_button(label="nice_path2",parent='butonss',tag="nice_path2",callback=active_but)
     width_lines = float(dpg.get_value('border_line_width'))
-    lins = MultiLineString([((0, y), (29.7, y))for y in np.arange(0,25.1,width_lines)])
+
+
+    lins = MultiLineString([((0, y), (CENTER_X, y)) for y in np.arange(0,CENTER_Y,width_lines)])
 
     linn = lins
     for p in polygons:
         linn = shapely.difference(linn,p)
-    print(polygons[1].exterior.xy)
+    
     # linn = shapely.difference(lins,polygons[0])
     c = 0
     
@@ -4299,11 +4580,11 @@ def kam_callback():
         coords.append((round(l.coords[0][0],4),  round(l.coords[0][1],4)))
         coords.append((round(l.coords[1][0],4), round(l.coords[1][1],4)))           
     
-        data_base.add_polyline('nice_pathh'+f"{c}" ,'nice_path',0, False, True, False)
+        data_base.add_polyline('nice_pathh'+f"{c}" ,'nice_path',0, False, False, False)
         data_base.add_coordinates('nice_pathh'+f"{c}",coords)
         c+=1
         
-    redraw()
+    # redraw()
 
 def nosik_callback():
     dpg.add_button(label="nosik",parent='butonss',tag="nosik",callback=active_but)
@@ -4883,6 +5164,7 @@ with dpg.viewport_menu_bar():
         dpg.add_menu_item(label="nosik", callback=nosik_callback) 
         dpg.add_menu_item(label="unaru union", callback=kam2_callback)
         dpg.add_menu_item(label="zapolnit dlya lazera", callback=kam_callback)
+        dpg.add_menu_item(label="zapolnit dlya lazera krasivo", callback=kam3_callback)
         dpg.add_menu_item(label="krysha nalivatora", callback=test2)
         
         dpg.add_menu_item(label="ruchka", callback=test10)

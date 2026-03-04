@@ -1,8 +1,35 @@
-from pygerber.examples import ExamplesEnum, load_example
-from pygerber.gerberx3.api.v2 import GerberFile
+import ezdxf
+import matplotlib.pyplot as plt
 
-# source_code = load_example(ExamplesEnum.UCAMCO_ex_2_Shapes)
-# print(source_code)
-GerberFile.from_file("Gerber_TopLayer.GTL").parse().render_svg("output.svg")
-# Запуск
-# render_gerber_to_image("Gerber_TopLayer.GTL")
+def extract_text_from_dxf(file_path):
+    # Чтение DXF файла
+    doc = ezdxf.readfile(file_path)
+    texts = []
+
+    # Извлечение текстовых объектов
+    for entity in doc.modelspace().query('TEXT'):
+        texts.append((entity.dxf.text, entity.dxf.insert))
+
+    return texts
+
+# Замените на путь к вашему DXF файлу
+dxf_file = "DXF_PCB1_2026-03-02_AutoCAD2007.dxf"
+texts = extract_text_from_dxf(dxf_file)
+
+# Создание графика
+fig, ax = plt.subplots()
+
+# Настройка осей
+ax.axis('equal')
+ax.set_xlim(-10, 100)
+ax.set_ylim(-100, 10)
+
+# Отображение текста
+for text, insert in texts:
+    ax.text(insert.x, insert.y, text, fontsize=12, ha='center', va='center')
+
+plt.title('Текст из DXF файла')
+plt.xlabel('X ось')
+plt.ylabel('Y ось')
+plt.grid()
+plt.show()
