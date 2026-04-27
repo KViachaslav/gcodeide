@@ -1292,10 +1292,10 @@ def read_dxf_lines_from_esyedapro(sender, app_data, user_data):
     dpg.delete_item('varradio')
     
     dpg.configure_item("modal_id", show=False)
-    for_correct = 0.05 #0.1 было ДЛЯ КОРРЕКЦИИ ШИРИНЫ-ВЫСОТЫ
+    for_correct = 0.015 #0.05 было ДЛЯ КОРРЕКЦИИ ШИРИНЫ-ВЫСОТЫ
     # for_buffer = 0.08/25.4 
-    for_buffer2 = 0.07 #47  было ЭТО ДЛЯ ОБВОДКИ
-    for_buffer = 0.09 # ЭТО ДЛЯ ШТРИХОВКИ 
+    for_buffer2 = 0.085 #07  было ЭТО ДЛЯ ОБВОДКИ
+    for_buffer = 0.11 # 09 ЭТО ДЛЯ ШТРИХОВКИ 
     a = 0.16
     b = 0.04
 
